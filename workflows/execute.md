@@ -1,5 +1,5 @@
 ---
-name: gtd:execute
+name: execute
 description: Execute a plan. Creates ./.gtd/<task_name>/{phase}/SUMMARY.md
 argument-hint: "[phase]"
 ---

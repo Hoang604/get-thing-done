@@ -1,5 +1,5 @@
 ---
-name: gtd:discuss-plan
+name: discuss-plan
 description: (Optional) Discuss and refine a phase plan before execution
 argument-hint: "[phase]"
 ---

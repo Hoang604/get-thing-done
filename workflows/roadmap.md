@@ -1,5 +1,5 @@
 ---
-name: gtd:roadmap
+name: roadmap
 description: Create sequential phases from spec. Creates ./.gtd/<task_name>/ROADMAP.md
 argument-hint: ""
 ---

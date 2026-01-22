@@ -1,5 +1,5 @@
 ---
-name: gtd:commit-spec
+name: commit-spec
 description: Create comprehensive commit message from spec phases and commit all changes
 argument-hint: ""
 ---

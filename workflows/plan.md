@@ -1,5 +1,5 @@
 ---
-name: gtd:plan
+name: plan
 description: Create execution plan for a phase. Creates ./.gtd/<task_name>/{phase}/PLAN.md
 argument-hint: "[phase] [--research] [--skip-research]"
 ---

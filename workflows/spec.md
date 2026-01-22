@@ -1,5 +1,5 @@
 ---
-name: gtd:spec
+name: spec
 description: Define what you want to build. Creates ./.gtd/<task_name>/SPEC.md
 argument-hint: "[--modify]"
 ---
