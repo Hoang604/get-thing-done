@@ -1,6 +1,6 @@
 ---
 name: d-verify
-description: Verify hypotheses with debug logging. Updates ./gtd/debug/current/ROOT_CAUSE.md
+description: Verify hypotheses with debug logging. Updates ./.gtd/debug/current/ROOT_CAUSE.md
 ---
 
 <role>
@@ -25,12 +25,12 @@ Find the actual root cause through systematic verification.
 <context>
 **Required files:**
 
-- `./gtd/debug/current/SYMPTOM.md` — Reproduction steps
-- `./gtd/debug/current/HYPOTHESES.md` — Hypotheses to test
+- `./.gtd/debug/current/SYMPTOM.md` — Reproduction steps
+- `./.gtd/debug/current/HYPOTHESES.md` — Hypotheses to test
 
 **Output:**
 
-- `./gtd/debug/current/ROOT_CAUSE.md` — When found
+- `./.gtd/debug/current/ROOT_CAUSE.md` — When found
 - Debug logs in code (temporary)
   </context>
 
@@ -60,11 +60,11 @@ If all hypotheses are rejected, stop and ask user to inspect again.
 
 Read both files:
 
-- `./gtd/debug/current/SYMPTOM.md` — For reproduction steps
-- `./gtd/debug/current/HYPOTHESES.md` — For hypotheses list
+- `./.gtd/debug/current/SYMPTOM.md` — For reproduction steps
+- `./.gtd/debug/current/HYPOTHESES.md` — For hypotheses list
 
 ```bash
-if ! test -f "./gtd/debug/current/SYMPTOM.md" || ! test -f "./gtd/debug/current/HYPOTHESES.md"; then
+if ! test -f "./.gtd/debug/current/SYMPTOM.md" || ! test -f "./.gtd/debug/current/HYPOTHESES.md"; then
     echo "Error: Missing required files"
     exit 1
 fi
@@ -146,7 +146,7 @@ Need to re-inspect code with fresh perspective.
 
 ## 3. Document Root Cause
 
-When hypothesis confirmed, write to `./gtd/debug/current/ROOT_CAUSE.md`:
+When hypothesis confirmed, write to `./.gtd/debug/current/ROOT_CAUSE.md`:
 
 ```markdown
 # Root Cause
@@ -202,7 +202,7 @@ Remove or comment out temporary debug logs added during verification.
  GTD:DEBUG ► ROOT CAUSE FOUND ✓
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Root cause documented: ./gtd/debug/current/ROOT_CAUSE.md
+Root cause documented: ./.gtd/debug/current/ROOT_CAUSE.md
 
 Verified hypothesis: {N}
 Location: {files}

@@ -1,6 +1,6 @@
 ---
 name: d-symptom
-description: Clarify and document bug symptoms. Creates ./gtd/debug/current/SYMPTOM.md
+description: Clarify and document bug symptoms. Creates ./.gtd/debug/current/SYMPTOM.md
 ---
 
 <role>
@@ -23,7 +23,7 @@ Create a clear symptom description that answers: "What's wrong and how do we kno
 <context>
 **Output:**
 
-- `./gtd/debug/current/SYMPTOM.md`
+- `./.gtd/debug/current/SYMPTOM.md`
   </context>
 
 <philosophy>
@@ -119,10 +119,10 @@ Is this correct? (yes/no/clarify)
 ## 4. Document SYMPTOM.md
 
 ```bash
-mkdir -p ./gtd/debug/current
+mkdir -p ./.gtd/debug/current
 ```
 
-Write to `./gtd/debug/current/SYMPTOM.md`:
+Write to `./.gtd/debug/current/SYMPTOM.md`:
 
 ```markdown
 # Bug Symptom
@@ -171,7 +171,7 @@ Write to `./gtd/debug/current/SYMPTOM.md`:
  GTD:DEBUG ► SYMPTOM DOCUMENTED ✓
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Symptom documented: ./gtd/debug/current/SYMPTOM.md
+Symptom documented: ./.gtd/debug/current/SYMPTOM.md
 
 ───────────────────────────────────────────────────────
 

@@ -1,6 +1,6 @@
 ---
 name: d-archive
-description: Archive completed debug work to ./gtd/archive/
+description: Archive completed debug work to ./.gtd/archive/
 ---
 
 <role>
@@ -23,11 +23,11 @@ Archive completed debug investigation to keep workspace clean while preserving h
 <context>
 **Source:**
 
-- `./gtd/debug/current/` — Current debug work
+- `./.gtd/debug/current/` — Current debug work
 
 **Destination:**
 
-- `./gtd/archive/debug-{timestamp}/` — Archived debug work
+- `./.gtd/archive/debug-{timestamp}/` — Archived debug work
 
 **Files to archive:**
 
@@ -58,10 +58,10 @@ After archiving, current/ folder should be empty for next debug session.
 
 ## 1. Check Current Debug Work
 
-Verify `./gtd/debug/current/` exists and has files:
+Verify `./.gtd/debug/current/` exists and has files:
 
 ```bash
-if [ ! -d "./gtd/debug/current" ] || [ -z "$(ls -A ./gtd/debug/current)" ]; then
+if [ ! -d "./.gtd/debug/current" ] || [ -z "$(ls -A ./.gtd/debug/current)" ]; then
     echo "No debug work to archive"
     exit 0
 fi
@@ -75,7 +75,7 @@ Generate timestamp-based archive name:
 
 ```bash
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-ARCHIVE_DIR="./gtd/archive/debug-${TIMESTAMP}"
+ARCHIVE_DIR="./.gtd/archive/debug-${TIMESTAMP}"
 mkdir -p "${ARCHIVE_DIR}"
 ```
 
@@ -86,7 +86,7 @@ mkdir -p "${ARCHIVE_DIR}"
 Move all files from current to archive:
 
 ```bash
-mv ./gtd/debug/current/* "${ARCHIVE_DIR}/"
+mv ./.gtd/debug/current/* "${ARCHIVE_DIR}/"
 ```
 
 ---
@@ -96,7 +96,7 @@ mv ./gtd/debug/current/* "${ARCHIVE_DIR}/"
 Commit the archive:
 
 ```bash
-git add ./gtd/archive/
+git add ./.gtd/archive/
 git commit -m "chore: archive debug work to debug-${TIMESTAMP}"
 ```
 
@@ -109,7 +109,7 @@ git commit -m "chore: archive debug work to debug-${TIMESTAMP}"
  GTD ► DEBUG WORK ARCHIVED ✓
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Archived to: ./gtd/archive/debug-{timestamp}/
+Archived to: ./.gtd/archive/debug-{timestamp}/
 
 Files archived: {count}
 

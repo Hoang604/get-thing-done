@@ -1,6 +1,6 @@
 ---
 name: d-inspect
-description: Inspect code and propose root cause hypotheses. Creates ./gtd/debug/current/HYPOTHESES.md
+description: Inspect code and propose root cause hypotheses. Creates ./.gtd/debug/current/HYPOTHESES.md
 ---
 
 <role>
@@ -23,11 +23,11 @@ Generate ranked hypotheses about the root cause of the bug.
 <context>
 **Required files:**
 
-- `./gtd/debug/current/SYMPTOM.md` — Must exist
+- `./.gtd/debug/current/SYMPTOM.md` — Must exist
 
 **Output:**
 
-- `./gtd/debug/current/HYPOTHESES.md`
+- `./.gtd/debug/current/HYPOTHESES.md`
 
 **Skills used:**
 
@@ -58,10 +58,10 @@ Each hypothesis needs supporting evidence from code analysis.
 
 ## 1. Load Symptom
 
-Read `./gtd/debug/current/SYMPTOM.md`.
+Read `./.gtd/debug/current/SYMPTOM.md`.
 
 ```bash
-if ! test -f "./gtd/debug/current/SYMPTOM.md"; then
+if ! test -f "./.gtd/debug/current/SYMPTOM.md"; then
     echo "Error: No symptom documented. Run /d-symptom first."
     exit 1
 fi
@@ -113,7 +113,7 @@ For each potential root cause, create a hypothesis with:
 
 ## 4. Document HYPOTHESES.md
 
-Write to `./gtd/debug/current/HYPOTHESES.md`:
+Write to `./.gtd/debug/current/HYPOTHESES.md`:
 
 ```markdown
 # Root Cause Hypotheses
@@ -182,7 +182,7 @@ Based on code analysis, here are the most likely root causes:
  GTD:DEBUG ► HYPOTHESES GENERATED ✓
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Hypotheses documented: ./gtd/debug/current/HYPOTHESES.md
+Hypotheses documented: ./.gtd/debug/current/HYPOTHESES.md
 
 Total hypotheses: {N}
 Highest confidence: {X}%

@@ -1,6 +1,6 @@
 ---
 name: d-execute
-description: Execute bug fix plan. Creates ./gtd/debug/current/FIX_SUMMARY.md
+description: Execute bug fix plan. Creates ./.gtd/debug/current/FIX_SUMMARY.md
 ---
 
 <role>
@@ -23,11 +23,11 @@ Execute all fix tasks and produce a summary of what was done.
 <context>
 **Required files:**
 
-- `./gtd/debug/current/FIX_PLAN.md` — Must exist
+- `./.gtd/debug/current/FIX_PLAN.md` — Must exist
 
 **Output:**
 
-- `./gtd/debug/current/FIX_SUMMARY.md`
+- `./.gtd/debug/current/FIX_SUMMARY.md`
 
 **Skills used:**
 
@@ -63,10 +63,10 @@ FIX_SUMMARY.md captures what was done with a proposed commit message.
 
 ## 1. Load Fix Plan
 
-Read `./gtd/debug/current/FIX_PLAN.md`.
+Read `./.gtd/debug/current/FIX_PLAN.md`.
 
 ```bash
-if ! test -f "./gtd/debug/current/FIX_PLAN.md"; then
+if ! test -f "./.gtd/debug/current/FIX_PLAN.md"; then
     echo "Error: No fix plan exists"
     exit 1
 fi
@@ -155,7 +155,7 @@ After all tasks, check plan's success criteria:
 
 ## 5. Reproduce Symptom
 
-Follow the reproduction steps from `./gtd/debug/current/SYMPTOM.md` to verify the bug is actually fixed.
+Follow the reproduction steps from `./.gtd/debug/current/SYMPTOM.md` to verify the bug is actually fixed.
 
 **Document the result:**
 
@@ -173,7 +173,7 @@ Result: {Bug no longer occurs / Issue resolved}
 
 ## 6. Write FIX_SUMMARY.md
 
-Write to `./gtd/debug/current/FIX_SUMMARY.md`:
+Write to `./.gtd/debug/current/FIX_SUMMARY.md`:
 
 ````markdown
 # Bug Fix Summary
@@ -249,7 +249,7 @@ Root cause: {brief root cause description}
 Tasks: {X}/{X} complete
 Files changed: {count}
 
-Summary: ./gtd/debug/current/FIX_SUMMARY.md
+Summary: ./.gtd/debug/current/FIX_SUMMARY.md
 
 ───────────────────────────────────────────────────────
 

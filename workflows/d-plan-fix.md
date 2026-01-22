@@ -1,6 +1,6 @@
 ---
 name: d-plan-fix
-description: Create a plan to fix the root cause. Creates ./gtd/debug/current/FIX_PLAN.md
+description: Create a plan to fix the root cause. Creates ./.gtd/debug/current/FIX_PLAN.md
 ---
 
 <role>
@@ -24,11 +24,11 @@ Create a clear, actionable plan to fix the bug.
 <context>
 **Required files:**
 
-- `./gtd/debug/current/ROOT_CAUSE.md` — Must exist
+- `./.gtd/debug/current/ROOT_CAUSE.md` — Must exist
 
 **Output:**
 
-- `./gtd/debug/current/FIX_PLAN.md`
+- `./.gtd/debug/current/FIX_PLAN.md`
   </context>
 
 <philosophy>
@@ -55,10 +55,10 @@ Each task should have clear done criteria that can be verified.
 
 ## 1. Load Root Cause
 
-Read `./gtd/debug/current/ROOT_CAUSE.md`.
+Read `./.gtd/debug/current/ROOT_CAUSE.md`.
 
 ```bash
-if ! test -f "./gtd/debug/current/ROOT_CAUSE.md"; then
+if ! test -f "./.gtd/debug/current/ROOT_CAUSE.md"; then
     echo "Error: No root cause found. Run /d-verify first."
     exit 1
 fi
@@ -155,7 +155,7 @@ Approve this plan? (yes/no/modify)
 
 ## 6. Write FIX_PLAN.md
 
-Write to `./gtd/debug/current/FIX_PLAN.md`:
+Write to `./.gtd/debug/current/FIX_PLAN.md`:
 
 ```markdown
 # Fix Plan
@@ -228,7 +228,7 @@ After all tasks complete:
  GTD:DEBUG ► FIX PLAN READY ✓
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Fix plan written: ./gtd/debug/current/FIX_PLAN.md
+Fix plan written: ./.gtd/debug/current/FIX_PLAN.md
 
 Tasks: {N}
 Estimated complexity: {High/Medium/Low}
