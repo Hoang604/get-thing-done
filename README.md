@@ -2,6 +2,25 @@
 
 A disciplined, zero-assumption framework for agentic software development and debugging.
 
+## Installation
+
+Run the following in your project's root directory:
+
+```bash
+# Clone the repository
+git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
+
+# Create .agent directory if it doesn't exist
+mkdir -p .agent
+
+# Move skills and workflows into .agent
+mv gtd-temp/skills .agent/
+mv gtd-temp/workflows .agent/
+
+# Clean up
+rm -rf gtd-temp
+```
+
 ## Core Philosophy
 
 - **Zero Assumption**: Never guess from names. Read the code to understand its true behavior.
@@ -40,12 +59,12 @@ Systematic process for resolving defects:
 
 ### 3. Lifecycle Management
 
-- **[/archive](workflows/archive.md)**: Move completed develop work to `./gtd/archive/`.
-- **[/d-archive](workflows/d-archive.md)**: Move completed debug work to `./gtd/archive/`.
+- **[/archive](workflows/archive.md)**: Move completed develop work to `./.gtd/archive/`.
+- **[/d-archive](workflows/d-archive.md)**: Move completed debug work to `./.gtd/archive/`.
 
 ## Directory Standard
 
-- `/.gtd/<task_name>/`: Active task state.
-- `./gtd/archive/`: Historical record of completed work.
+- `./.gtd/<task_name>/`: Active task state.
+- `./.gtd/archive/`: Historical record of completed work.
 - `./skills/`: Shared behavioral guidelines.
 - `./workflows/`: Process automation scripts.
