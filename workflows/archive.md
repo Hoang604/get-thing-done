@@ -1,6 +1,6 @@
 ---
 name: archive
-description: Archive completed task/spec work to ./gtd/archive/
+description: Archive completed task/spec work to ./.gtd/archive/
 argument-hint: "[task_name]"
 ---
 
@@ -30,7 +30,7 @@ Archive completed task to keep workspace clean while preserving history.
 
 **Destination:**
 
-- `./gtd/archive/<task_name>-{timestamp}/` — Archived task work
+- `./.gtd/archive/<task_name>-{timestamp}/` — Archived task work
 
 **Files to archive:**
 
@@ -52,7 +52,7 @@ Keep all files for future reference and learning.
 
 ## Clean Workspace
 
-After archiving, task folder is removed to keep gtd/ clean.
+After archiving, task folder is removed to keep .gtd/ clean.
 
 </philosophy>
 
@@ -91,8 +91,8 @@ Generate archive name with timestamp:
 
 ```bash
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-ARCHIVE_DIR="./gtd/archive/<task_name>-${TIMESTAMP}"
-mkdir -p "./gtd/archive"
+ARCHIVE_DIR="./.gtd/archive/<task_name>-${TIMESTAMP}"
+mkdir -p "./.gtd/archive"
 ```
 
 ---
@@ -112,7 +112,7 @@ mv "./.gtd/<task_name>" "${ARCHIVE_DIR}"
 Commit the archive:
 
 ```bash
-git add ./gtd/archive/
+git add ./.gtd/archive/
 git commit -m "chore: archive task <task_name> to {task_name}-${TIMESTAMP}"
 ```
 
@@ -126,12 +126,12 @@ git commit -m "chore: archive task <task_name> to {task_name}-${TIMESTAMP}"
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Task: {task_name}
-Archived to: ./gtd/archive/{task_name}-{timestamp}/
+Archived to: ./.gtd/archive/{task_name}-{timestamp}/
 
 Phases archived: {count}
 Files archived: {count}
 
-Task folder removed from ./gtd/
+Task folder removed from ./.gtd/
 
 ───────────────────────────────────────────────────────
 ```
