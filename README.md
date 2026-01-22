@@ -4,21 +4,48 @@ A disciplined, zero-assumption framework for agentic software development and de
 
 ## Installation
 
-Run the following in your project's root directory:
+### Local Install (project-specific)
+
+Navigate to your project directory first, then run:
 
 ```bash
-# Clone the repository
 git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
+cd gtd-temp && ./install.sh ./.agent
+cd .. && rm -rf gtd-temp
+```
 
-# Create .agent directory if it doesn't exist
-mkdir -p .agent
+### Global Install (available everywhere)
 
-# Move skills and workflows into .agent
-mv gtd-temp/skills .agent/
-mv gtd-temp/workflows .agent/
+You can run this from any directory.
 
-# Clean up
-rm -rf gtd-temp
+```bash
+git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
+cd gtd-temp && ./install.sh ~/.gemini/antigravity --global
+cd .. && rm -rf gtd-temp
+```
+
+---
+
+## Gemini CLI Installation
+
+For Gemini CLI users, workflows are converted to TOML commands with inlined skills.
+
+### Local Install (project-specific)
+
+Navigate to your project directory first, then run:
+
+```bash
+git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
+cd gtd-temp && ./install-gemini.sh
+cd .. && rm -rf gtd-temp
+```
+
+### Global Install
+
+```bash
+git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
+cd gtd-temp && ./install-gemini.sh --global
+cd .. && rm -rf gtd-temp
 ```
 
 ## Core Philosophy

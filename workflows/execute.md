@@ -119,7 +119,7 @@ For each task:
 
 > **Skill: `code`**
 >
-> Read and apply `./skills/code/SKILL.md` before implementing.
+> Read and apply `{{SKILLS_ROOT}}/code/SKILL.md` before implementing.
 
 Implement what the task specifies.
 

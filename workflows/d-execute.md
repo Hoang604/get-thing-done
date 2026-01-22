@@ -107,7 +107,7 @@ For each task:
 
 > **Skill: `code`**
 >
-> Read and apply `./skills/code/SKILL.md` before implementing.
+> Read and apply `{{SKILLS_ROOT}}/code/SKILL.md` before implementing.
 
 Implement what the task specifies.
 
@@ -223,7 +223,7 @@ Write to `./.gtd/debug/current/FIX_SUMMARY.md`:
 
 ## Proposed Commit Message
 
-\```
+```
 fix({scope}): {short description of bug fix}
 
 {Longer description of what was fixed and why}
@@ -232,7 +232,7 @@ Root cause: {brief root cause description}
 
 - {change 1}
 - {change 2}
-  \```
+```
 ````
 
 ---
