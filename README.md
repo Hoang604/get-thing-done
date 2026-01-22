@@ -12,7 +12,7 @@ Navigate to your project directory.
 
 ```bash
 git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
-cd gtd-temp && chmod +x *.sh && ./install.sh ./.agent
+cd gtd-temp && chmod +x *.sh && ./install.sh ../.agent
 cd .. && rm -rf gtd-temp
 ```
 
@@ -20,7 +20,7 @@ cd .. && rm -rf gtd-temp
 
 ```powershell
 git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
-cd gtd-temp; .\install.ps1 .\.agent
+cd gtd-temp; .\install.ps1 ..\.agent
 cd ..; Remove-Item -Recurse -Force gtd-temp
 ```
 
@@ -56,16 +56,16 @@ Navigate to your project directory.
 
 ```bash
 git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
-cd gtd-temp && chmod +x *.sh && ./install-gemini.sh
-cd .. && rm -rf gtd-temp
+chmod +x gtd-temp/*.sh && ./gtd-temp/install-gemini.sh
+rm -rf gtd-temp
 ```
 
 **Windows (PowerShell):**
 
 ```powershell
 git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
-cd gtd-temp; .\install-gemini.ps1
-cd ..; Remove-Item -Recurse -Force gtd-temp
+.\gtd-temp\install-gemini.ps1
+Remove-Item -Recurse -Force gtd-temp
 ```
 
 ### Global Install
