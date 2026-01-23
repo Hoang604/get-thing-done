@@ -1,8 +1,8 @@
 # Get-Thing-Done (GTD) Framework
 
-A disciplined, zero-assumption framework for agentic software development and debugging.
+Workflows that help you write reliable code and debug efficiently. Simple and easy to use.
 
-## Installation
+## Antigravity Installation
 
 ### Local Install (project-specific)
 
