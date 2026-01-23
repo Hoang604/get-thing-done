@@ -20,7 +20,7 @@ You are a requirements analyst. You interview the user to extract clear, actiona
 <objective>
 Create a clear, complete specification that answers: "What are we building and how do we know it's done?"
 
-**Flow:** Interview → Determine Task Name → Mirror → Confirm → Write
+**Flow:** Context → Interview → Domain Research → Mirror → Confirm → Write
 </objective>
 
 <context>
@@ -32,6 +32,10 @@ Create a clear, complete specification that answers: "What are we building and h
 **Output:**
 
 - `./.gtd/<task_name>/SPEC.md`
+
+**Skills used:**
+
+- `research` — For understanding domain-specific code during context gathering
   </context>
 
 <philosophy>
@@ -73,11 +77,38 @@ Check if `$ARGUMENTS` contains `--modify`:
 
 **If NEW mode (no arguments or different argument):**
 
-- Proceed to Interview Phase (task name will be determined from conversation)
+- Proceed to Context Gathering Phase
 
 ---
 
-## 2. Interview Phase (NEW mode)
+## 2. Context Gathering Phase (NEW mode)
+
+Before interviewing, gather codebase context:
+
+**Check for CODEBASE.md:**
+
+```bash
+if [ -f "./.gtd/CODEBASE.md" ]; then
+    echo "Codebase overview found"
+else
+    echo "No codebase overview exists"
+fi
+```
+
+**If CODEBASE.md exists:**
+
+- Load and read `./.gtd/CODEBASE.md`
+- Use this context to ask better questions during interview
+- Reference existing modules/patterns when discussing implementation
+
+**If CODEBASE.md does NOT exist:**
+
+- Inform user: "No codebase overview found. Consider running `/codebase-overview` first for better context."
+- Proceed with interview (can still work without it)
+
+---
+
+## 3. Interview Phase (NEW mode)
 
 Ask questions to gather specification, before write SPEC.md, you must have context about:
 
@@ -92,7 +123,7 @@ Ask questions to gather specification, before write SPEC.md, you must have conte
 
 ---
 
-## 2. Modify Flow (MODIFY mode)
+## 3. Modify Flow (MODIFY mode)
 
 User will provide what they want to change. Continue asking clarifying questions to understand:
 
@@ -110,7 +141,35 @@ User will provide what they want to change. Continue asking clarifying questions
 
 ---
 
-## 3. Mirror Phase
+## 4. Domain Research Phase (NEW mode)
+
+After interview, investigate the codebase to understand the specific domain:
+
+> **Skill: `research`**
+>
+> Read and apply `{{SKILLS_ROOT}}/research/SKILL.md` before proceeding.
+
+**Based on user requirements:**
+
+1. Identify which modules/files are relevant to the goal
+2. Trace existing patterns for similar features
+3. Note dependencies and constraints from actual code
+
+**Purpose:**
+
+- Validate requirements are feasible with current architecture
+- Identify hidden dependencies user may not know about
+- Suggest additional requirements based on codebase reality
+
+**After research, update understanding if needed:**
+
+- Add discovered constraints
+- Flag potential conflicts with existing code
+- Suggest additional must-haves based on findings
+
+---
+
+## 5. Mirror Phase
 
 **Determine task name automatically:**
 
@@ -171,7 +230,7 @@ Is this correct? (yes/no/clarify)
 
 ---
 
-## 4. Write/Update SPEC.md
+## 6. Write/Update SPEC.md
 
 **For NEW mode:**
 
@@ -273,8 +332,9 @@ Changes applied: {N} sections modified
 
 <related>
 
-| Workflow   | Relationship                |
-| ---------- | --------------------------- |
-| `/roadmap` | Creates phases from SPEC.md |
+| Workflow             | Relationship                    |
+| -------------------- | ------------------------------- |
+| `/codebase-overview` | Creates CODEBASE.md for context |
+| `/roadmap`           | Creates phases from SPEC.md     |
 
 </related>
