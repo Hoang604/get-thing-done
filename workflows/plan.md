@@ -41,7 +41,7 @@ Create executable plans (PLAN.md files) for a roadmap phase.
 
 **Skills used:**
 
-- `investigate` — During research phase
+- `research` — During research phase
   </context>
 
 <philosophy>
@@ -145,9 +145,9 @@ Display:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-> **Skill: `investigate`**
+> **Skill: `research`**
 >
-> Read and apply `{{SKILLS_ROOT}}/investigate/SKILL.md` before proceeding.
+> Read and apply `{{SKILLS_ROOT}}/research/SKILL.md` before proceeding.
 
 Write `./.gtd/<task_name>/$PHASE/RESEARCH.md` with findings.
 

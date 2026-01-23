@@ -29,7 +29,7 @@ Verify that all "Must Have" requirements defined in SPEC.md have been implemente
 
 **Skills used:**
 
-- `investigate` — To find evidence in the code
+- `research` — To find evidence in the code
   </context>
 
 <process>
@@ -49,9 +49,10 @@ If not found, error: "SPEC.md not found for task <task_name>".
 
 ## 2. Verify "Must Have" Requirements
 
-> **Skill: `investigate`**
+> **Skill: `research`**
 >
-> Use the investigate skill capabilities to search and read code.
+> Use the research skill capabilities to search and read code.
+> Read and apply `{{SKILLS_ROOT}}/research/SKILL.md` before proceeding.
 
 For **EACH** item in the `### Must Have` section of the spec:
 

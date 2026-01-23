@@ -31,7 +31,7 @@ Generate ranked hypotheses about the root cause of the bug.
 
 **Skills used:**
 
-- `investigate` — During code tracing
+- `research` — During code tracing
   </context>
 
 <philosophy>
@@ -71,9 +71,9 @@ fi
 
 ## 2. Trace Code Paths
 
-> **Skill: `investigate`**
+> **Skill: `research`**
 >
-> Read and apply `{{SKILLS_ROOT}}/investigate/SKILL.md` before tracing.
+> Read and apply `{{SKILLS_ROOT}}/research/SKILL.md` before tracing.
 
 Based on the symptom:
 

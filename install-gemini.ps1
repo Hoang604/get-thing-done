@@ -48,15 +48,15 @@ Get-ChildItem (Join-Path $ScriptDir "workflows\*.md") | ForEach-Object {
     $body = Get-BodyContent $content
     $skillsToAdd = ""
     
-    # Check for investigate skill
-    if ($body -match '\{\{SKILLS_ROOT\}\}/investigate/SKILL.md') {
-        $skillPath = Join-Path $ScriptDir "skills\investigate\SKILL.md"
+    # Check for research skill
+    if ($body -match '\{\{SKILLS_ROOT\}\}/research/SKILL.md') {
+        $skillPath = Join-Path $ScriptDir "skills\research\SKILL.md"
         if (Test-Path $skillPath) {
             $skillContent = Get-Content $skillPath -Raw
             $skillBody = Get-BodyContent $skillContent
-            $skillsToAdd += "`n`n---`n# Skill: Investigate (The Archaeologist)`n$skillBody"
+            $skillsToAdd += "`n`n---`n# Skill: research (The Archaeologist)`n$skillBody"
         }
-        $body = $body -replace '> Read and apply `\{\{SKILLS_ROOT\}\}/investigate/SKILL.md`.*', '> Apply the Investigate skill documented at the end of this prompt.'
+        $body = $body -replace '> Read and apply `\{\{SKILLS_ROOT\}\}/research/SKILL.md`.*', '> Apply the research skill documented at the end of this prompt.'
     }
     
     # Check for code skill

@@ -1,5 +1,5 @@
 ---
-name: investigate
+name: research
 description: Understand code before changing it. Apply when researching for /plan.
 ---
 
@@ -19,7 +19,7 @@ Never guess from names. `saveUser()` might delete records. READ THE CODE.
 
 ## Trust Threshold
 
-Skip implementation ONLY if docstring documents:
+Skip deep dive the implementation ONLY if docstring documents:
 
 - What it does
 - What it returns

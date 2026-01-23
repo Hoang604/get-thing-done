@@ -45,17 +45,17 @@ convert_workflow() {
     # Collect skills to inline
     local skills_to_add=""
     
-    # Check for investigate skill
-    if echo "$body" | grep -q "{{SKILLS_ROOT}}/investigate/SKILL.md"; then
-        if [ -f "$SCRIPT_DIR/skills/investigate/SKILL.md" ]; then
+    # Check for research skill
+    if echo "$body" | grep -q "{{SKILLS_ROOT}}/research/SKILL.md"; then
+        if [ -f "$SCRIPT_DIR/skills/research/SKILL.md" ]; then
             skills_to_add="$skills_to_add
 
 ---
-# Skill: Investigate (The Archaeologist)
-$(read_skill "$SCRIPT_DIR/skills/investigate/SKILL.md")"
+# Skill: research (The Archaeologist)
+$(read_skill "$SCRIPT_DIR/skills/research/SKILL.md")"
         fi
         # Remove the reference line
-        body=$(echo "$body" | sed 's|> Read and apply `{{SKILLS_ROOT}}/investigate/SKILL.md`.*|> Apply the Investigate skill documented at the end of this prompt.|g')
+        body=$(echo "$body" | sed 's|> Read and apply `{{SKILLS_ROOT}}/research/SKILL.md`.*|> Apply the research skill documented at the end of this prompt.|g')
     fi
     
     # Check for code skill
