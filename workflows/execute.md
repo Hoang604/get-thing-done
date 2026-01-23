@@ -250,11 +250,11 @@ Update `./.gtd/<task_name>/ROADMAP.md` phase status:
  GTD ► PHASE {N} COMPLETE ✓
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+Summary written to: ./.gtd/{N}/SUMMARY.md
+
 Tasks: {X}/{X} complete
 Deviations: {count}
 Files changed: {count}
-
-Summary: ./gtd/{N}/SUMMARY.md
 
 ───────────────────────────────────────────────────────
 

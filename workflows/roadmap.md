@@ -155,6 +155,8 @@ Write to `./.gtd/<task_name>/ROADMAP.md`:
  GTD ► ROADMAP COMPLETE ✓
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+Roadmap written to ./.gtd/<task_name>/ROADMAP.md
+
 {N} phases defined
 
 | Phase | Name | Criteria |

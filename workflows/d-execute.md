@@ -246,10 +246,10 @@ Root cause: {brief root cause description}
  GTD:DEBUG ► BUG FIXED ✓
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+Fix summary written to: ./.gtd/debug/current/FIX_SUMMARY.md
+
 Tasks: {X}/{X} complete
 Files changed: {count}
-
-Summary: ./.gtd/debug/current/FIX_SUMMARY.md
 
 ───────────────────────────────────────────────────────
 

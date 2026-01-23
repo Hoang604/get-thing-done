@@ -215,12 +215,14 @@ Check:
  GTD:DEBUG ► FIX PLANNED ✓
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+Fix plan written to ./.gtd/debug/current/FIX_PLAN.md
+
 {X} tasks defined
 
-| Task | Name | Files |
-|------|------|-------|
-| 1 | {name} | {files} |
-| 2 | {name} | {files} |
+| Task | Name |
+|------|------|
+| 1 | {name} |
+| 2 | {name} |
 
 ───────────────────────────────────────────────────────
 

@@ -82,6 +82,8 @@ Updated:
  GTD ► PLAN APPROVED ✓
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+Plan updated at: ./.gtd/<task_name>/{phase}/PLAN.md
+
 Changes made: {Yes/No}
 
 ───────────────────────────────────────────────────────

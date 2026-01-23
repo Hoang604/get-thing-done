@@ -263,14 +263,14 @@ Check:
  GTD ► PHASE {N} PLANNED ✓
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+Plan written to ./.gtd/<task_name>/{phase}/PLAN.md
+
 {X} tasks defined
 
-| Task | Name | Files |
-|------|------|-------|
-| 1 | {name} | {files} |
-| 2 | {name} | {files} |
-
-Research: {Completed | Used existing | Skipped}
+| Task | Name |
+|------|------|
+| 1 | {name} |
+| 2 | {name} |
 
 ───────────────────────────────────────────────────────
 
