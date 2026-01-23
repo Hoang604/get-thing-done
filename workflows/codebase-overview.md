@@ -56,6 +56,37 @@ CODEBASE.md is updated when:
 
 </philosophy>
 
+<prohibitions>
+
+## No Guessing From Names
+
+**NEVER describe a module based on its name alone.**
+
+- `UserService` might delete users, not serve them
+- `utils/` might contain critical business logic
+- `cache.ts` might write to database
+
+**Every description requires reading actual code.**
+
+## Evidence Required
+
+Every claim must cite evidence:
+
+- Tech stack → cite `package.json`, `go.mod`, or actual imports
+- Module purpose → cite key function signatures read
+- Patterns → cite 2+ files demonstrating the pattern
+
+**No citation = don't write it.**
+
+## Admit Unknowns
+
+If you can't verify something, add it to Open Questions.
+
+Better: "Open Question: What does `core/` do?"
+Worse: "core/ contains core business logic" (guessed from name)
+
+</prohibitions>
+
 <process>
 
 ## 1. Check Mode
@@ -126,6 +157,11 @@ For each major directory/module, classify:
 
 **If unclear:** Apply research skill to understand.
 
+> **Skill: `research`**
+>
+> Read and apply `{{SKILLS_ROOT}}/research/SKILL.md` for every module classification.
+> You MUST read at least one key file in each module before describing it.
+
 ### 2.5 Patterns & Conventions
 
 Look for:
@@ -191,11 +227,9 @@ Key files:
 |-------------|------|------|---------|
 | {name} | HTTP/CLI/Worker | {file} | {purpose} |
 
-## Data Flow
-
-{Describe how data moves through the system — optional, include if clear}
-
 ## Patterns & Conventions
+
+(Only include patterns you verified in 2+ files. Cite examples.)
 
 - **File naming:** {pattern}
 - **Error handling:** {pattern}
