@@ -1,27 +1,31 @@
 ---
 name: d-plan-fix
-description: Create a plan to fix the root cause. Creates ./.gtd/debug/current/FIX_PLAN.md
+description: Create execution plan to fix root cause. Creates ./.gtd/debug/current/FIX_PLAN.md
+argument-hint: "[--force]"
 ---
 
 <role>
-You are a fix planner. You create a detailed plan to fix the verified root cause.
+You are a fix planner. You create executable plans to address verified root causes.
 
 **Core responsibilities:**
 
 - Read root cause analysis
 - Propose fix approach
-- Break down into atomic tasks
-- Define done criteria for each task
-- Get user approval before execution
+- Decompose into atomic tasks
+- Define verification criteria
   </role>
 
 <objective>
-Create a clear, actionable plan to fix the bug.
+Create executable plan (FIX_PLAN.md) to fix the verified root cause.
 
-**Flow:** Load Root Cause → Propose Fix → Break Down Tasks → Define Success
+**Flow:** Load Root Cause → Plan → Verify → Write
 </objective>
 
 <context>
+**Flags:**
+
+- `--force` — Regenerate plan even if FIX_PLAN.md exists
+
 **Required files:**
 
 - `./.gtd/debug/current/ROOT_CAUSE.md` — Must exist
@@ -37,25 +41,26 @@ Create a clear, actionable plan to fix the bug.
 
 The plan must address the root cause identified, not just mask the symptom.
 
-## Tasks Are Atomic
+## Aggressive Atomicity
 
-Each task should be completable and verifiable independently.
+Each plan: **2-3 tasks max**. No exceptions.
 
-## Consider Side Effects
+## Side Effect Awareness
 
-Think about what else might break when fixing this.
-
-## Testability
-
-Each task should have clear done criteria that can be verified.
+| Type            | Check                          | Action                     |
+| --------------- | ------------------------------ | -------------------------- |
+| Breaking Change | API/interface changes?         | Document in plan           |
+| Regression      | What else uses this code path? | Add regression test task   |
+| Performance     | Hot path affected?             | Add verification criterion |
+| Data            | State/schema changes?          | Add migration task         |
 
 </philosophy>
 
 <process>
 
-## 1. Load Root Cause
+## 1. Validate Environment
 
-Read `./.gtd/debug/current/ROOT_CAUSE.md`.
+**Bash:**
 
 ```bash
 if ! test -f "./.gtd/debug/current/ROOT_CAUSE.md"; then
@@ -66,151 +71,109 @@ fi
 
 ---
 
-## 2. Propose Fix Approach
+## 2. Check Existing Plan
 
-Based on the root cause, propose:
+**Bash:**
 
-1. **What needs to change?**
-   - Code changes
-   - Configuration changes
-   - Data migrations
-   - Dependencies
+```bash
+test -f "./.gtd/debug/current/FIX_PLAN.md"
+```
 
-2. **Why this approach?**
-   - How it addresses the root cause
-   - Alternative approaches considered
+**If exists AND `--force` NOT set:**
 
-3. **Risks and side effects:**
-   - What might break?
-   - Backward compatibility concerns?
-   - Performance implications?
-
-Present this to user and get feedback before creating detailed plan.
+- Display: "Using existing plan. Use --force to regenerate."
+- Skip to offer_next
 
 ---
 
-## 3. Break Down Into Tasks
+## 3. Load Root Cause
 
-Create atomic, ordered tasks:
+Read `./.gtd/debug/current/ROOT_CAUSE.md`.
 
-**Each task must have:**
+Extract:
 
-- Clear description of what to do
-- Files to modify
-- Done criteria (how to verify)
-
-**Task types:**
-
-1. **Preparation** (if needed): backups, migrations, etc.
-2. **Core fix**: The actual bug fix
-3. **Safety**: Error handling, validation
-4. **Testing**: Verify fix works
+- Root cause description
+- Affected files
+- Expected vs actual behavior
 
 ---
 
-## 4. Define Success Criteria
+## 4. Plan Fix
 
-How do we know the bug is fixed?
-
-- Symptom no longer occurs when following reproduction steps
-- Tests pass (existing + new)
-- No regressions introduced
-
----
-
-## 5. Get User Approval
-
-Present the complete plan:
+Display:
 
 ```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GTD:DEBUG ► FIX PLAN PROPOSAL
+ GTD:DEBUG ► PLANNING FIX
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-**Root Cause:** {brief description}
-
-**Fix Approach:**
-{High-level approach}
-
-**Tasks:**
-1. {task 1}
-2. {task 2}
-...
-
-**Success Criteria:**
-- {criterion 1}
-- {criterion 2}
-
-**Risks:**
-- {risk 1}
-
-───────────────────────────────────────────────────────
-
-Approve this plan? (yes/no/modify)
 ```
 
-**Wait for explicit approval.**
+### 4a. Propose Approach
+
+Determine:
+
+1. **What changes?** Code, config, data, dependencies
+2. **Why this approach?** How it addresses root cause
+3. **Side effects?** What else might be affected
+
+### 4b. Decompose into Tasks
+
+For the fix:
+
+1. Identify all changes needed
+2. Break into atomic tasks (2-3 max)
+3. Define done criteria for each
 
 ---
 
-## 6. Write FIX_PLAN.md
+## 5. Write FIX_PLAN.md
 
 Write to `./.gtd/debug/current/FIX_PLAN.md`:
 
 ```markdown
+---
+created: { date }
+root_cause: { brief one-liner }
+---
+
 # Fix Plan
 
-**Created:** {date}
-**Status:** APPROVED
+## Objective
 
-## Root Cause Summary
+{What this fix delivers and why}
 
-{Brief summary from ROOT_CAUSE.md}
+## Context
 
-## Fix Approach
-
-{How we'll fix it and why}
+- ./.gtd/debug/current/ROOT_CAUSE.md
+- {affected source files}
 
 ## Tasks
 
-### Task 1: {Name}
+<task id="1" type="auto">
+  <name>{Task name}</name>
+  <files>{exact file paths}</files>
+  <action>
+    {Specific implementation instructions}
+    - What to do
+    - What to avoid and WHY
+  </action>
+  <done>{How we know this task is complete}</done>
+</task>
 
-**Description:**
-{What to do}
-
-**Files:**
-
-- `{file1}`
-- `{file2}`
-
-**Changes:**
-{Specific changes to make}
-
-<done>
-- {Verification criterion 1}
-- {Verification criterion 2}
-</done>
-
----
-
-### Task 2: {Name}
-
-{Same structure}
-
----
+<task id="2" type="auto">
+  <name>{Task name}</name>
+  <files>{exact file paths}</files>
+  <action>
+    {Specific implementation instructions}
+  </action>
+  <done>{How we know this task is complete}</done>
+</task>
 
 ## Success Criteria
 
-After all tasks complete:
-
 - [ ] Original symptom no longer occurs
-- [ ] {Additional criterion}
+- [ ] {Additional measurable outcome}
 - [ ] No regressions (existing tests pass)
-
-## Risks and Mitigations
-
-- **Risk:** {potential issue}
-  - **Mitigation:** {how to handle}
 
 ## Rollback Plan
 
@@ -219,19 +182,45 @@ After all tasks complete:
 
 ---
 
+## 6. Verify Plan
+
+Check:
+
+- [ ] Tasks are specific (no "fix the bug")
+- [ ] Done criteria are measurable
+- [ ] 2-3 tasks max
+- [ ] All files specified
+- [ ] Side effects addressed
+
+**If issues found:** Fix before writing.
+
 </process>
+
+<task_types>
+
+| Type                      | Use For                               | Autonomy         |
+| ------------------------- | ------------------------------------- | ---------------- |
+| `auto`                    | Everything agent can do independently | Fully autonomous |
+| `checkpoint:human-verify` | Visual/functional verification        | Pauses for user  |
+| `checkpoint:decision`     | Implementation choices                | Pauses for user  |
+
+**Automation-first rule:** If agent CAN do it, agent MUST do it. Checkpoints are for verification AFTER automation.
+
+</task_types>
 
 <offer_next>
 
 ```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GTD:DEBUG ► FIX PLAN READY ✓
+ GTD:DEBUG ► FIX PLANNED ✓
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Fix plan written: ./.gtd/debug/current/FIX_PLAN.md
+{X} tasks defined
 
-Tasks: {N}
-Estimated complexity: {High/Medium/Low}
+| Task | Name | Files |
+|------|------|-------|
+| 1 | {name} | {files} |
+| 2 | {name} | {files} |
 
 ───────────────────────────────────────────────────────
 
@@ -249,6 +238,6 @@ Estimated complexity: {High/Medium/Low}
 | Workflow     | Relationship                     |
 | ------------ | -------------------------------- |
 | `/d-verify`  | Provides root cause for planning |
-| `/d-execute` | Executes this plan               |
+| `/d-execute` | Runs the plan                    |
 
 </related>
