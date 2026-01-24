@@ -60,7 +60,7 @@ For **EACH** item in the `### Must Have` section of the spec:
 2.  **Search for Evidence:**
     - Where should this be implemented? (Frontend types, Backend API, Database, Logic?)
     - Use `grep_search` or `find_by_name` to locate relevant files or symbols.
-    - Read the code (`view_file`) to verify logic.
+    - Read the code (`view_file/read_file`) to verify logic.
 3.  **Validate:**
     - **Pass:** Code explicitly handles this requirement.
     - **Fail:** Code missing or incomplete.
