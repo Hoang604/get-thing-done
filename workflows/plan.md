@@ -299,7 +299,7 @@ Plan written to ./.gtd/<task_name>/{phase}/PLAN.md
 /execute {N} — run this plan
 ───────────────────────────────────────────────────────
 Also available:
-- /discuss {N} — review plan before executing
+- /discuss-plan {N} — review plan before executing
 ───────────────────────────────────────────────────────
 ```
 
