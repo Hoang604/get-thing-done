@@ -129,10 +129,14 @@ git add .
 
 ## 5. Create Commit
 
+Write the commit message to a temp file, then commit:
+
 ```bash
-git commit -F- <<'EOF'
-{generated commit message}
-EOF
+# 1. Write message to file (use write_to_file tool)
+# 2. Commit
+git commit -F .gtd/COMMIT_MSG.txt
+# 3. Clean up
+rm .gtd/COMMIT_MSG.txt
 ```
 
 ---
