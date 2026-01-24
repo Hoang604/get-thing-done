@@ -86,6 +86,50 @@ cd gtd-temp; .\install-gemini.ps1 -Global
 cd ..; Remove-Item -Recurse -Force gtd-temp
 ```
 
+---
+
+## Claude Code Installation
+
+### Local Install (project-specific)
+
+Navigate to your project directory.
+
+**Linux/macOS:**
+
+```bash
+git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
+cp -r gtd-temp/.claude .
+rm -rf gtd-temp
+```
+
+**Windows (PowerShell):**
+
+```powershell
+git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
+Copy-Item -Recurse -Force gtd-temp/.claude .
+Remove-Item -Recurse -Force gtd-temp
+```
+
+### Global Install (available everywhere)
+
+**Linux/macOS:**
+
+```bash
+git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
+mkdir -p ~/.claude
+cp -r gtd-temp/.claude/* ~/.claude/
+rm -rf gtd-temp
+```
+
+**Windows (PowerShell):**
+
+```powershell
+git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
+if (!(Test-Path $env:USERPROFILE/.claude)) { New-Item -ItemType Directory -Path $env:USERPROFILE/.claude }
+Copy-Item -Recurse -Force gtd-temp/.claude/* $env:USERPROFILE/.claude/
+Remove-Item -Recurse -Force gtd-temp
+```
+
 ## Core Philosophy
 
 - **Zero Assumption**: Never guess from names. Read the code to understand its true behavior.

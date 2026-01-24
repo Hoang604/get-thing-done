@@ -31,6 +31,16 @@ Create a roadmap that answers: "In what order do we build this?"
 - `./.gtd/<task_name>/ROADMAP.md`
   </context>
 
+<related>
+
+| Workflow          | Relationship                   |
+| ----------------- | ------------------------------ |
+| `/spec`           | Creates the SPEC.md this reads |
+| `/plan`           | Creates plans for each phase   |
+| `/update-roadmap` | Modifies phases                |
+
+</related>
+
 <philosophy>
 
 ## Phases Are Deliverables
@@ -134,9 +144,10 @@ Write to `./.gtd/<task_name>/ROADMAP.md`:
 
 **Status**: ⬜ Not Started
 **Objective**: {description}
-</must-have>
 
 ...
+</must-have>
+
 <nice-to-have>
 
 ### Phase n (optional): {name}
@@ -176,13 +187,3 @@ Coverage: 100% of spec criteria assigned
 ```
 
 </offer_next>
-
-<related>
-
-| Workflow          | Relationship                   |
-| ----------------- | ------------------------------ |
-| `/spec`           | Creates the SPEC.md this reads |
-| `/plan`           | Creates plans for each phase   |
-| `/update-roadmap` | Modifies phases                |
-
-</related>

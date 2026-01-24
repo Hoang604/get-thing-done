@@ -26,6 +26,15 @@ Create a clear symptom description that answers: "What's wrong and how do we kno
 - `./.gtd/debug/current/SYMPTOM.md`
   </context>
 
+<related>
+
+| Workflow     | Relationship                   |
+| ------------ | ------------------------------ |
+| `/d-inspect` | Analyzes code based on symptom |
+| `/d-verify`  | Verifies root cause hypothesis |
+
+</related>
+
 <philosophy>
 
 ## Precision Over Speed
@@ -183,12 +192,3 @@ Symptom documented: ./.gtd/debug/current/SYMPTOM.md
 ```
 
 </offer_next>
-
-<related>
-
-| Workflow     | Relationship                   |
-| ------------ | ------------------------------ |
-| `/d-inspect` | Analyzes code based on symptom |
-| `/d-verify`  | Verifies root cause hypothesis |
-
-</related>

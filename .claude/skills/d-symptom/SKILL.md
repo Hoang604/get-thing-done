@@ -1,6 +1,7 @@
 ---
 name: d-symptom
 description: Clarify and document bug symptoms. Creates ./.gtd/debug/current/SYMPTOM.md
+disable-model-invocation: true
 ---
 
 <role>
@@ -183,12 +184,3 @@ Symptom documented: ./.gtd/debug/current/SYMPTOM.md
 ```
 
 </offer_next>
-
-<related>
-
-| Workflow     | Relationship                   |
-| ------------ | ------------------------------ |
-| `/d-inspect` | Analyzes code based on symptom |
-| `/d-verify`  | Verifies root cause hypothesis |
-
-</related>

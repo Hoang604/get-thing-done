@@ -2,6 +2,7 @@
 name: d-plan-fix
 description: Create execution plan to fix root cause. Creates ./.gtd/debug/current/FIX_PLAN.md
 argument-hint: "[--force]"
+disable-model-invocation: true
 ---
 
 <role>
@@ -33,13 +34,18 @@ Create executable plan (FIX_PLAN.md) to fix the verified root cause.
 **Output:**
 
 - `./.gtd/debug/current/FIX_PLAN.md`
-
-**Skills used:**
-
-- `design` — Apply architectural constraints to fix
   </context>
 
-<philosophy>
+<related>
+| Workflow     | Relationship                     |
+| ------------ | -------------------------------- |
+| `/d-verify`  | Provides root cause for planning |
+| `/d-execute` | Runs the plan                    |
+</related>
+
+<standards_and_constraints>
+
+  <philosophy>
 
 ## Fix the Cause, Not the Symptom
 
@@ -58,7 +64,45 @@ Each plan: **2-3 tasks max**. No exceptions.
 | Performance     | Hot path affected?             | Add verification criterion |
 | Data            | State/schema changes?          | Add migration task         |
 
-</philosophy>
+  </philosophy>
+
+<design_principles>
+
+## Core Principles
+
+**Mantra:** "Optimize for Evolution, not just Implementation."
+
+- **Gall's Law:** Reject complexity. Start with the smallest working modular monolith.
+- **Single Source of Truth:** Data must be normalized. If state exists in two places, you have designed a bug.
+- **Complete Path Principle:** Information never teleports. Every producer needs a consumer. Every event needs a handler.
+- **Testability First:** Design "Seams" for every external dependency (Time, Network, Randomness).
+- **Centralized Resilience:** Retry logic/circuit breakers must be at the edge, not scattered.
+
+## Blueprint Checklist
+
+- [ ] **Data Model:** Defined schemas (SQL/JSON) with exact types.
+- [ ] **Constraints:** What must ALWAYS be true? (e.g., "Balance >= 0").
+- [ ] **Failure Modes:** Handling partial failures and data corruption.
+- [ ] **Error Taxonomy:** Define Retryable vs Fatal errors.
+      </design_principles>
+
+<prohibitions>
+- **No Implementation Code:** Do not write function bodies. Define interfaces.
+- **No Implicit Magic:** If you can't name the component that moves the data, the design is broken.
+</prohibitions>
+
+<task_types>
+**Automation-first rule:** If agent CAN do it, agent MUST do it. Checkpoints are for verification AFTER automation.
+
+| Type                      | Use For                               | Autonomy         |
+| ------------------------- | ------------------------------------- | ---------------- |
+| `auto`                    | Everything agent can do independently | Fully autonomous |
+| `checkpoint:human-verify` | Visual/functional verification        | Pauses for user  |
+| `checkpoint:decision`     | Implementation choices                | Pauses for user  |
+
+</task_types>
+
+</standards_and_constraints>
 
 <process>
 
@@ -73,8 +117,6 @@ if ! test -f "./.gtd/debug/current/ROOT_CAUSE.md"; then
 fi
 ```
 
----
-
 ## 2. Check Existing Plan
 
 **Bash:**
@@ -86,9 +128,7 @@ test -f "./.gtd/debug/current/FIX_PLAN.md"
 **If exists AND `--force` NOT set:**
 
 - Display: "Using existing plan. Use --force to regenerate."
-- Skip to offer_next
-
----
+- Skip to Offer Next
 
 ## 3. Load Root Cause
 
@@ -100,8 +140,6 @@ Extract:
 - Affected files
 - Expected vs actual behavior
 
----
-
 ## 4. Plan Fix
 
 Display:
@@ -112,32 +150,19 @@ Display:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-### 4a. Propose Approach
+### 4a. Gather Context
 
-> **Skill: `design`**
->
-> Read and apply `{{SKILLS_ROOT}}/design/SKILL.md` before planning the fix.
-> Ensure the fix respects architectural boundaries and doesn't just patch the symptom.
-
-Determine:
-
-1. **What changes?** Code, config, data, dependencies
-2. **Why this approach?** How it addresses root cause
-3. **Side effects?** What else might be affected
+Load ROOT_CAUSE.md and affected source files. Use root cause findings to inform design constraints defined in `<design_principles>`.
 
 ### 4b. Decompose into Tasks
 
-For the fix:
+1. Identify all changes needed.
+2. Break into atomic tasks (2-3 max) using `<task_types>`.
+3. Define done criteria for each.
 
-1. Identify all changes needed
-2. Break into atomic tasks (2-3 max)
-3. Define done criteria for each
+### 4c. Write FIX_PLAN.md
 
----
-
-## 5. Write FIX_PLAN.md
-
-Write to `./.gtd/debug/current/FIX_PLAN.md`:
+Write to `./.gtd/debug/current/FIX_PLAN.md` using this template:
 
 ```markdown
 ---
@@ -156,6 +181,13 @@ root_cause: { brief one-liner }
 - ./.gtd/debug/current/ROOT_CAUSE.md
 - {affected source files}
 
+## Architecture Constraints
+
+- **Single Source:** {Where is the authoritative data?}
+- **Invariants:** {What must ALWAYS be true?}
+- **Resilience:** {How do we handle failures?}
+- **Testability:** {What needs to be injected/mocked?}
+
 ## Tasks
 
 <task id="1" type="auto">
@@ -170,12 +202,7 @@ root_cause: { brief one-liner }
 </task>
 
 <task id="2" type="auto">
-  <name>{Task name}</name>
-  <files>{exact file paths}</files>
-  <action>
-    {Specific implementation instructions}
-  </action>
-  <done>{How we know this task is complete}</done>
+  ...
 </task>
 
 ## Success Criteria
@@ -189,9 +216,7 @@ root_cause: { brief one-liner }
 {How to undo changes if something goes wrong}
 ```
 
----
-
-## 6. Verify Plan
+## 5. Verify Plan
 
 Check:
 
@@ -200,22 +225,11 @@ Check:
 - [ ] 2-3 tasks max
 - [ ] All files specified
 - [ ] Side effects addressed
+- [ ] Adherence to `<prohibitions>`
 
 **If issues found:** Fix before writing.
 
 </process>
-
-<task_types>
-
-| Type                      | Use For                               | Autonomy         |
-| ------------------------- | ------------------------------------- | ---------------- |
-| `auto`                    | Everything agent can do independently | Fully autonomous |
-| `checkpoint:human-verify` | Visual/functional verification        | Pauses for user  |
-| `checkpoint:decision`     | Implementation choices                | Pauses for user  |
-
-**Automation-first rule:** If agent CAN do it, agent MUST do it. Checkpoints are for verification AFTER automation.
-
-</task_types>
 
 <offer_next>
 
@@ -234,21 +248,9 @@ Fix plan written to ./.gtd/debug/current/FIX_PLAN.md
 | 2 | {name} |
 
 ───────────────────────────────────────────────────────
-
 ▶ Next Up
-
 /d-execute — execute the fix plan
-
 ───────────────────────────────────────────────────────
 ```
 
 </offer_next>
-
-<related>
-
-| Workflow     | Relationship                     |
-| ------------ | -------------------------------- |
-| `/d-verify`  | Provides root cause for planning |
-| `/d-execute` | Runs the plan                    |
-
-</related>

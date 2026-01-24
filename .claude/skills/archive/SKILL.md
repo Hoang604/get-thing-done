@@ -2,6 +2,7 @@
 name: archive
 description: Archive completed task/spec work to ./.gtd/archive/
 argument-hint: "[task_name]"
+disable-model-invocation: true
 ---
 
 <role>
@@ -139,12 +140,3 @@ Task folder removed from ./.gtd/
 ---
 
 </process>
-
-<related>
-
-| Workflow   | Relationship                            |
-| ---------- | --------------------------------------- |
-| `/spec`    | Can start fresh task after archiving    |
-| `/execute` | Should complete phases before archiving |
-
-</related>

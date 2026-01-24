@@ -2,6 +2,7 @@
 name: roadmap
 description: Create sequential phases from spec. Creates ./.gtd/<task_name>/ROADMAP.md
 argument-hint: ""
+disable-model-invocation: true
 ---
 
 <role>
@@ -134,9 +135,10 @@ Write to `./.gtd/<task_name>/ROADMAP.md`:
 
 **Status**: ⬜ Not Started
 **Objective**: {description}
-</must-have>
 
 ...
+</must-have>
+
 <nice-to-have>
 
 ### Phase n (optional): {name}

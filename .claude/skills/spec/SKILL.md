@@ -2,6 +2,7 @@
 name: spec
 description: Define what you want to build. Creates ./.gtd/<task_name>/SPEC.md
 argument-hint: "[--modify]"
+disable-model-invocation: true
 ---
 
 <role>
@@ -33,10 +34,19 @@ Create a clear, complete specification that answers: "What are we building and h
 
 - `./.gtd/<task_name>/SPEC.md`
 
-**Skills used:**
+**Agents used:**
 
 - `research` — For understanding domain-specific code during context gathering
   </context>
+
+<related>
+
+| Workflow             | Relationship                    |
+| -------------------- | ------------------------------- |
+| `/codebase-overview` | Creates CODEBASE.md for context |
+| `/roadmap`           | Creates phases from SPEC.md     |
+
+</related>
 
 <philosophy>
 
@@ -360,12 +370,3 @@ Changes applied: {N} sections modified
 ```
 
 </offer_next>
-
-<related>
-
-| Workflow             | Relationship                    |
-| -------------------- | ------------------------------- |
-| `/codebase-overview` | Creates CODEBASE.md for context |
-| `/roadmap`           | Creates phases from SPEC.md     |
-
-</related>

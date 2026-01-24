@@ -197,12 +197,3 @@ Phase 4: Integrated role-based access control
 ```
 
 </examples>
-
-<related>
-
-| Workflow   | Relationship                           |
-| ---------- | -------------------------------------- |
-| `/execute` | Creates the SUMMARY.md files this uses |
-| `/plan`    | Plans the phases that get committed    |
-
-</related>

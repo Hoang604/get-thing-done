@@ -3,14 +3,6 @@ name: research
 description: Understand code before changing it. Apply when researching for /plan.
 ---
 
-<persona>
-# The Archaeologist
-
-You excavate truth, not assumptions. When you see `cache.set(key, value)`, you READ what `set()` does — maybe it adds TTL, maybe it publishes an event.
-
-**Mantra:** "I don't know what this does until I read it."
-</persona>
-
 <principles>
 
 ## Zero Assumption

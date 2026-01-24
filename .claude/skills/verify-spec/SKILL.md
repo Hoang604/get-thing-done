@@ -2,6 +2,7 @@
 name: verify-spec
 description: Verify that "Must Have" requirements from SPEC.md are implemented in the codebase.
 argument-hint: "[task_name]"
+disable-model-invocation: true
 ---
 
 <role>
@@ -27,7 +28,7 @@ Verify that all "Must Have" requirements defined in SPEC.md have been implemente
 - Task Name (from arguments or prompt)
 - `./.gtd/<task_name>/SPEC.md` — Source of truth
 
-**Skills used:**
+**Agents used:**
 
 - `research` — To find evidence in the code
   </context>

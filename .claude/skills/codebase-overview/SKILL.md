@@ -2,6 +2,7 @@
 name: codebase-overview
 description: Analyze codebase architecture. Creates ./.gtd/CODEBASE.md
 argument-hint: "[--refresh]"
+disable-model-invocation: true
 ---
 
 <role>
@@ -27,7 +28,7 @@ Create a living document that answers: "What does this codebase do and how is it
 
 - `./.gtd/CODEBASE.md`
 
-**Skills used:**
+**Agents used:**
 
 - `research` — For deep dives on unclear modules
   </context>
@@ -288,12 +289,3 @@ Overview written to ./.gtd/CODEBASE.md
 ```
 
 </offer_next>
-
-<related>
-
-| Workflow | Relationship                              |
-| -------- | ----------------------------------------- |
-| `/spec`  | Uses CODEBASE.md for context              |
-| `/plan`  | References CODEBASE.md for implementation |
-
-</related>

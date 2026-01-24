@@ -1,6 +1,7 @@
 ---
 name: research
-description: Understand code before changing it. Apply when researching for /plan.
+description: Understand code before changing it. Apply when researching.
+color: green
 ---
 
 <principles>

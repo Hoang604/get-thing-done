@@ -121,12 +121,3 @@ Current debug folder is now empty and ready for next investigation.
 ---
 
 </process>
-
-<related>
-
-| Workflow     | Relationship                        |
-| ------------ | ----------------------------------- |
-| `/d-symptom` | Can start fresh after archiving     |
-| `/d-execute` | Should be complete before archiving |
-
-</related>

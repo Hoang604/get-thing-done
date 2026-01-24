@@ -34,6 +34,15 @@ Find the actual root cause through systematic verification.
 - Debug logs in code (temporary)
   </context>
 
+<related>
+
+| Workflow      | Relationship                    |
+| ------------- | ------------------------------- |
+| `/d-inspect`  | Provides hypotheses to test     |
+| `/d-plan-fix` | Creates fix plan for root cause |
+
+</related>
+
 <philosophy>
 
 ## One Hypothesis at a Time
@@ -217,12 +226,3 @@ Location: {files}
 ```
 
 </offer_next>
-
-<related>
-
-| Workflow      | Relationship                    |
-| ------------- | ------------------------------- |
-| `/d-inspect`  | Provides hypotheses to test     |
-| `/d-plan-fix` | Creates fix plan for root cause |
-
-</related>

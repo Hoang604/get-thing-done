@@ -139,12 +139,3 @@ Task folder removed from ./.gtd/
 ---
 
 </process>
-
-<related>
-
-| Workflow   | Relationship                            |
-| ---------- | --------------------------------------- |
-| `/spec`    | Can start fresh task after archiving    |
-| `/execute` | Should complete phases before archiving |
-
-</related>

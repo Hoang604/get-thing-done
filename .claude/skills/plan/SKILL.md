@@ -2,6 +2,7 @@
 name: plan
 description: Create execution plan for a phase. Creates ./.gtd/<task_name>/{phase}/PLAN.md
 argument-hint: "[phase] [--research] [--skip-research]"
+disable-model-invocation: true
 ---
 
 <role>
@@ -39,11 +40,20 @@ Create executable plans (PLAN.md files) for a roadmap phase.
 - `./gtd/{phase}/PLAN.md`
 - `./gtd/{phase}/RESEARCH.md` (if research performed)
 
-**Skills used:**
+**Agents used:**
 
 - `research` — During research phase
-- `design` — Apply architectural constraints during planning
   </context>
+
+<related>
+
+| Workflow        | Relationship                  |
+| --------------- | ----------------------------- |
+| `/roadmap`      | Creates phases this reads     |
+| `/discuss-plan` | Reviews plan before execution |
+| `/execute`      | Runs the plan                 |
+
+</related>
 
 <philosophy>
 
@@ -70,6 +80,63 @@ Each plan: **2-3 tasks max**. No exceptions.
 | 3 - Deep     | Architectural decision, high risk       | Full research                |
 
 </philosophy>
+
+<design_guidelines>
+
+<design_principles>
+
+## Core Principles
+
+Design **Constraints** and **Invariants**. The features should be built without increasing system's entropy.
+
+**Mantra:** "Optimize for Evolution, not just Implementation."
+
+## Gall's Law
+
+Reject complexity. Start with the smallest working modular monolith. A complex system that works is invariably found to have evolved from a simple system that worked.
+
+## Single Source of Truth
+
+Data must be normalized. If state exists in two places, you have designed a bug.
+
+## Complete Path Principle
+
+Information never teleports.
+
+- Every producer needs a consumer.
+- Every event needs a handler.
+- If you can't trace the path from User Action → User Observation, the design is incomplete.
+
+## Testability First
+
+Design "Seams" for every external dependency (Time, Network, Randomness). Static calls to side effects are forbidden.
+
+## Centralized Resilience
+
+Retry logic, circuit breakers, timeout handling MUST be centralized at the edge of system/component. Never scatter retry logic across callsites (e.g., inside individual service methods).
+
+</design_principles>
+
+<checklist>
+## The Blueprint
+
+- [ ] **Data Model:** Defined schemas (SQL/JSON) with exact types.
+- [ ] **Constraints:** What must ALWAYS be true? (e.g., "Balance >= 0").
+- [ ] **Failure Modes:**
+  - Partial Failure: What if the DB is down? what if network is down?
+  - Data Corruption: How do we detect it?
+- [ ] **Error Taxonomy:** Define Retryable vs Fatal errors.
+      </checklist>
+
+<prohibitions>
+
+- **No Implementation Code:** Do not write function bodies. Define interfaces.
+- **No Orphaned Artifacts:** Do not design components that connect to nothing.
+- **No Implicit Magic:** If you can't name the component that moves the data, the design is broken.
+
+</prohibitions>
+
+</design_guidelines>
 
 <process>
 
@@ -213,6 +280,7 @@ Load:
 - `./.gtd/<task_name>/SPEC.md`
 - `./.gtd/<task_name>/ROADMAP.md` (phase section)
 - `./.gtd/<task_name>/$PHASE/RESEARCH.md` (if exists)
+- **Use research findings to inform design constraints**
 
 ### 6b. Decompose into Tasks
 
@@ -243,6 +311,13 @@ created: { date }
 - ./gtd/SPEC.md
 - ./gtd/ROADMAP.md
 - {relevant source files}
+
+## Architecture Constraints
+
+- **Single Source:** {Where is the authoritative data?}
+- **Invariants:** {What must ALWAYS be true?}
+- **Resilience:** {How do we handle failures?}
+- **Testability:** {What needs to be injected/mocked?}
 
 ## Tasks
 
@@ -329,13 +404,3 @@ Also available:
 ```
 
 </offer_next>
-
-<related>
-
-| Workflow   | Relationship                  |
-| ---------- | ----------------------------- |
-| `/roadmap` | Creates phases this reads     |
-| `/discuss` | Reviews plan before execution |
-| `/execute` | Runs the plan                 |
-
-</related>

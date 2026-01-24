@@ -2,6 +2,7 @@
 name: commit-spec
 description: Create comprehensive commit message from spec phases and commit all changes
 argument-hint: ""
+disable-model-invocation: true
 ---
 
 <role>
@@ -197,12 +198,3 @@ Phase 4: Integrated role-based access control
 ```
 
 </examples>
-
-<related>
-
-| Workflow   | Relationship                           |
-| ---------- | -------------------------------------- |
-| `/execute` | Creates the SUMMARY.md files this uses |
-| `/plan`    | Plans the phases that get committed    |
-
-</related>

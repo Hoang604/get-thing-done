@@ -1,6 +1,7 @@
 ---
 name: d-inspect
 description: Inspect code and propose root cause hypotheses. Creates ./.gtd/debug/current/HYPOTHESES.md
+disable-model-invocation: true
 ---
 
 <role>
@@ -29,10 +30,19 @@ Generate ranked hypotheses about the root cause of the bug.
 
 - `./.gtd/debug/current/HYPOTHESES.md`
 
-**Skills used:**
+**Agents used:**
 
 - `research` — During code tracing
   </context>
+
+<related>
+
+| Workflow     | Relationship                  |
+| ------------ | ----------------------------- |
+| `/d-symptom` | Provides symptom for analysis |
+| `/d-verify`  | Tests these hypotheses        |
+
+</related>
 
 <philosophy>
 
@@ -72,7 +82,6 @@ fi
 ## 2. Spawn Investigator Agent
 
 **Trigger:** Immediately after loading symptom.
-**Concurrency:** 1 (Run strictly sequentially).
 
 Fill prompt and spawn:
 
@@ -106,8 +115,6 @@ Task(
   description="Investigating root cause"
 )
 ```
-
-**Skill: `research`** is delegated to the subagent to avoid polluting main context.
 
 ---
 
@@ -197,12 +204,3 @@ Highest confidence: {X}%
 ```
 
 </offer_next>
-
-<related>
-
-| Workflow     | Relationship                  |
-| ------------ | ----------------------------- |
-| `/d-symptom` | Provides symptom for analysis |
-| `/d-verify`  | Tests these hypotheses        |
-
-</related>

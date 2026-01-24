@@ -273,12 +273,3 @@ Overview written to ./.gtd/CODEBASE.md
 ```
 
 </offer_next>
-
-<related>
-
-| Workflow | Relationship                              |
-| -------- | ----------------------------------------- |
-| `/spec`  | Uses CODEBASE.md for context              |
-| `/plan`  | References CODEBASE.md for implementation |
-
-</related>

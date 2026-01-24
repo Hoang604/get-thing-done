@@ -1,6 +1,7 @@
 ---
 name: d-verify
 description: Verify hypotheses with debug logging. Updates ./.gtd/debug/current/ROOT_CAUSE.md
+disable-model-invocation: true
 ---
 
 <role>
@@ -90,6 +91,15 @@ Verify Hypothesis: {hypothesis_description}
 - Symptom: {symptom_description}
 - Evidence: {existing_evidence}
 </context>
+
+<related>
+
+| Workflow      | Relationship                    |
+| ------------- | ------------------------------- |
+| `/d-inspect`  | Provides hypotheses to test     |
+| `/d-plan-fix` | Creates fix plan for root cause |
+
+</related>
 
 <investigation_checklist>
 
@@ -221,12 +231,3 @@ Location: {files}
 ```
 
 </offer_next>
-
-<related>
-
-| Workflow      | Relationship                    |
-| ------------- | ------------------------------- |
-| `/d-inspect`  | Provides hypotheses to test     |
-| `/d-plan-fix` | Creates fix plan for root cause |
-
-</related>
