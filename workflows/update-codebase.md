@@ -90,31 +90,19 @@ LEARNED:
 
 ## 4. Make Targeted Updates
 
+Goal: Make CODEBASE.md accurate and up-to-date.
+
 For each piece of knowledge:
 
-1. Read the relevant CODEBASE.md section
-2. Update only that section
-3. Add `**Updated:** {date}` annotation if significant change
+1. Locate the relevant section in CODEBASE.md
+2. Update it to reflect the truth
 
 **Update rules:**
 
 - **Adding info:** Append to existing sections
-- **Correcting info:** Replace with new, add note: `(Corrected: was {old}, actually {new})`
+- **Correcting info:** Replace incorrect content with correct content
 - **Removing Open Question:** Delete the question, add the answer to appropriate section
-
----
-
-## 5. Record Update Log
-
-At the bottom of CODEBASE.md, maintain an update log:
-
-```markdown
-## Update Log
-
-| Date   | Session         | Updates            |
-| ------ | --------------- | ------------------ |
-| {date} | {brief context} | {sections changed} |
-```
+- **Outdated content:** Remove or update — don't leave stale information
 
 </process>
 
