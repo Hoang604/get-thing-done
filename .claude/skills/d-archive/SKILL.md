@@ -116,7 +116,7 @@ Files archived: {count}
 
 Current debug folder is now empty and ready for next investigation.
 
-───────────────────────────────────────────────────────
+─────────────────────────────────────────────────────
 ```
 
 ---

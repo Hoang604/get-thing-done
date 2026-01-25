@@ -108,7 +108,7 @@ Summarize your understanding:
 **Environment:**
 {Environment details}
 
-───────────────────────────────────────────────────────
+─────────────────────────────────────────────────────
 
 Is this correct? (yes/no/clarify)
 ```
@@ -174,13 +174,13 @@ Write to `./.gtd/debug/current/SYMPTOM.md`:
 
 Symptom documented: ./.gtd/debug/current/SYMPTOM.md
 
-───────────────────────────────────────────────────────
+─────────────────────────────────────────────────────
 
 ▶ Next Up
 
 /d-inspect — analyze code and form hypotheses
 
-───────────────────────────────────────────────────────
+─────────────────────────────────────────────────────
 ```
 
 </offer_next>

@@ -263,13 +263,13 @@ Overview written to ./.gtd/CODEBASE.md
 | Entry Points | {N} |
 | Key Dependencies | {N} |
 
-───────────────────────────────────────────────────────
+─────────────────────────────────────────────────────
 
 ▶ Next Up
 
 /spec — define what you want to build (now with codebase context)
 
-───────────────────────────────────────────────────────
+─────────────────────────────────────────────────────
 ```
 
 </offer_next>

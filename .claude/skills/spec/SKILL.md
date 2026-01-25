@@ -244,7 +244,7 @@ Task(
 **Constraints:**
 - {constraint 1}
 
-───────────────────────────────────────────────────────
+─────────────────────────────────────────────────────
 
 Is this correct? (yes/no/clarify)
 ```
@@ -262,7 +262,7 @@ Here's what I understand you want to change:
 - {section 1}: {old} → {new}
 - {section 2}: {old} → {new}
 
-───────────────────────────────────────────────────────
+─────────────────────────────────────────────────────
 
 Is this correct? (yes/no/clarify)
 ```
@@ -342,13 +342,13 @@ Specification written to ./.gtd/<task_name>/SPEC.md
 
 Acceptance Criteria: {N} items defined
 
-───────────────────────────────────────────────────────
+─────────────────────────────────────────────────────
 
 ▶ Next Up
 
 /roadmap — create phases from this spec
 
-───────────────────────────────────────────────────────
+─────────────────────────────────────────────────────
 ```
 
 **For MODIFY mode:**
@@ -362,11 +362,11 @@ Specification updated: ./.gtd/<task_name>/SPEC.md
 
 Changes applied: {N} sections modified
 
-───────────────────────────────────────────────────────
+─────────────────────────────────────────────────────
 
 ⚠ Note: Update roadmap/plans manually if needed
 
-───────────────────────────────────────────────────────
+─────────────────────────────────────────────────────
 ```
 
 </offer_next>

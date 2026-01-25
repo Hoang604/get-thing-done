@@ -138,7 +138,7 @@ All {N} hypotheses have been tested and rejected.
 
 Need to re-inspect code with fresh perspective.
 
-───────────────────────────────────────────────────────
+─────────────────────────────────────────────────────
 
 ▶ Suggested Actions
 
@@ -146,7 +146,7 @@ Need to re-inspect code with fresh perspective.
 2. Review debug output for new clues
 3. Discuss findings with user
 
-───────────────────────────────────────────────────────
+─────────────────────────────────────────────────────
 ```
 
 **STOP and ask user to re-inspect.**
@@ -216,13 +216,13 @@ Root cause documented: ./.gtd/debug/current/ROOT_CAUSE.md
 Verified hypothesis: {N}
 Location: {files}
 
-───────────────────────────────────────────────────────
+─────────────────────────────────────────────────────
 
 ▶ Next Up
 
 /d-plan-fix — create fix plan
 
-───────────────────────────────────────────────────────
+─────────────────────────────────────────────────────
 ```
 
 </offer_next>

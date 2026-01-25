@@ -196,13 +196,13 @@ Hypotheses documented: ./.gtd/debug/current/HYPOTHESES.md
 Total hypotheses: {N}
 Highest confidence: {X}%
 
-───────────────────────────────────────────────────────
+─────────────────────────────────────────────────────
 
 ▶ Next Up
 
 /d-verify — verify hypotheses with debug logs
 
-───────────────────────────────────────────────────────
+─────────────────────────────────────────────────────
 ```
 
 </offer_next>

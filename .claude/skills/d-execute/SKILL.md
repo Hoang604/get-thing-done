@@ -134,7 +134,7 @@ Root Cause: {brief summary}
 Tasks:
 [ ] 1. {task 1 name}
 [ ] 2. {task 2 name}
-───────────────────────────────────────────────────────
+─────────────────────────────────────────────────────
 ```
 
 ## 3. Execute Tasks
@@ -288,7 +288,7 @@ Fix summary written to: ./.gtd/debug/current/FIX_SUMMARY.md
 Tasks: {X}/{X} complete
 Files changed: {count}
 
-───────────────────────────────────────────────────────
+─────────────────────────────────────────────────────
 
 ▶ Next Steps
 
@@ -296,7 +296,7 @@ Files changed: {count}
 2. Run additional tests if needed
 3. Commit using the proposed message
 
-───────────────────────────────────────────────────────
+─────────────────────────────────────────────────────
 ```
 
 </offer_next>
