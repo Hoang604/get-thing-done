@@ -42,7 +42,8 @@ Create a clear, complete specification that answers: "What are we building and h
 
 | Workflow             | Relationship                    |
 | -------------------- | ------------------------------- |
-| `/codebase-overview` | Creates CODEBASE.md for context |
+| `/product-overview`  | Creates PRODUCT.md (Functional) |
+| `/codebase-overview` | Creates CODEBASE.md (Technical) |
 | `/roadmap`           | Creates phases from SPEC.md     |
 
 </related>
@@ -92,28 +93,30 @@ Check if `$ARGUMENTS` contains `--modify`:
 
 ## 2. Context Gathering Phase (NEW mode)
 
-Before interviewing, gather codebase context:
+Before interviewing, gather system context:
 
-**Check for CODEBASE.md:**
+**Check for Source of Truth files:**
 
 ```bash
-if [ -f "./.gtd/CODEBASE.md" ]; then
-    echo "Codebase overview found"
-else
-    echo "No codebase overview exists"
-fi
+ls ./.gtd/CODEBASE.md ./.gtd/PRODUCT.md 2>/dev/null
 ```
+
+**If PRODUCT.md exists:**
+
+- Load and read `./.gtd/PRODUCT.md`.
+- Use this as the **Functional Source of Truth**.
+- Identify existing features/rules that might be affected by this task.
 
 **If CODEBASE.md exists:**
 
-- Load and read `./.gtd/CODEBASE.md`
-- Use this context to ask better questions during interview
-- Reference existing modules/patterns when discussing implementation
+- Load and read `./.gtd/CODEBASE.md`.
+- Use this as the **Technical Source of Truth**.
+- Reference existing modules/patterns when discussing implementation.
 
-**If CODEBASE.md does NOT exist:**
+**If neither exist:**
 
-- Inform user: "No codebase overview found. Consider running `/codebase-overview` first for better context."
-- Proceed with interview (can still work without it)
+- Inform user: "No system overview found. Consider running `/product-overview` and `/codebase-overview` first for better context."
+- Proceed with interview.
 
 ---
 
