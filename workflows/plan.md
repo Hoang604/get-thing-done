@@ -133,8 +133,8 @@ Before planning, you must assess the **Risk Profile** of this phase. Do not rely
 
 **Rule for High Complexity:**
 
-1. You MUST insert a `checkpoint:human-verify` task immediately after the critical implementation task.
-   | 2. You MUST explain _why_ it is High Complexity in the plan's context.
+1. You MUST insert a `checkpoint:human-verify` task immediately after the High Complexity task.
+2. You MUST explain _why_ it is High Complexity in the plan's context.
 
 </complexity_rubric>
 
@@ -296,7 +296,17 @@ is_tdd: { true/false }
   <done>{How we know this task is complete}</done>
 </task>
 
-<task id="2" type="auto">
+<task id="2" type="checkpoint:human-verify">
+  <name>STOP. Review the implementation of {file} for {specific_risk}</name>
+  <risk>{One sentence rationale if complexity > Low}</risk>
+  <files>{exact file paths}</files>
+  <action>
+    {Specific review instructions}
+  </action>
+  <done>{How we know this task is complete}</done>
+</task>
+
+<task id="3" type="auto">
   ...
 </task>
 
