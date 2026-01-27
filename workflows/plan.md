@@ -1,7 +1,7 @@
 ---
 name: plan
 description: Create execution plan for a phase. Creates ./.gtd/<task_name>/{phase}/PLAN.md
-argument-hint: "[phase] [--research] [--skip-research]"
+argument-hint: "[phase] [--research] [--skip-research] [--test]"
 ---
 
 <role>
@@ -28,6 +28,7 @@ Create executable plans (PLAN.md files) for a roadmap phase.
 
 - `--research` — Force re-research even if RESEARCH.md exists
 - `--skip-research` — Skip research, go straight to planning
+- `--test` — Add a "Create Failing Test" task, TDD style
 
 **Required files:**
 
@@ -114,6 +115,29 @@ Each plan: **2-3 tasks max**. No exceptions.
 | `checkpoint:human-verify` | Visual/functional verification        | Pauses for user  |
 | `checkpoint:decision`     | Implementation choices                | Pauses for user  |
 
+<complexity_rubric>
+
+## Self-Calibration: The "Gut Check"
+
+Before planning, you must assess the **Risk Profile** of this phase. Do not rely on a fixed list of keywords. Instead, simulate the implementation in your head and ask:
+
+**"What is the probability that a Junior Developer would break the system implementing this?"**
+
+### Complexity Levels
+
+| Level      | Internal Monologue Guide                                                                                                                                                      | Action                             |
+| :--------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------- |
+| **Low**    | "I can see the entire solution clearly. It is boilerplate or standard CRUD. I have 100% certainty."                                                                           | Standard flow.                     |
+| **Medium** | "I know the pattern, but there are edge cases (null checks, state sync) I need to be careful about."                                                                          | Standard flow, but detailed tasks. |
+| **High**   | "This is tricky. It involves critical state transitions, ambiguous requirements, or I have to invent a new pattern. There is a >10% chance I might misunderstand the intent." | **MANDATORY CHECKPOINT.**          |
+
+**Rule for High Complexity:**
+
+1. You MUST insert a `checkpoint:human-verify` task immediately after the critical implementation task.
+   | 2. You MUST explain _why_ it is High Complexity in the plan's context.
+
+</complexity_rubric>
+
 </task_types>
 
 </standards_and_constraints>
@@ -138,6 +162,7 @@ Extract from $ARGUMENTS:
 - Phase number (integer)
 - `--research` flag
 - `--skip-research` flag
+- `--test` flag
 
 **If no phase number:** Detect next unplanned phase from ROADMAP.md.
 
@@ -208,18 +233,34 @@ Load SPEC.md, ROADMAP.md, and RESEARCH.md (if exists). Use research findings to 
 
 ### 6b. Decompose into Tasks
 
-1. Identify all deliverables.
-2. Break into atomic tasks (2-3 max) using `<task_types>`.
-3. Define done criteria for each.
+1. **Perform Task-Level Self-Calibration:**
+   - For EACH task you define, simulate the implementation in your head.
+   - Assign a Complexity Level (Low/Medium/High) based on the `<complexity_rubric>`.
+   - _Crucial:_ If you feel ANY hesitation about the "correct" way to implement a specific task, label that task as **High**.
+
+2. **Handle TDD:**
+   - If the `--test` flag is active:
+     - **Task 1 MUST be:** "Create Failing Test".
+     - **Constraint:** The test must define the interfaces planned and assert the desired outcome. It must fail initially (Red state).
+     - **Done:** Test exists and fails with expected "logic missing" error.
+
+3. **Decompose deliverables** into remaining atomic tasks (total 2-3 max).
+
+4. **Apply Safety Brakes:**
+   - If a task is rated **High** complexity: Insert a `checkpoint:human-verify` task immediately after it.
+   - The checkpoint action must read: "STOP. Review the implementation of {file} for {specific_risk}."
+
+5. Define done criteria for each.
 
 ### 6c. Write PLAN.md
 
 Write to `./.gtd/<task_name>/$PHASE/PLAN.md` using this template:
 
 ```markdown
----
 phase: { N }
 created: { date }
+is_tdd: { true/false }
+
 ---
 
 # Plan: Phase {N} - {Name}
@@ -243,8 +284,9 @@ created: { date }
 
 ## Tasks
 
-<task id="1" type="auto">
+<task id="1" type="auto" complexity="Low/Medium/High">
   <name>{Task name}</name>
+  <risk>{One sentence rationale if complexity > Low}</risk>
   <files>{exact file paths}</files>
   <action>
     {Specific implementation instructions}

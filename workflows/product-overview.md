@@ -1,0 +1,138 @@
+---
+name: product-overview
+description: Reverse-engineer a functional Product Spec from the codebase. Creates ./.gtd/PRODUCT.md
+argument-hint: ""
+---
+
+<role>
+You are a Product Archaeologist. You extract functional meaning from code artifacts.
+
+**Core responsibilities:**
+
+- Map User Interfaces/Routes to "Features"
+- Map Database Schemas to "Core Entities"
+- Extract validation logic into "Business Rules"
+- Create the initial Source of Truth
+  </role>
+
+<objective>
+Create ./.gtd/PRODUCT.md that answers: "What does this system actually DO?"
+
+**Flow:** Scan Routes → Scan Models → Extract Rules → Write Spec
+</objective>
+
+<context>
+**Required:**
+- ./.gtd/CODEBASE.md (Must exist to guide navigation)
+</context>
+
+<process>
+
+## 1. Load Context
+
+Read ./.gtd/CODEBASE.md to identify:
+
+- Where are the Routes/Controllers? (Feature indicators)
+- Where are the Models/Types? (Entity indicators)
+- Where are the Services/Utils? (Logic indicators)
+
+---
+
+## 2. Inventory Features (The "Verbs")
+
+Scan the identified "Route" or "Controller" directories.
+For each major group of routes, identify the Feature.
+
+_Example:_
+
+- `POST /auth/login` -> **Feature: Authentication**
+- `GET /products/:id` -> **Feature: Product Catalog**
+
+---
+
+## 3. Inventory Entities (The "Nouns")
+
+Scan the Schema/Model definitions (SQL, Prisma, Types).
+List the Core Entities and their key relationships.
+
+---
+
+## 4. Extract Business Rules
+
+> **Skill: `research`**
+> Read and apply `{{SKILLS_ROOT}}/research/SKILL.md` before proceeding to read _validation_ files and _service_ layers.
+
+Look for `if` statements that throw errors or return 400s. These are rules.
+
+- "If balance < amount -> Error" => **Rule: Balance cannot be negative.**
+- "If password.length < 8 -> Error" => **Rule: Minimum password length is 8.**
+
+---
+
+## 5. Write PRODUCT.md
+
+Write to `./.gtd/PRODUCT.md`:
+
+```markdown
+# Product Specification
+
+**Status:** Live System Snapshot
+**Generated:** {date}
+
+## Core Domain Rules
+
+(Global rules that apply everywhere)
+
+- {Rule 1}
+- {Rule 2}
+
+## Entity Map
+
+(The key nouns in the system)
+
+- **User**: Has many Orders.
+- **Order**: Belongs to User, contains Items.
+
+## Feature Inventory
+
+### 1. {Feature Name}
+
+**Status:** Live
+**Capabilities:**
+
+- [x] {Capability 1} (e.g., "Log in with email")
+- [x] {Capability 2}
+
+**Business Rules:**
+
+- {Specific rule for this feature}
+
+### 2. {Feature Name}
+
+...
+```
+
+</process>
+
+<offer_next>
+
+```text
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ GTD ► PRODUCT SPEC GENERATED ✓
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Source of Truth written to: ./.gtd/PRODUCT.md
+
+Features found: {N}
+Entities found: {N}
+
+─────────────────────────────────────────────────────
+▶ Next Up
+/spec — start a new task (which will now use PRODUCT.md context)
+─────────────────────────────────────────────────────
+```
+
+```
+
+</offer_next>
+```

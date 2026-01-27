@@ -144,7 +144,23 @@ Tasks:
 
 **Loop through each task in PLAN.md:**
 
-### 3a. Announce Task
+### 3a. Check Task Type
+
+**If task.type starts with `checkpoint`:**
+
+1. **STOP.** Do not auto-execute.
+2. Display:
+   ```text
+   🛑 CHECKPOINT REQUIRED: {task.name}
+   Rationale: {task.risk}
+   Action: {task.action}
+   ```
+3. **Ask User:** "Please perform this check. Enter 'continue' when ready, or 'abort' to stop."
+4. **Wait for explicit user input.**
+   - If 'continue' -> Mark done, proceed to next task.
+   - If 'abort' -> Exit workflow.
+
+### 3b. Announce Task (Standard)
 
 ```text
 ► Task {N}: {name}
