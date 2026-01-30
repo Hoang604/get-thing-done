@@ -142,21 +142,29 @@ Remove-Item -Recurse -Force gtd-temp
 ### 1. Skills (The Foundations)
 
 - **[Investigate (The Archaeologist)](skills/investigate/SKILL.md)**: Procedures for excavating truth from code paths without guessing.
-- **[Code (The Runtime Realist)](skills/code/SKILL.md)**: Standards for implementing reliable, atomic, and magic-free code.
 
 ### 2. Workflows (The Process)
 
-#### Develop Flow
+#### Strategy Flow (Architecture Porting)
 
-Standardized sequence for building new features:
+Systematic execution of an architectural backlog:
 
-1. **[/spec](workflows/spec.md)**: Interview user and define clear, finalized requirements in `SPEC.md`.
+1. **[/bootstrap](workflows/bootstrap.md)**: Initialize `BACKLOG.md` from architecture docs.
+2. **[/expand-backlog](workflows/expand-backlog.md)**: Break high-level items into executable sub-tasks.
+3. **[/s:spec](workflows/s-spec.md)**: Pull next item from `BACKLOG.md` and generate `SPEC.md`.
+4. **[/s:archive](workflows/s-archive.md)**: Archive work and mark backlog item complete.
+
+#### Develop Flow (Feature Execution)
+
+Standardized sequence for building features (used after /spec or /s:spec):
+
+1. **[/spec](workflows/spec.md)**: Define clear requirements in `SPEC.md` (Manual Mode).
 2. **[/roadmap](workflows/roadmap.md)**: Sequence requirements into ordered `ROADMAP.md` phases.
 3. **[/plan](workflows/plan.md)**: Create atomic `PLAN.md` tasks for a specific phase.
 4. **[/execute](workflows/execute.md)**: Atomically implement tasks and generate a `SUMMARY.md`.
 5. **[/commit-spec](workflows/commit-spec.md)**: Synthesize all summaries into a high-quality descriptive commit.
 
-#### Debug Flow
+#### Debug Flow (Fixes)
 
 Systematic process for resolving defects:
 
@@ -168,12 +176,5 @@ Systematic process for resolving defects:
 
 ### 3. Lifecycle Management
 
-- **[/archive](workflows/archive.md)**: Move completed develop work to `./.gtd/archive/`.
+- **[/archive](workflows/archive.md)**: Move completed independent task to `./.gtd/archive/`.
 - **[/d-archive](workflows/d-archive.md)**: Move completed debug work to `./.gtd/archive/`.
-
-## Directory Standard
-
-- `./.gtd/<task_name>/`: Active task state.
-- `./.gtd/archive/`: Historical record of completed work.
-- `./skills/`: Shared behavioral guidelines.
-- `./workflows/`: Process automation scripts.
