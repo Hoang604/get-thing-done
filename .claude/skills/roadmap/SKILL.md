@@ -188,3 +188,7 @@ Coverage: 100% of spec criteria assigned
 | `/update-roadmap` | Modifies phases                |
 
 </related>
+
+<forced_stop>
+STOP. The workflow is complete. Do NOT automatically run the next command. Wait for the user.
+</forced_stop>

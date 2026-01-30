@@ -91,13 +91,20 @@ Check if `$ARGUMENTS` contains `--modify`:
 
 ---
 
+---
+
 ## 2. Context Gathering Phase (NEW mode)
 
-Before interviewing, gather codebase context:
+Before interviewing, gather system context:
 
-**Check for CODEBASE.md:**
+**Check for Source of Truth files:**
 
 ```bash
+if [ -f "./.gtd/PRODUCT.md" ]; then
+    echo "Product overview found"
+else
+    echo "No product overview exists"
+fi
 if [ -f "./.gtd/CODEBASE.md" ]; then
     echo "Codebase overview found"
 else
@@ -105,15 +112,21 @@ else
 fi
 ```
 
+**If PRODUCT.md exists:**
+
+- Load and read `./.gtd/PRODUCT.md`.
+- Use this as the **Functional Source of Truth**.
+- Identify existing features/rules that might be affected by this task.
+
 **If CODEBASE.md exists:**
 
 - Load and read `./.gtd/CODEBASE.md`
-- Use this context to ask better questions during interview
+- Use this as the **Technical Source of Truth**.
 - Reference existing modules/patterns when discussing implementation
 
-**If CODEBASE.md does NOT exist:**
+**If neither exist:**
 
-- Inform user: "No codebase overview found. Consider running `/codebase-overview` first for better context."
+- Inform user: "No system overview found. Consider running `/product-overview` and `/codebase-overview` first for better context."
 - Proceed with interview (can still work without it)
 
 ---
@@ -370,3 +383,7 @@ Changes applied: {N} sections modified
 ```
 
 </offer_next>
+
+<forced_stop>
+STOP. The workflow is complete. Do NOT automatically run the next command. Wait for the user.
+</forced_stop>

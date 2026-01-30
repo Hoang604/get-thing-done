@@ -198,3 +198,7 @@ Phase 4: Integrated role-based access control
 ```
 
 </examples>
+
+<forced_stop>
+STOP. The workflow is complete. Do NOT automatically run the next command. Wait for the user.
+</forced_stop>

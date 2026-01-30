@@ -1,5 +1,5 @@
 ---
-name: archive
+name: s:archive
 description: Archive completed task/spec work to ./.gtd/archive/
 argument-hint: "[task_name]"
 disable-model-invocation: true
@@ -11,6 +11,8 @@ You are an archiver. You move completed task work to the archive folder for hist
 **Core responsibilities:**
 
 - Verify task work exists
+- Update BACKLOG.md to mark item complete
+- Append completion event to JOURNAL.md
 - Create archive with task name and timestamp
 - Move all task files to archive
 - Clean up task folder
@@ -19,7 +21,7 @@ You are an archiver. You move completed task work to the archive folder for hist
 <objective>
 Archive completed task to keep workspace clean while preserving history.
 
-**Flow:** Verify Exists → Create Archive → Move Files → Clean Up
+**Flow:** Verify Exists → Update Backlog → Log Journal → Create Archive → Move Files → Clean Up
 </objective>
 
 <context>
@@ -32,6 +34,11 @@ Archive completed task to keep workspace clean while preserving history.
 **Destination:**
 
 - `./.gtd/archive/<task_name>-{timestamp}/` — Archived task work
+
+**Updates:**
+
+- `./.gtd/BACKLOG.md` — Mark item as `[x]` complete
+- `./.gtd/JOURNAL.md` — Append completion event
 
 **Files to archive:**
 
@@ -50,6 +57,10 @@ Only archive when task is complete or abandoned.
 ## Preserve History
 
 Keep all files for future reference and learning.
+
+## Update State
+
+Backlog and Journal must reflect the completion.
 
 ## Clean Workspace
 
@@ -86,7 +97,37 @@ fi
 
 ---
 
-## 3. Create Archive Directory
+## 3. Update BACKLOG.md
+
+**If `./.gtd/BACKLOG.md` exists:**
+
+- Read the file
+- Find the line matching the task name (e.g., `- [ ] **{task_name}**`)
+- Change `[ ]` to `[x]`
+- Write updated file
+
+**Example:**
+
+```
+Before: - [ ] **audio-gateway** — Opus decoding, VAD
+After:  - [x] **audio-gateway** — Opus decoding, VAD
+```
+
+---
+
+## 4. Append to JOURNAL.md
+
+**If `./.gtd/JOURNAL.md` exists:**
+
+Append a new row to the journal table:
+
+```markdown
+| {date} | Task completed: {task_name} | Complete | {task_name} |
+```
+
+---
+
+## 5. Create Archive Directory
 
 Generate archive name with timestamp:
 
@@ -98,7 +139,7 @@ mkdir -p "./.gtd/archive"
 
 ---
 
-## 4. Move Task Folder
+## 6. Move Task Folder
 
 Move entire task folder to archive:
 
@@ -108,18 +149,18 @@ mv "./.gtd/<task_name>" "${ARCHIVE_DIR}"
 
 ---
 
-## 5. Commit Archive
+## 7. Commit Archive
 
-Commit the archive:
+Commit the archive and state updates:
 
 ```bash
-git add ./.gtd/archive/
+git add ./.gtd/archive/ ./.gtd/BACKLOG.md ./.gtd/JOURNAL.md
 git commit -m "chore: archive task <task_name> to {task_name}-${TIMESTAMP}"
 ```
 
 ---
 
-## 6. Display Summary
+## 8. Display Summary
 
 ```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -132,7 +173,9 @@ Archived to: ./.gtd/archive/{task_name}-{timestamp}/
 Phases archived: {count}
 Files archived: {count}
 
-Task folder removed from ./.gtd/
+✓ BACKLOG.md updated
+✓ JOURNAL.md updated
+✓ Task folder removed from ./.gtd/
 
 ─────────────────────────────────────────────────────
 ```

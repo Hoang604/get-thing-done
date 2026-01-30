@@ -122,3 +122,7 @@ Current debug folder is now empty and ready for next investigation.
 ---
 
 </process>
+
+<forced_stop>
+STOP. The workflow is complete. Do NOT automatically run the next command. Wait for the user.
+</forced_stop>

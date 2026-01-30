@@ -231,3 +231,7 @@ Location: {files}
 ```
 
 </offer_next>
+
+<forced_stop>
+STOP. The workflow is complete. Do NOT automatically run the next command. Wait for the user.
+</forced_stop>
