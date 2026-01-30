@@ -1,7 +1,7 @@
 ---
 name: plan
 description: Create execution plan for a phase. Creates ./.gtd/<task_name>/{phase}/PLAN.md
-argument-hint: "[phase] [--research] [--skip-research]"
+argument-hint: "[phase] [--research] [--skip-research] [--test]"
 disable-model-invocation: true
 ---
 
@@ -29,16 +29,17 @@ Create executable plans (PLAN.md files) for a roadmap phase.
 
 - `--research` — Force re-research even if RESEARCH.md exists
 - `--skip-research` — Skip research, go straight to planning
+- `--test` — Add a "Create Failing Test" task, TDD style
 
 **Required files:**
 
-- `./gtd/SPEC.md` — Must be FINALIZED
-- `./gtd/ROADMAP.md` — Must have phases defined
+- `./.gtd/SPEC.md` — Must be FINALIZED
+- `./.gtd/ROADMAP.md` — Must have phases defined
 
 **Output:**
 
-- `./gtd/{phase}/PLAN.md`
-- `./gtd/{phase}/RESEARCH.md` (if research performed)
+- `./.gtd/{phase}/PLAN.md`
+- `./.gtd/{phase}/RESEARCH.md` (if research performed)
 
 **Agents used:**
 
@@ -46,16 +47,16 @@ Create executable plans (PLAN.md files) for a roadmap phase.
   </context>
 
 <related>
-
-| Workflow        | Relationship                  |
-| --------------- | ----------------------------- |
-| `/roadmap`      | Creates phases this reads     |
+| Workflow   | Relationship                  |
+| ---------- | ----------------------------- |
+| `/roadmap` | Creates phases this reads     |
 | `/discuss-plan` | Reviews plan before execution |
-| `/execute`      | Runs the plan                 |
-
+| `/execute` | Runs the plan                 |
 </related>
 
-<philosophy>
+<standards_and_constraints>
+
+  <philosophy>
 
 ## Plans Are Prompts
 
@@ -79,64 +80,68 @@ Each plan: **2-3 tasks max**. No exceptions.
 | 2 - Standard | 2-3 options, new integration            | Create RESEARCH.md           |
 | 3 - Deep     | Architectural decision, high risk       | Full research                |
 
-</philosophy>
-
-<design_guidelines>
+  </philosophy>
 
 <design_principles>
 
 ## Core Principles
 
-Design **Constraints** and **Invariants**. The features should be built without increasing system's entropy.
-
 **Mantra:** "Optimize for Evolution, not just Implementation."
 
-## Gall's Law
+- **Gall's Law:** Reject complexity. Start with the smallest working modular monolith.
+- **Single Source of Truth:** Data must be normalized. If state exists in two places, you have designed a bug.
+- **Complete Path Principle:** Information never teleports. Every producer needs a consumer. Every event needs a handler.
+- **Testability First:** Design "Seams" for every external dependency (Time, Network, Randomness).
+- **Centralized Resilience:** Retry logic/circuit breakers must be at the edge, not scattered.
 
-Reject complexity. Start with the smallest working modular monolith. A complex system that works is invariably found to have evolved from a simple system that worked.
-
-## Single Source of Truth
-
-Data must be normalized. If state exists in two places, you have designed a bug.
-
-## Complete Path Principle
-
-Information never teleports.
-
-- Every producer needs a consumer.
-- Every event needs a handler.
-- If you can't trace the path from User Action → User Observation, the design is incomplete.
-
-## Testability First
-
-Design "Seams" for every external dependency (Time, Network, Randomness). Static calls to side effects are forbidden.
-
-## Centralized Resilience
-
-Retry logic, circuit breakers, timeout handling MUST be centralized at the edge of system/component. Never scatter retry logic across callsites (e.g., inside individual service methods).
-
-</design_principles>
-
-<checklist>
-## The Blueprint
+## Blueprint Checklist
 
 - [ ] **Data Model:** Defined schemas (SQL/JSON) with exact types.
 - [ ] **Constraints:** What must ALWAYS be true? (e.g., "Balance >= 0").
-- [ ] **Failure Modes:**
-  - Partial Failure: What if the DB is down? what if network is down?
-  - Data Corruption: How do we detect it?
+- [ ] **Failure Modes:** Handling partial failures and data corruption.
 - [ ] **Error Taxonomy:** Define Retryable vs Fatal errors.
-      </checklist>
+      </design_principles>
 
 <prohibitions>
-
 - **No Implementation Code:** Do not write function bodies. Define interfaces.
-- **No Orphaned Artifacts:** Do not design components that connect to nothing.
 - **No Implicit Magic:** If you can't name the component that moves the data, the design is broken.
-
 </prohibitions>
 
-</design_guidelines>
+<task_types>
+**Automation-first rule:** If agent CAN do it, agent MUST do it. Checkpoints are for verification AFTER automation.
+
+| Type                      | Use For                               | Autonomy         |
+| ------------------------- | ------------------------------------- | ---------------- |
+| `auto`                    | Everything agent can do independently | Fully autonomous |
+| `checkpoint:human-verify` | Visual/functional verification        | Pauses for user  |
+| `checkpoint:decision`     | Implementation choices                | Pauses for user  |
+
+<complexity_rubric>
+
+## Self-Calibration: The "Gut Check"
+
+Before planning, you must assess the **Risk Profile** of this phase. Do not rely on a fixed list of keywords. Instead, simulate the implementation in your head and ask:
+
+**"What is the probability that a Junior Developer would break the system implementing this?"**
+
+### Complexity Levels
+
+| Level      | Internal Monologue Guide                                                                                                                                                      | Action                             |
+| :--------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------- |
+| **Low**    | "I can see the entire solution clearly. It is boilerplate or standard CRUD. I have 100% certainty."                                                                           | Standard flow.                     |
+| **Medium** | "I know the pattern, but there are edge cases (null checks, state sync) I need to be careful about."                                                                          | Standard flow, but detailed tasks. |
+| **High**   | "This is tricky. It involves critical state transitions, ambiguous requirements, or I have to invent a new pattern. There is a >10% chance I might misunderstand the intent." | **MANDATORY CHECKPOINT.**          |
+
+**Rule for High Complexity:**
+
+1. You MUST insert a `checkpoint:human-verify` task immediately after the High Complexity task.
+2. You MUST explain _why_ it is High Complexity in the plan's context.
+
+</complexity_rubric>
+
+</task_types>
+
+</standards_and_constraints>
 
 <process>
 
@@ -145,13 +150,11 @@ Retry logic, circuit breakers, timeout handling MUST be centralized at the edge 
 **Bash:**
 
 ```bash
-if ! test -f "./gtd/ROADMAP.md"; then
+if ! test -f "./.gtd/ROADMAP.md"; then
     echo "Error: ROADMAP.md must exist"
     exit 1
 fi
 ```
-
----
 
 ## 2. Parse Arguments
 
@@ -160,10 +163,9 @@ Extract from $ARGUMENTS:
 - Phase number (integer)
 - `--research` flag
 - `--skip-research` flag
+- `--test` flag
 
 **If no phase number:** Detect next unplanned phase from ROADMAP.md.
-
----
 
 ## 3. Validate Phase
 
@@ -176,8 +178,6 @@ grep "## Phase $PHASE:" "./.gtd/<task_name>/ROADMAP.md"
 **If not found:** Error with available phases.
 **If found:** Extract phase name and objective.
 
----
-
 ## 4. Ensure Phase Directory
 
 **Bash:**
@@ -185,8 +185,6 @@ grep "## Phase $PHASE:" "./.gtd/<task_name>/ROADMAP.md"
 ```bash
 mkdir -p "./.gtd/<task_name>/$PHASE"
 ```
-
----
 
 ## 5. Handle Research
 
@@ -204,7 +202,6 @@ test -f "./.gtd/<task_name>/$PHASE/RESEARCH.md"
 - Skip to step 6
 
 **If research needed:**
-
 Display:
 
 ```text
@@ -275,29 +272,38 @@ Display:
 
 ### 6a. Gather Context
 
-Load:
-
-- `./.gtd/<task_name>/SPEC.md`
-- `./.gtd/<task_name>/ROADMAP.md` (phase section)
-- `./.gtd/<task_name>/$PHASE/RESEARCH.md` (if exists)
-- **Use research findings to inform design constraints**
+Load SPEC.md, ROADMAP.md, and RESEARCH.md (if exists). Use research findings to inform design constraints defined in `<design_principles>`.
 
 ### 6b. Decompose into Tasks
 
-For the phase goal:
+1. **Perform Task-Level Self-Calibration:**
+   - For EACH task you define, simulate the implementation in your head.
+   - Assign a Complexity Level (Low/Medium/High) based on the `<complexity_rubric>`.
+   - _Crucial:_ If you feel ANY hesitation about the "correct" way to implement a specific task, label that task as **High**.
 
-1. Identify all deliverables
-2. Break into atomic tasks (2-3 max)
-3. Define done criteria for each
+2. **Handle TDD:**
+   - If the `--test` flag is active:
+     - **Task 1 MUST be:** "Create Failing Test".
+     - **Constraint:** The test must define the interfaces planned and assert the desired outcome. It must fail initially (Red state).
+     - **Done:** Test exists and fails with expected "logic missing" error.
+
+3. **Decompose deliverables** into remaining atomic tasks (total 2-3 max).
+
+4. **Apply Safety Brakes:**
+   - If a task is rated **High** complexity: Insert a `checkpoint:human-verify` task immediately after it.
+   - The checkpoint action must read: "STOP. Review the implementation of {file} for {specific_risk}."
+
+5. Define done criteria for each.
 
 ### 6c. Write PLAN.md
 
-Write to `./.gtd/<task_name>/$PHASE/PLAN.md`:
+Write to `./.gtd/<task_name>/$PHASE/PLAN.md` using this template:
 
 ```markdown
----
 phase: { N }
 created: { date }
+is_tdd: { true/false }
+
 ---
 
 # Plan: Phase {N} - {Name}
@@ -308,8 +314,8 @@ created: { date }
 
 ## Context
 
-- ./gtd/SPEC.md
-- ./gtd/ROADMAP.md
+- ./.gtd/SPEC.md
+- ./.gtd/ROADMAP.md
 - {relevant source files}
 
 ## Architecture Constraints
@@ -321,8 +327,9 @@ created: { date }
 
 ## Tasks
 
-<task id="1" type="auto">
+<task id="1" type="auto" complexity="Low/Medium/High">
   <name>{Task name}</name>
+  <risk>{One sentence rationale if complexity > Low}</risk>
   <files>{exact file paths}</files>
   <action>
     {Specific implementation instructions}
@@ -332,23 +339,25 @@ created: { date }
   <done>{How we know this task is complete}</done>
 </task>
 
-<task id="2" type="auto">
-  <name>{Task name}</name>
+<task id="2" type="checkpoint:human-verify">
+  <name>STOP. Review the implementation of {file} for {specific_risk}</name>
+  <risk>{One sentence rationale if complexity > Low}</risk>
   <files>{exact file paths}</files>
   <action>
-    {Specific implementation instructions}
-    - What to do
-    - What to avoid and WHY
+    {Specific review instructions}
   </action>
   <done>{How we know this task is complete}</done>
 </task>
+
+<task id="3" type="auto">
+  ...
+</task>
+
 ## Success Criteria
 
 - [ ] {Measurable outcome 1}
 - [ ] {Measurable outcome 2}
 ```
-
----
 
 ## 7. Verify Plan
 
@@ -358,21 +367,11 @@ Check:
 - [ ] Done criteria are measurable
 - [ ] 2-3 tasks max
 - [ ] All files specified
+- [ ] Adherence to `<prohibitions>`
 
 **If issues found:** Fix before writing.
+
 </process>
-
-<task_types>
-
-| Type                      | Use For                               | Autonomy         |
-| ------------------------- | ------------------------------------- | ---------------- |
-| `auto`                    | Everything agent can do independently | Fully autonomous |
-| `checkpoint:human-verify` | Visual/functional verification        | Pauses for user  |
-| `checkpoint:decision`     | Implementation choices                | Pauses for user  |
-
-**Automation-first rule:** If agent CAN do it, agent MUST do it. Checkpoints are for verification AFTER automation.
-
-</task_types>
 
 <offer_next>
 
@@ -391,15 +390,11 @@ Plan written to ./.gtd/<task_name>/{phase}/PLAN.md
 | 2 | {name} |
 
 ─────────────────────────────────────────────────────
-
 ▶ Next Up
-
 /execute {N} — run this plan
-
 ─────────────────────────────────────────────────────
-
 Also available:
-- /discuss {N} — review plan before executing
+/discuss-plan {N} — review plan before executing
 ─────────────────────────────────────────────────────
 ```
 
