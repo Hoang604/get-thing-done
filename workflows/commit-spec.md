@@ -156,12 +156,14 @@ Commit message preview:
 ...
 
 ─────────────────────────────────────────────────────
-
 ▶ View Full Commit
 
 git show HEAD
-
 ─────────────────────────────────────────────────────
+▶ Next Up
+/update-codebase update .gtd/CODEBASE.md to reflect the new change
+─────────────────────────────────────────────────────
+
 ```
 
 ---
