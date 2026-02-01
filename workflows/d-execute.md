@@ -113,7 +113,7 @@ Every number, string, or value must have a name.
 **Bash:**
 
 ```bash
-if ! test -f "./.gtd/debug/current/FIX_PLAN.md"; then
+if ! ls "./.gtd/debug/current/FIX_PLAN.md" >/dev/null 2>&1; then
     echo "Error: No fix plan exists"
     exit 1
 fi

@@ -121,6 +121,10 @@ Write to `./.gtd/<task_name>/ROADMAP.md`:
 **Goal:** {goal}
 **Created:** {date}
 
+## Strategy
+
+{Explain the phased approach. E.g., "Back-end first to secure data model, then UI," or "Vertical slice first to prove viability."}
+
 ## Must-Haves
 
 - [ ] {must-have 1}

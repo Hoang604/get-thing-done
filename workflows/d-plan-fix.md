@@ -110,7 +110,7 @@ Each plan: **2-3 tasks max**. No exceptions.
 **Bash:**
 
 ```bash
-if ! test -f "./.gtd/debug/current/ROOT_CAUSE.md"; then
+if ! ls "./.gtd/debug/current/ROOT_CAUSE.md" >/dev/null 2>&1; then
     echo "Error: No root cause found. Run /d-verify first."
     exit 1
 fi
@@ -121,7 +121,7 @@ fi
 **Bash:**
 
 ```bash
-test -f "./.gtd/debug/current/FIX_PLAN.md"
+ls "./.gtd/debug/current/FIX_PLAN.md" >/dev/null 2>&1
 ```
 
 **If exists AND `--force` NOT set:**

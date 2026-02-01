@@ -73,7 +73,7 @@ Read both files:
 - `./.gtd/debug/current/HYPOTHESES.md` — For hypotheses list
 
 ```bash
-if ! test -f "./.gtd/debug/current/SYMPTOM.md" || ! test -f "./.gtd/debug/current/HYPOTHESES.md"; then
+if ! ls "./.gtd/debug/current/SYMPTOM.md" >/dev/null 2>&1 || ! ls "./.gtd/debug/current/HYPOTHESES.md" >/dev/null 2>&1; then
     echo "Error: Missing required files"
     exit 1
 fi

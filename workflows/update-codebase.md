@@ -43,7 +43,7 @@ This is an incremental update. You modify specific sections, not the whole docum
 Verify `./.gtd/CODEBASE.md` exists and read it:
 
 ```bash
-test -f ./.gtd/CODEBASE.md && echo "EXISTS" || echo "MISSING"
+ls ./.gtd/CODEBASE.md >/dev/null 2>&1 && echo "EXISTS" || echo "MISSING"
 ```
 
 **If MISSING:** Stop. User should run `/codebase-overview` first.

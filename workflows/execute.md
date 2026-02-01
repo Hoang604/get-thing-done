@@ -117,7 +117,7 @@ Every number, string, or value must have a name.
 **Bash:**
 
 ```bash
-if ! test -f "./.gtd/<task_name>/$PHASE/PLAN.md"; then
+if ! ls "./.gtd/<task_name>/$PHASE/PLAN.md" >/dev/null 2>&1; then
     echo "Error: No plan exists for phase $PHASE"
     exit 1
 fi
@@ -230,6 +230,21 @@ Write to `./.gtd/<task_name>/$PHASE/SUMMARY.md`:
 ## What Was Done
 
 {Narrative summary of implementation}
+
+## Walkthrough (Proof of Work)
+
+**Changes Made:**
+
+- {Concise list of key changes}
+
+**Validation Results:**
+
+- {What was tested}
+- {Result of verification}
+
+**Evidence:**
+
+- {Test pass, logs, or replication steps that prove it works}
 
 ## Behaviour
 

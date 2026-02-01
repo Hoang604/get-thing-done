@@ -122,7 +122,14 @@ ls ./.gtd/CODEBASE.md ./.gtd/PRODUCT.md 2>/dev/null
 
 ## 3. Interview Phase (NEW mode)
 
-Ask questions to gather specification, before write SPEC.md, you must have context about:
+Ask questions to gather specification.
+
+**Communication Standard:**
+
+- **Batch Questions:** Do not ping-pong. Ask 3-5 questions in a single turn if they are independent.
+- **Infer then Verify:** Instead of asking "What should I do?", propose "I plan to do X, is that correct?"
+
+Before write SPEC.md, you must have context about:
 
 1. **Goal:** "What user really want?"
 2. **Requirements:**
@@ -259,6 +266,10 @@ Write to `./.gtd/<task_name>/SPEC.md`:
 
 **Status:** FINALIZED
 **Created:** {date}
+
+## Synopsis
+
+{2-3 sentences explaining the "User Story" of this task. What is the value proposition?}
 
 ## Goal
 

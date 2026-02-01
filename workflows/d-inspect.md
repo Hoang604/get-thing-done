@@ -70,7 +70,7 @@ Each hypothesis needs supporting evidence from code analysis.
 Read `./.gtd/debug/current/SYMPTOM.md`.
 
 ```bash
-if ! test -f "./.gtd/debug/current/SYMPTOM.md"; then
+if ! ls "./.gtd/debug/current/SYMPTOM.md" >/dev/null 2>&1; then
     echo "Error: No symptom documented. Run /d-symptom first."
     exit 1
 fi

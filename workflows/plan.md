@@ -1,7 +1,7 @@
 ---
 name: plan
 description: Create execution plan for a phase. Creates ./.gtd/<task_name>/{phase}/PLAN.md
-argument-hint: "[phase] [--research] [--skip-research] [--test]"
+argument-hint: "[phase] [--research] [--test]"
 ---
 
 <role>
@@ -27,7 +27,6 @@ Create executable plans (PLAN.md files) for a roadmap phase.
 **Flags:**
 
 - `--research` — Force re-research even if RESEARCH.md exists
-- `--skip-research` — Skip research, go straight to planning
 - `--test` — Add a "Create Failing Test" task, TDD style
 
 **Required files:**
@@ -149,7 +148,7 @@ Before planning, you must assess the **Risk Profile** of this phase. Do not rely
 **Bash:**
 
 ```bash
-if ! test -f "./.gtd/ROADMAP.md"; then
+if ! ls "./.gtd/ROADMAP.md" >/dev/null 2>&1; then
     echo "Error: ROADMAP.md must exist"
     exit 1
 fi
@@ -161,7 +160,6 @@ Extract from $ARGUMENTS:
 
 - Phase number (integer)
 - `--research` flag
-- `--skip-research` flag
 - `--test` flag
 
 **If no phase number:** Detect next unplanned phase from ROADMAP.md.
@@ -187,12 +185,10 @@ mkdir -p "./.gtd/<task_name>/$PHASE"
 
 ## 5. Handle Research
 
-**If `--skip-research`:** Skip to step 6.
-
 **Check for existing research:**
 
 ```bash
-test -f "./.gtd/<task_name>/$PHASE/RESEARCH.md"
+ls "./.gtd/<task_name>/$PHASE/RESEARCH.md" >/dev/null 2>&1
 ```
 
 **If exists AND `--research` NOT set:**
@@ -268,6 +264,10 @@ is_tdd: { true/false }
 ## Objective
 
 {What this phase delivers and why}
+
+## Verification Strategy
+
+{How will we verify this phase is done? E.g., "Automated tests", "Manual UI walkthrough", "Log inspection"}
 
 ## Context
 
