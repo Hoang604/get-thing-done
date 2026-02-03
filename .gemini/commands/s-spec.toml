@@ -19,7 +19,7 @@ Create a specification for a backlog item that answers: "How do we implement thi
 **Flow:** Read Backlog → Select Item → Research → Interview (HOW) → Mirror → Confirm → Write
 </objective>
 
-## User Request
+## User Request (if Empty, select the first item that haven't done in backlog)
 {{args}}
 
 <context>

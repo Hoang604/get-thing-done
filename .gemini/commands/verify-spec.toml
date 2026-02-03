@@ -193,7 +193,46 @@ Save this list as `$CHANGED_FILES` for the audit steps below.
 
 ---
 
-## 7. Rust Quality Audit (Conditional)
+## 7. TypeScript Quality Audit (Conditional)
+
+**Only run if `$CHANGED_FILES` contains `.ts`, `.tsx`, `.js`, or `.jsx` files.**
+
+Check for TS/JS files:
+
+```bash
+echo "$CHANGED_FILES" | grep -E '.(ts|tsx|js|jsx)$'
+```
+
+If matches exist, run audit:
+
+> Use `ts_quality` tool:
+>
+> ```
+> ts_quality{query: "
+> <objective>
+> Review TypeScript code quality for task: <task_name>
+> </objective>
+>
+> <files_to_scan>
+> {TS/JS files from $CHANGED_FILES}
+> </files_to_scan>
+>
+> <context>
+> Spec: ./.gtd/<task_name>/SPEC.md
+> </context>
+>
+> <focus_areas>
+> - Type safety (no any)
+> - React hooks rules
+> - Async patterns
+> - Error handling
+> </focus_areas>
+> "}
+> ```
+
+---
+
+## 8. Rust Quality Audit (Conditional)
 
 **Only run if `$CHANGED_FILES` contains `.rs` files.**
 
@@ -233,9 +272,16 @@ If Rust files exist, run audit:
 
 ---
 
-## 8. Consolidate Report
+## 9. Consolidate Report
 
-Combine all findings into a single report:
+Combine all findings into a single comprehensive report and **write to file:**
+
+```bash
+# Write report to task folder
+touch ./.gtd/<task_name>/VERIFICATION.md
+```
+
+Write to `./.gtd/<task_name>/VERIFICATION.md`:
 
 ```markdown
 # Verification Report: <task_name>
@@ -298,6 +344,22 @@ Combine all findings into a single report:
 
 {Proceed / Fix Critical Issues First / Major Refactoring Needed}
 ```
+
+## 10. Update Backlog
+
+If any issues (FAIL, Security, Performance, Tech Debt) were found, add them to `BACKLOG.md`.
+
+1. Read `./.gtd/BACKLOG.md`
+2. Append a new section (if not exists) `### Verification Findings: <task_name>`
+3. Add findings as new items:
+
+```markdown
+- [ ] **debt/<task_name>/security** — {security issue description}
+- [ ] **debt/<task_name>/perf** — {performance issue description}
+- [ ] **debt/<task_name>/fix** — {failed requirement description}
+```
+
+4. Write updated `BACKLOG.md`.
 
 </process>
 
