@@ -1,4 +1,5 @@
 description = "Verify requirements, security, performance, and technical debt for a task."
+
 prompt = """
 
 <role>
@@ -84,7 +85,23 @@ Extract ALL requirements from the `### Must Have` section, then make a **single*
 
 ---
 
-## 3. Security Audit
+## 3. Get Changed Files
+
+Before running audits, get the list of files changed for this task:
+
+```bash
+# Get files changed since task started (compare with main/master)
+git diff --name-only main...HEAD
+
+# Or if working on current changes
+git diff --name-only HEAD~10
+```
+
+Save this list as `$CHANGED_FILES` for the audit steps below.
+
+---
+
+## 4. Security Audit
 
 > Use `security` tool:
 >
@@ -94,9 +111,12 @@ Extract ALL requirements from the `### Must Have` section, then make a **single*
 > Scan for security vulnerabilities in code related to task: <task_name>
 > </objective>
 >
+> <files_to_scan>
+> {$CHANGED_FILES - list from git diff above}
+> </files_to_scan>
+>
 > <context>
 > Spec: ./.gtd/<task_name>/SPEC.md
-> Files changed: {list files from spec context or recent changes}
 > </context>
 >
 > <focus_areas>
@@ -113,7 +133,7 @@ Extract ALL requirements from the `### Must Have` section, then make a **single*
 
 ---
 
-## 4. Performance Audit
+## 5. Performance Audit
 
 > Use `performance` tool:
 >
@@ -123,9 +143,12 @@ Extract ALL requirements from the `### Must Have` section, then make a **single*
 > Scan for performance issues in code related to task: <task_name>
 > </objective>
 >
+> <files_to_scan>
+> {$CHANGED_FILES - list from git diff above}
+> </files_to_scan>
+>
 > <context>
 > Spec: ./.gtd/<task_name>/SPEC.md
-> Files changed: {list files from spec context or recent changes}
 > </context>
 >
 > <focus_areas>
@@ -140,19 +163,22 @@ Extract ALL requirements from the `### Must Have` section, then make a **single*
 
 ---
 
-## 5. Technical Debt Audit
+## 6. Technical Debt Audit
 
-> Use `tech-debt` tool:
+> Use `tech_debt` tool:
 >
 > ```
-> tech-debt{query: "
+> tech_debt{query: "
 > <objective>
 > Scan for technical debt in code related to task: <task_name>
 > </objective>
 >
+> <files_to_scan>
+> {$CHANGED_FILES - list from git diff above}
+> </files_to_scan>
+>
 > <context>
 > Spec: ./.gtd/<task_name>/SPEC.md
-> Files changed: {list files from spec context or recent changes}
 > </context>
 >
 > <focus_areas>
@@ -167,7 +193,47 @@ Extract ALL requirements from the `### Must Have` section, then make a **single*
 
 ---
 
-## 6. Consolidate Report
+## 7. Rust Quality Audit (Conditional)
+
+**Only run if `$CHANGED_FILES` contains `.rs` files.**
+
+Check for Rust files:
+
+```bash
+echo "$CHANGED_FILES" | grep '.rs$'
+```
+
+If Rust files exist, run audit:
+
+> Use `rust_quality` tool:
+>
+> ```
+> rust_quality{query: "
+> <objective>
+> Review Rust code quality for task: <task_name>
+> </objective>
+>
+> <files_to_scan>
+> {Rust files from $CHANGED_FILES}
+> </files_to_scan>
+>
+> <context>
+> Spec: ./.gtd/<task_name>/SPEC.md
+> </context>
+>
+> <focus_areas>
+> - Ownership and borrowing patterns
+> - Error handling (unwrap usage)
+> - Async patterns
+> - Idiomatic Rust
+> - Performance (unnecessary allocations)
+> </focus_areas>
+> "}
+> ```
+
+---
+
+## 8. Consolidate Report
 
 Combine all findings into a single report:
 
