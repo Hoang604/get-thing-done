@@ -1,9 +1,5 @@
----
-name: plan
-description: Create execution plan for a phase. Creates ./.gtd/<task_name>/{phase}/PLAN.md
-argument-hint: "[phase] [--research] [--skip-research] [--test]"
-disable-model-invocation: true
----
+description = "Create execution plan for a phase. Creates ./.gtd/<task_name>/{phase}/PLAN.md"
+prompt = """
 
 <role>
 You are a plan creator. You break a phase into executable tasks with clear done criteria.
@@ -28,7 +24,6 @@ Create executable plans (PLAN.md files) for a roadmap phase.
 **Flags:**
 
 - `--research` — Force re-research even if RESEARCH.md exists
-- `--skip-research` — Skip research, go straight to planning
 - `--test` — Add a "Create Failing Test" task, TDD style
 
 **Required files:**
@@ -41,10 +36,9 @@ Create executable plans (PLAN.md files) for a roadmap phase.
 - `./.gtd/<task_name>/{phase}/PLAN.md`
 - `./.gtd/<task_name>/{phase}/RESEARCH.md` (if research performed)
 
-**Agents used:**
-
-- `research` — During research phase
   </context>
+
+
 
 <standards_and_constraints>
 
@@ -142,8 +136,8 @@ Before planning, you must assess the **Risk Profile** of this phase. Do not rely
 **Bash:**
 
 ```bash
-if ! test -f "./.gtd/<task_name>/ROADMAP.md"; then
-    echo "Error: ROADMAP.md must exist"
+if ! ls "./.gtd/<task_name>/ROADMAP.md" >/dev/null 2>&1; then
+    echo "Error: ROADMAP.md must exist for <task_name>"
     exit 1
 fi
 ```
@@ -154,7 +148,6 @@ Extract from $ARGUMENTS:
 
 - Phase number (integer)
 - `--research` flag
-- `--skip-research` flag
 - `--test` flag
 
 **If no phase number:** Detect next unplanned phase from ROADMAP.md.
@@ -180,12 +173,10 @@ mkdir -p "./.gtd/<task_name>/$PHASE"
 
 ## 5. Handle Research
 
-**If `--skip-research`:** Skip to step 6.
-
 **Check for existing research:**
 
 ```bash
-test -f "./.gtd/<task_name>/$PHASE/RESEARCH.md"
+ls "./.gtd/<task_name>/$PHASE/RESEARCH.md" >/dev/null 2>&1
 ```
 
 **If exists AND `--research` NOT set:**
@@ -202,53 +193,41 @@ Display:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-Spawn researcher agent:
+> Use `research` tool with a structured query:
+>
+> ```
+> research{query: "
+> <objective>
+> Research implementation details for Phase {N}: {phase_name}
+> Goal: {phase_objective from ROADMAP.md}
+> </objective>
+>
+> <output_file>./.gtd/<task_name>/{N}/RESEARCH.md</output_file>
+>
+> <context>
+> - Spec: ./.gtd/<task_name>/SPEC.md
+> - Roadmap: ./.gtd/<task_name>/ROADMAP.md
+> - Phase Dir: ./.gtd/<task_name>/{N}/
+> </context>
+>
+> <research_checklist>
+> 1. Identify existing components to modify
+> 2. Find similar patterns to reuse
+> 3. Check for constraints (types, schemas, config)
+> 4. Verify dependency versions/availability
+> </research_checklist>
+>
+> <output_format>
+> Research Notes covering:
+> - Technical Approach
+> - Key Files to Touch
+> - Pseudo-code/Snippets
+> - Potential Pitfalls
+> </output_format>
+> "}
+> ```
 
-**Trigger:** If need to trigger research.
-**Concurrency:** As many as needed.
-
-Fill prompt and spawn:
-
-```markdown
-<objective>
-Research implementation details for Phase {phase}: {phase_name}
-
-**Goal:** {phase_objective}
-</objective>
-
-<context>
-- Spec: ./.gtd/<task_name>/SPEC.md
-- Roadmap: ./.gtd/<task_name>/ROADMAP.md
-- Phase Dir: ./.gtd/<task_name>/{phase}/
-</context>
-
-<research_checklist>
-
-1. Identify existing components to modify
-2. Find similar patterns to reuse
-3. Check for specific constraints (types, schemas, config)
-4. Verify dependency versions/availability
-   </research_checklist>
-
-<output_format>
-Research Notes (RESEARCH.md) covering:
-
-- Technical Approach
-- Key Files to Touch
-- Pseudo-code/Snippets
-- Potential Pitfalls
-  </output_format>
-```
-
-```python
-Task(
-  prompt=filled_prompt,
-  subagent_type="researcher",
-  description="Researching phase implementation details"
-)
-```
-
-Write subagent output to `./.gtd/<task_name>/$PHASE/RESEARCH.md`.
+Research agent will write findings to `./.gtd/<task_name>/$PHASE/RESEARCH.md` directly. You will need to read that before go to the next step
 
 ---
 
@@ -304,10 +283,14 @@ is_tdd: { true/false }
 
 {What this phase delivers and why}
 
+## Verification Strategy
+
+{How will we verify this phase is done? E.g., "Automated tests", "Manual UI walkthrough", "Log inspection"}
+
 ## Context
 
 - ./.gtd/<task_name>/SPEC.md
-- ./.gtd/<task_name>/ROADMAP.md
+- ./.gtd/<task_name>ROADMAP.md
 - {relevant source files}
 
 ## Architecture Constraints
@@ -363,6 +346,37 @@ Check:
 
 **If issues found:** Fix before writing.
 
+---
+
+## 8. Review Plan (Conditional)
+
+**If ANY task has complexity = Medium or High:**
+
+> Use `review_plan` tool:
+>
+> ```
+> review_plan{query: "
+> <objective>
+> Review PLAN.md for Phase {N}: {phase_name}
+> Check for security, performance, and design risks before execution.
+> </objective>
+>
+> <plan_file>
+> ./.gtd/<task_name>/{N}/PLAN.md
+> </plan_file>
+>
+> <tasks_to_review>
+> {list only Medium/High complexity tasks with their descriptions}
+> </tasks_to_review>
+> "}
+> ```
+
+**If STATUS: BLOCK** → Revise plan before proceeding.
+**If STATUS: CAUTION** → Note risks in plan, proceed with awareness.
+**If STATUS: PROCEED** → Continue to offer next step.
+
+**If ALL tasks are Low complexity:** Skip review, proceed directly.
+
 </process>
 
 <offer_next>
@@ -395,3 +409,4 @@ Also available:
 <forced_stop>
 STOP. The workflow is complete. Do NOT automatically run the next command. Wait for the user.
 </forced_stop>
+"""

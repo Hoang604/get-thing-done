@@ -31,20 +31,18 @@ Create executable plans (PLAN.md files) for a roadmap phase.
 
 **Required files:**
 
-- `./.gtd/SPEC.md` — Must be FINALIZED
-- `./.gtd/ROADMAP.md` — Must have phases defined
+- `./.gtd/<task_name>/SPEC.md` — Must be FINALIZED
+- `./.gtd/<task_name>/ROADMAP.md` — Must have phases defined
 
 **Output:**
 
-- `./.gtd/{phase}/PLAN.md`
-- `./.gtd/{phase}/RESEARCH.md` (if research performed)
+- `./.gtd/<task_name>/{phase}/PLAN.md`
+- `./.gtd/<task_name>/{phase}/RESEARCH.md` (if research performed)
 
 **Skills used:**
 
 - `research` — During research phase
   </context>
-
-
 
 <standards_and_constraints>
 
@@ -142,7 +140,7 @@ Before planning, you must assess the **Risk Profile** of this phase. Do not rely
 **Bash:**
 
 ```bash
-if ! ls "./.gtd/ROADMAP.md" >/dev/null 2>&1; then
+if ! ls "./.gtd/<task_name>/ROADMAP.md" >/dev/null 2>&1; then
     echo "Error: ROADMAP.md must exist"
     exit 1
 fi
@@ -265,8 +263,8 @@ is_tdd: { true/false }
 
 ## Context
 
-- ./.gtd/SPEC.md
-- ./.gtd/ROADMAP.md
+- ./.gtd/<task_name>/SPEC.md
+- ./.gtd/<task_name>/ROADMAP.md
 - {relevant source files}
 
 ## Architecture Constraints
