@@ -34,14 +34,7 @@ Review a plan with the user and refine it based on feedback.
 - Updated `./.gtd/<task_name>/{phase}/PLAN.md` (if changes made)
   </context>
 
-<related>
 
-| Workflow   | Relationship           |
-| ---------- | ---------------------- |
-| `/plan`    | Creates the plan       |
-| `/execute` | Runs the approved plan |
-
-</related>
 
 <philosophy>
 

@@ -38,15 +38,7 @@ Create a clear, complete specification that answers: "What are we building and h
 - `research` — For understanding domain-specific code during context gathering
   </context>
 
-<related>
 
-| Workflow             | Relationship                    |
-| -------------------- | ------------------------------- |
-| `/product-overview`  | Creates PRODUCT.md (Functional) |
-| `/codebase-overview` | Creates CODEBASE.md (Technical) |
-| `/roadmap`           | Creates phases from SPEC.md     |
-
-</related>
 
 <philosophy>
 

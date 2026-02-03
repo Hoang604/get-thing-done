@@ -35,12 +35,7 @@ Create executable plan (FIX_PLAN.md) to fix the verified root cause.
 - `./.gtd/debug/current/FIX_PLAN.md`
   </context>
 
-<related>
-| Workflow     | Relationship                     |
-| ------------ | -------------------------------- |
-| `/d-verify`  | Provides root cause for planning |
-| `/d-execute` | Runs the plan                    |
-</related>
+
 
 <standards_and_constraints>
 

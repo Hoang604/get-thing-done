@@ -46,13 +46,7 @@ Create executable plans (PLAN.md files) for a roadmap phase.
 - `research` — During research phase
   </context>
 
-<related>
-| Workflow   | Relationship                  |
-| ---------- | ----------------------------- |
-| `/roadmap` | Creates phases this reads     |
-| `/discuss-plan` | Reviews plan before execution |
-| `/execute` | Runs the plan                 |
-</related>
+
 
 <standards_and_constraints>
 

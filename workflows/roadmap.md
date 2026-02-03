@@ -31,15 +31,7 @@ Create a roadmap that answers: "In what order do we build this?"
 - `./.gtd/<task_name>/ROADMAP.md`
   </context>
 
-<related>
 
-| Workflow          | Relationship                   |
-| ----------------- | ------------------------------ |
-| `/spec`           | Creates the SPEC.md this reads |
-| `/plan`           | Creates plans for each phase   |
-| `/update-roadmap` | Modifies phases                |
-
-</related>
 
 <philosophy>
 

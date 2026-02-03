@@ -35,14 +35,7 @@ Generate ranked hypotheses about the root cause of the bug.
 - `research` — During code tracing
   </context>
 
-<related>
 
-| Workflow     | Relationship                  |
-| ------------ | ----------------------------- |
-| `/d-symptom` | Provides symptom for analysis |
-| `/d-verify`  | Tests these hypotheses        |
-
-</related>
 
 <philosophy>
 

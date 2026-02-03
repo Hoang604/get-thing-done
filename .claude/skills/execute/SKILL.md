@@ -36,12 +36,7 @@ Execute all tasks in a plan and produce a summary of what was done.
 - Source code changes
   </context>
 
-<related>
-| Workflow   | Relationship                     |
-| ---------- | -------------------------------- |
-| `/plan`    | Creates the plan this executes   |
-| `/discuss` | Optional review before execution |
-</related>
+
 
 <standards_and_constraints>
 

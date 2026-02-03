@@ -40,16 +40,7 @@ Create a specification for a backlog item that answers: "How do we implement thi
 - `research` — For understanding implementation constraints
   </context>
 
-<related>
 
-| Workflow             | Relationship                      |
-| -------------------- | --------------------------------- |
-| `/bootstrap`         | Creates BACKLOG.md (Project Init) |
-| `/codebase-overview` | Creates CODEBASE.md (Technical)   |
-| `/roadmap`           | Creates phases from SPEC.md       |
-| `/archive`           | Updates BACKLOG.md on completion  |
-
-</related>
 
 <philosophy>
 

@@ -32,12 +32,7 @@ Execute all fix tasks and produce a summary of what was done.
 - Source code changes
   </context>
 
-<related>
-| Workflow      | Relationship                    |
-| ------------- | ------------------------------- |
-| `/d-plan-fix` | Creates the plan this executes  |
-| `/d-symptom`  | Provides symptom for validation |
-</related>
+
 
 <standards_and_constraints>
 

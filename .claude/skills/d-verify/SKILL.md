@@ -92,14 +92,7 @@ Verify Hypothesis: {hypothesis_description}
 - Evidence: {existing_evidence}
 </context>
 
-<related>
 
-| Workflow      | Relationship                    |
-| ------------- | ------------------------------- |
-| `/d-inspect`  | Provides hypotheses to test     |
-| `/d-plan-fix` | Creates fix plan for root cause |
-
-</related>
 
 <investigation_checklist>
 

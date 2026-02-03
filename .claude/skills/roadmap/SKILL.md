@@ -179,15 +179,7 @@ Coverage: 100% of spec criteria assigned
 
 </offer_next>
 
-<related>
 
-| Workflow          | Relationship                   |
-| ----------------- | ------------------------------ |
-| `/spec`           | Creates the SPEC.md this reads |
-| `/plan`           | Creates plans for each phase   |
-| `/update-roadmap` | Modifies phases                |
-
-</related>
 
 <forced_stop>
 STOP. The workflow is complete. Do NOT automatically run the next command. Wait for the user.
