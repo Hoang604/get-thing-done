@@ -21,11 +21,11 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 if [ "$GLOBAL_FLAG" = "--global" ]; then
-    # Global install: skills → global_skills, workflows → global_workflows
-    SKILLS_DIR="$TARGET_DIR/global_skills"
+    # Global install: skills → skills, workflows → global_workflows
+    SKILLS_DIR="$TARGET_DIR/skills"
     WORKFLOWS_DIR="$TARGET_DIR/global_workflows"
     # Use absolute path for SKILLS_ROOT
-    SKILLS_ROOT="$(cd "$TARGET_DIR" 2>/dev/null && pwd)/global_skills"
+    SKILLS_ROOT="$(cd "$TARGET_DIR" 2>/dev/null && pwd)/skills"
 else
     # Local install: skills → skills, workflows → workflows
     SKILLS_DIR="$TARGET_DIR/skills"
