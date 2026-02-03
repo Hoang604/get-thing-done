@@ -37,7 +37,61 @@ Create a specification for a backlog item that answers: "How do we implement thi
 
   </context>
 
+<tools>
 
+## ask_user
+
+Use the `ask_user` tool for structured user interaction:
+
+**For implementation choices:**
+```
+ask_user({
+  questions: [
+    {
+      header: "Implementation",
+      type: "choice",
+      question: "Which approach for this backlog item?",
+      options: [
+        { label: "Option A", description: "Description" },
+        { label: "Option B", description: "Description" }
+      ]
+    }
+  ]
+})
+```
+
+**For clarification:**
+```
+ask_user({
+  questions: [
+    {
+      header: "Clarification",
+      type: "text",
+      question: "Any specific constraints I should know?",
+      placeholder: "e.g., must use existing patterns..."
+    }
+  ]
+})
+```
+
+**For confirmation:**
+```
+ask_user({
+  questions: [
+    {
+      header: "Confirm",
+      type: "choice",
+      question: "Is this specification correct?",
+      options: [
+        { label: "Yes", description: "Proceed to write SPEC.md" },
+        { label: "Adjust", description: "Let me clarify..." }
+      ]
+    }
+  ]
+})
+```
+
+</tools>
 
 <philosophy>
 

@@ -35,7 +35,63 @@ Create a clear, complete specification that answers: "What are we building and h
 
 </context>
 
+<tools>
 
+## ask_user
+
+Use the `ask_user` tool for structured user interaction:
+
+**For choices:**
+```
+ask_user({
+  questions: [
+    {
+      header: "Approach",
+      type: "choice",
+      question: "Which implementation approach?",
+      options: [
+        { label: "Option A", description: "Description" },
+        { label: "Option B", description: "Description" }
+      ]
+    }
+  ]
+})
+```
+
+**For free-form input:**
+```
+ask_user({
+  questions: [
+    {
+      header: "Details",
+      type: "text",
+      question: "What specific behavior do you need?",
+      placeholder: "Describe the expected behavior..."
+    }
+  ]
+})
+```
+
+**For confirmation:**
+```
+ask_user({
+  questions: [
+    {
+      header: "Confirm",
+      type: "choice",
+      question: "Is this specification correct?",
+      options: [
+        { label: "Yes", description: "Proceed to write SPEC.md" },
+        { label: "No", description: "Let me clarify..." }
+      ]
+    }
+  ]
+})
+```
+
+Use this tool instead of plain text questions for better UX.
+
+</tools>
 
 <philosophy>
 
@@ -93,21 +149,45 @@ Check if `$ARGUMENTS` contains `--modify`:
 
 ## 3. Interview Phase (NEW mode)
 
-Ask questions to gather specification.
+Gather specification using `ask_user` tool.
 
 **Communication Standard:**
 
-- **Batch Questions:** Do not ping-pong. Ask 3-5 questions in a single turn if they are independent.
-- **Infer then Verify:** Instead of asking "What should I do?", propose "I plan to do X, is that correct?"
+- **Batch Questions:** Ask multiple questions in one `ask_user` call.
+- **Infer then Verify:** Propose solutions, use confirmation to verify.
 
-Before write SPEC.md, you must have context about:
+**Example interview:**
 
-1. **Goal:** "What user really want?"
-2. **Requirements:**
-   - **Must Have:** "What are the absolute essentials?"
-   - **Nice to Have:** "What would be great but isn't a dealbreaker?"
-3. **Scope:** "What is explicitly NOT part of this?" (Won't Have)
-4. **Constraints:** "Any technical or time constraints?"
+```
+ask_user({
+  questions: [
+    {
+      header: "Goal",
+      type: "text",
+      question: "What is the main goal of this feature?",
+      placeholder: "e.g., Allow users to export reports as PDF..."
+    },
+    {
+      header: "Must Have",
+      type: "text",
+      question: "What are the absolute essentials?",
+      placeholder: "List the core requirements..."
+    },
+    {
+      header: "Nice to Have",
+      type: "text",
+      question: "What would be great but isn't essential?",
+      placeholder: "Optional features..."
+    },
+    {
+      header: "Constraints",
+      type: "text",
+      question: "Any technical or time constraints?",
+      placeholder: "e.g., Must use existing auth, deadline is Friday..."
+    }
+  ]
+})
+```
 
 **Keep asking until you have clear answers for all.**
 
@@ -115,19 +195,40 @@ Before write SPEC.md, you must have context about:
 
 ## 3. Modify Flow (MODIFY mode)
 
-User will provide what they want to change. Continue asking clarifying questions to understand:
+User will provide what they want to change.
 
-1. **What specifically needs to change?**
-   - Which section? (Goal, Must Have, Nice to Have, Won't Have, Constraints)
-   - What's the new content?
+**Example clarification:**
 
-2. **Why the change?**
-   - Understanding context helps ensure the change is complete
-
-3. **Any ripple effects?**
-   - Does this change affect other parts of the spec?
-
-**Keep asking until you have clear understanding of all changes.**
+```
+ask_user({
+  questions: [
+    {
+      header: "Section",
+      type: "choice",
+      question: "Which section needs changes?",
+      options: [
+        { label: "Goal", description: "Change the main objective" },
+        { label: "Must Have", description: "Modify requirements" },
+        { label: "Nice to Have", description: "Adjust optional features" },
+        { label: "Won't Have", description: "Update exclusions" },
+        { label: "Constraints", description: "Change constraints" }
+      ]
+    },
+    {
+      header: "Changes",
+      type: "text",
+      question: "What specifically needs to change?",
+      placeholder: "Describe the modification..."
+    },
+    {
+      header: "Reason",
+      type: "text",
+      question: "Why this change?",
+      placeholder: "Context helps ensure completeness..."
+    }
+  ]
+})
+```
 
 ---
 

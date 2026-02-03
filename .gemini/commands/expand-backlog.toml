@@ -19,7 +19,7 @@ Expand one backlog item into multiple executable sub-items that s:spec can proce
 **Flow:** Read Item → Research → Interview → Propose → Confirm → Update BACKLOG.md
 </objective>
 
-## User Request
+## User Request Current high level backlog
 {{args}}
 
 <context>
@@ -35,6 +35,49 @@ Expand one backlog item into multiple executable sub-items that s:spec can proce
 
 - `./.gtd/BACKLOG.md` — Adds sub-items under the parent
   </context>
+
+<tools>
+
+## ask_user
+
+Use the `ask_user` tool for breakdown confirmation:
+
+**For breakdown preferences:**
+```
+ask_user({
+  questions: [
+    {
+      header: "Breakdown Size",
+      type: "choice",
+      question: "How granular should the sub-items be?",
+      options: [
+        { label: "Fine-grained", description: "Many small items (1-2 hours each)" },
+        { label: "Moderate", description: "Medium items (half-day each)" },
+        { label: "Coarse", description: "Fewer large items (1 day each)" }
+      ]
+    }
+  ]
+})
+```
+
+**For confirmation:**
+```
+ask_user({
+  questions: [
+    {
+      header: "Confirm Breakdown",
+      type: "choice",
+      question: "Is this breakdown correct?",
+      options: [
+        { label: "Yes", description: "Update BACKLOG.md" },
+        { label: "Adjust", description: "Let me refine..." }
+      ]
+    }
+  ]
+})
+```
+
+</tools>
 
 <philosophy>
 

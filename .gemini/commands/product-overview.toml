@@ -27,7 +27,7 @@ Create ./.gtd/PRODUCT.md that answers: "What does this system actually DO?"
 
 ## 1. Load Context
 
-**Codebase Overview (auto-injected):**
+**Codebase Overview:**
 @{./.gtd/CODEBASE.md}
 
 Use this to identify:

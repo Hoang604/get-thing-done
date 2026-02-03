@@ -27,7 +27,50 @@ Create a clear symptom description that answers: "What's wrong and how do we kno
 - `./.gtd/debug/current/SYMPTOM.md`
   </context>
 
+<tools>
 
+## ask_user
+
+Use the `ask_user` tool for bug clarification:
+
+**For symptom details:**
+```
+ask_user({
+  questions: [
+    {
+      header: "Expected Behavior",
+      type: "text",
+      question: "What should happen instead?",
+      placeholder: "Describe the expected behavior..."
+    },
+    {
+      header: "Reproduction Steps",
+      type: "text",
+      question: "How do I reproduce this?",
+      placeholder: "Step 1: ..., Step 2: ..."
+    }
+  ]
+})
+```
+
+**For confirmation:**
+```
+ask_user({
+  questions: [
+    {
+      header: "Confirm Symptom",
+      type: "choice",
+      question: "Is this symptom description accurate?",
+      options: [
+        { label: "Yes", description: "Proceed to document" },
+        { label: "No", description: "Let me clarify..." }
+      ]
+    }
+  ]
+})
+```
+
+</tools>
 
 <philosophy>
 

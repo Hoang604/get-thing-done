@@ -19,7 +19,7 @@ Execute all tasks in a plan and produce a summary of what was done.
 **Flow:** Load Plan → Execute Tasks (Apply Code Standards) → Verify → Summarize
 </objective>
 
-## User Request
+## User Request Current Phase
 {{args}}
 
 <context>
