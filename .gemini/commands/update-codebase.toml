@@ -1,5 +1,5 @@
-description="Update CODEBASE.md with working knowledge gained during task execution"
-prompt="""
+description = "Update CODEBASE.md with working knowledge gained during task execution"
+prompt = """
 
 <role>
 You are updating the codebase map with newly discovered knowledge.
@@ -19,6 +19,11 @@ Incrementally update `./.gtd/CODEBASE.md` with verified knowledge from current s
 **Flow:** Recall → Verify → Update
 </objective>
 
+<context>
+**Current Codebase Map:**
+@{./.gtd/CODEBASE.md}
+</context>
+
 <prohibitions>
 
 ## Same Rules as codebase-overview
@@ -35,27 +40,7 @@ This is an incremental update. You modify specific sections, not the whole docum
 
 <process>
 
-## 1. Load Current State
-
-Verify `./.gtd/CODEBASE.md` exists and read it:
-
-```bash
-ls ./.gtd/CODEBASE.md >/dev/null 2>&1 && echo "EXISTS" || echo "MISSING"
-```
-
-**If MISSING:** Stop. User should run `/codebase-overview` first.
-
-**If EXISTS:** Read the entire CODEBASE.md now. You need current state to:
-
-- Know what's already documented (avoid duplicates)
-- See existing Open Questions you might have resolved
-- Understand section structure for targeted updates
-
-Use `view_file/read_file` tool on `./.gtd/CODEBASE.md` to read the full contents.
-
----
-
-## 2. Identify What You Learned
+## 1. Identify What You Learned
 
 List the knowledge gained in this session. Examples:
 
@@ -72,7 +57,7 @@ LEARNED:
 
 ---
 
-## 3. Map to CODEBASE.md Sections
+## 2. Map to CODEBASE.md Sections
 
 | Knowledge Type             | Section to Update       |
 | -------------------------- | ----------------------- |
@@ -85,7 +70,7 @@ LEARNED:
 
 ---
 
-## 4. Make Targeted Updates
+## 3. Make Targeted Updates
 
 Goal: Make CODEBASE.md accurate and up-to-date.
 
