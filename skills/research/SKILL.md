@@ -1,6 +1,6 @@
 ---
 name: research
-description: Understand code before changing it. Apply when researching for /plan.
+description: Trace execution paths and document how code actually behaves. Use when you need to understand how features work, walk through code flows, explain component behavior, trace where data comes from, understand relationships between components, or audit for orphaned events and dead code.
 ---
 
 <principles>
