@@ -42,6 +42,11 @@ Verify that all requirements are implemented AND identify hidden problems (secur
 Read `./.gtd/<task_name>/SPEC.md`.
 If not found, error: "SPEC.md not found for task <task_name>".
 
+**Prepare Audit Directory:**
+```bash
+mkdir -p ./.gtd/<task_name>/audit
+```
+
 ---
 
 ## 2. Verify "Must Have" Requirements
@@ -111,6 +116,10 @@ Save this list as `$CHANGED_FILES` for the audit steps below.
 > Scan for security vulnerabilities in code related to task: <task_name>
 > </objective>
 >
+> <output_file>
+> ./.gtd/<task_name>/audit/SECURITY.md
+> </output_file>
+>
 > <files_to_scan>
 > {$CHANGED_FILES - list from git diff above}
 > </files_to_scan>
@@ -143,6 +152,10 @@ Save this list as `$CHANGED_FILES` for the audit steps below.
 > Scan for performance issues in code related to task: <task_name>
 > </objective>
 >
+> <output_file>
+> ./.gtd/<task_name>/audit/PERFORMANCE.md
+> </output_file>
+>
 > <files_to_scan>
 > {$CHANGED_FILES - list from git diff above}
 > </files_to_scan>
@@ -173,6 +186,10 @@ Save this list as `$CHANGED_FILES` for the audit steps below.
 > Scan for technical debt in code related to task: <task_name>
 > </objective>
 >
+> <output_file>
+> ./.gtd/<task_name>/audit/TECH_DEBT.md
+> </output_file>
+>
 > <files_to_scan>
 > {$CHANGED_FILES - list from git diff above}
 > </files_to_scan>
@@ -193,9 +210,9 @@ Save this list as `$CHANGED_FILES` for the audit steps below.
 
 ---
 
-## 7. TypeScript Quality Audit (Conditional)
+## 7. TypeScript Quality Audit
 
-**Only run if `$CHANGED_FILES` contains `.ts`, `.tsx`, `.js`, or `.jsx` files.**
+**Only and MUST run if `$CHANGED_FILES` contains `.ts`, `.tsx`, `.js`, or `.jsx` files.**
 
 Check for TS/JS files:
 
@@ -212,6 +229,10 @@ If matches exist, run audit:
 > <objective>
 > Review TypeScript code quality for task: <task_name>
 > </objective>
+>
+> <output_file>
+> ./.gtd/<task_name>/audit/TS_QUALITY.md
+> </output_file>
 >
 > <files_to_scan>
 > {TS/JS files from $CHANGED_FILES}
@@ -232,9 +253,9 @@ If matches exist, run audit:
 
 ---
 
-## 8. Rust Quality Audit (Conditional)
+## 8. Rust Quality Audit
 
-**Only run if `$CHANGED_FILES` contains `.rs` files.**
+**Only and MUST run if `$CHANGED_FILES` contains `.rs` files.**
 
 Check for Rust files:
 
@@ -251,6 +272,10 @@ If Rust files exist, run audit:
 > <objective>
 > Review Rust code quality for task: <task_name>
 > </objective>
+>
+> <output_file>
+> ./.gtd/<task_name>/audit/RUST_QUALITY.md
+> </output_file>
 >
 > <files_to_scan>
 > {Rust files from $CHANGED_FILES}
@@ -272,16 +297,28 @@ If Rust files exist, run audit:
 
 ---
 
-## 9. Consolidate Report
+## 9. Read Audit Findings
 
-Combine all findings into a single comprehensive report and **write to file:**
+Read the generated audit reports to gather evidence for the consolidated report:
 
 ```bash
-# Write report to task folder
-touch ./.gtd/<task_name>/VERIFICATION.md
+# Read all generated audit files
+cat ./.gtd/<task_name>/audit/*.md
 ```
 
-Write to `./.gtd/<task_name>/VERIFICATION.md`:
+---
+
+## 10. Consolidate Report
+
+Combine all findings into a single comprehensive report.
+
+**Action 1: Write to file**
+Write to `./.gtd/<task_name>/VERIFICATION.md` using `write_file` tool.
+
+**Action 2: Display to console**
+Output the FULL content of the report in your final response so the user can read it immediately.
+
+**Report Format:**
 
 ```markdown
 # Verification Report: <task_name>
@@ -340,12 +377,27 @@ Write to `./.gtd/<task_name>/VERIFICATION.md`:
 
 ---
 
+## 5. Audits Summary
+
+Detailed findings are saved in the `audit/` folder.
+
+| Audit | Status | Report |
+| :--- | :--- | :--- |
+| **Security** | {PASS/FAIL} | [Detailed Report](./audit/SECURITY.md) |
+| **Performance** | {PASS/FAIL} | [Detailed Report](./audit/PERFORMANCE.md) |
+| **Tech Debt** | {PASS/FAIL} | [Detailed Report](./audit/TECH_DEBT.md) |
+| **TS Quality** | {PASS/FAIL/SKIP} | [Detailed Report](./audit/TS_QUALITY.md) |
+| **Rust Quality** | {PASS/FAIL/SKIP} | [Detailed Report](./audit/RUST_QUALITY.md) |
+
+---
+
+
 ## Overall Recommendation
 
 {Proceed / Fix Critical Issues First / Major Refactoring Needed}
 ```
 
-## 10. Update Backlog
+## 11. Update Backlog
 
 If any issues (FAIL, Security, Performance, Tech Debt) were found, add them to `BACKLOG.md`.
 
@@ -354,9 +406,10 @@ If any issues (FAIL, Security, Performance, Tech Debt) were found, add them to `
 3. Add findings as new items:
 
 ```markdown
-- [ ] **debt/<task_name>/security** — {security issue description}
-- [ ] **debt/<task_name>/perf** — {performance issue description}
-- [ ] **debt/<task_name>/fix** — {failed requirement description}
+- [ ] **debt/<task_name>/security** — {security issue description} ([audit/SECURITY.md](./.gtd/<task_name>/audit/SECURITY.md))
+- [ ] **debt/<task_name>/perf** — {performance issue description} ([audit/PERFORMANCE.md](./.gtd/<task_name>/audit/PERFORMANCE.md))
+- [ ] **debt/<task_name>/tech-debt** — {tech debt description} ([audit/TECH_DEBT.md](./.gtd/<task_name>/audit/TECH_DEBT.md))
+- [ ] **debt/<task_name>/fix** — {failed requirement description} ([VERIFICATION.md](./.gtd/<task_name>/VERIFICATION.md))
 ```
 
 4. Write updated `BACKLOG.md`.
