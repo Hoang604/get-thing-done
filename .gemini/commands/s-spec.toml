@@ -19,6 +19,9 @@ Create a specification for a backlog item that answers: "How do we implement thi
 **Flow:** Read Backlog → Select Item → Research → Interview (HOW) → Mirror → Confirm → Write
 </objective>
 
+## User Request
+{{args}}
+
 <context>
 **Task naming:**
 - Task name comes directly from BACKLOG.md item name
@@ -65,6 +68,22 @@ Summarize the implementation plan, not the requirements (those come from Backlog
 </philosophy>
 
 <process>
+
+## Context
+
+### Backlog
+@{./.gtd/BACKLOG.md}
+
+### Codebase Overview
+@{./.gtd/CODEBASE.md}
+
+### Architecture
+@{./.gtd/ARCHITECTURE.md}
+
+### Stack Decisions
+@{./.gtd/STACK_DECISION.md}
+
+---
 
 ## 1. Backlog Selection Phase
 
@@ -174,7 +193,7 @@ Proceeding with this item. Let me research the implementation...
 
 **Based on the backlog item:**
 
-1. Load `./.gtd/CODEBASE.md` if exists (current state)
+1. Use research findings
 2. Identify relevant existing code
 3. Note dependencies and integration points
 4. Identify technical constraints

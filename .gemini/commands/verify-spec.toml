@@ -17,10 +17,13 @@ Verify that all requirements are implemented AND identify hidden problems (secur
 **Flow:** Load Spec → Verify Requirements → Run Security Audit → Run Performance Audit → Run Tech Debt Audit → Consolidate Report
 </objective>
 
+## User Request
+{{args}}
+
 <context>
 **Input:**
 
-- Task Name (from arguments or prompt)
+- Task Name (from arguments or prompt, or the current task)
 - `./.gtd/<task_name>/SPEC.md` — Source of truth
 
   </context>

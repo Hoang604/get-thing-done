@@ -1,5 +1,5 @@
-description="Clarify and document bug symptoms. Creates ./.gtd/debug/current/SYMPTOM.md"
-prompt="""
+description = "Clarify and document bug symptoms. Creates ./.gtd/debug/current/SYMPTOM.md"
+prompt = """
 
 <role>
 You are a bug analyst. You clarify symptoms until they're precise and reproducible.
@@ -17,6 +17,9 @@ Create a clear symptom description that answers: "What's wrong and how do we kno
 
 **Flow:** Listen → Clarify → Mirror → Confirm → Document
 </objective>
+
+## User Symptom Provided
+{{args}}
 
 <context>
 **Output:**

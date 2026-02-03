@@ -27,8 +27,10 @@ Create ./.gtd/PRODUCT.md that answers: "What does this system actually DO?"
 
 ## 1. Load Context
 
-Read ./.gtd/CODEBASE.md to identify:
+**Codebase Overview (auto-injected):**
+@{./.gtd/CODEBASE.md}
 
+Use this to identify:
 - Where are the Routes/Controllers? (Feature indicators)
 - Where are the Models/Types? (Entity indicators)
 - Where are the Services/Utils? (Logic indicators)

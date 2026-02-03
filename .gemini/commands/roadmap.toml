@@ -1,5 +1,5 @@
-description="Create sequential phases from spec. Creates ./.gtd/<task_name>/ROADMAP.md"
-prompt="""
+description = "Create sequential phases from spec. Creates ./.gtd/<task_name>/ROADMAP.md"
+prompt = """
 
 <role>
 You are a project sequencer. You break a specification into ordered, achievable phases.
@@ -17,6 +17,9 @@ Create a roadmap that answers: "In what order do we build this?"
 
 **Flow:** Read Spec → Group → Order → Write
 </objective>
+
+## User Request
+{{args}}
 
 <context>
 **Required files:**

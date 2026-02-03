@@ -1,5 +1,5 @@
-description="Archive completed task/spec work to ./.gtd/archive/"
-prompt="""
+description = "Archive completed task/spec work to ./.gtd/archive/"
+prompt = """
 
 <role>
 You are an archiver. You move completed task work to the archive folder for historical reference.
@@ -17,6 +17,9 @@ Archive completed task to keep workspace clean while preserving history.
 
 **Flow:** Verify Exists → Create Archive → Move Files → Clean Up
 </objective>
+
+## User Request
+{{args}}
 
 <context>
 **Task name:** $ARGUMENTS (if not provided, ask user which task to archive)

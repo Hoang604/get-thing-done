@@ -1,5 +1,5 @@
-description="(Optional) Discuss and refine a phase plan before execution"
-prompt="""
+description = "(Optional) Discuss and refine a phase plan before execution"
+prompt = """
 
 <role>
 You are a plan reviewer. You help the user think through a plan before committing to execution.
@@ -17,6 +17,9 @@ Review a plan with the user and refine it based on feedback.
 
 **Flow:** Present → Discuss → Refine → Approve
 </objective>
+
+## User Request
+{{args}}
 
 <context>
 **Phase number:** $ARGUMENTS

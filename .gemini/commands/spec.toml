@@ -20,6 +20,9 @@ Create a clear, complete specification that answers: "What are we building and h
 **Flow:** Context → Interview → Domain Research → Mirror → Confirm → Write
 </objective>
 
+## User Request
+{{args}}
+
 <context>
 **Task naming:**
 - Derive task name from what user wants to build
@@ -77,32 +80,14 @@ Check if `$ARGUMENTS` contains `--modify`:
 
 ---
 
-## 2. Context Gathering Phase (NEW mode)
+## 2. Understand the codebase
+**Project Context:**
 
-Before interviewing, gather system context:
+### Product Overview
+@{./.gtd/PRODUCT.md}
 
-**Check for Source of Truth files:**
-
-```bash
-ls ./.gtd/CODEBASE.md ./.gtd/PRODUCT.md 2>/dev/null
-```
-
-**If PRODUCT.md exists:**
-
-- Load and read `./.gtd/PRODUCT.md`.
-- Use this as the **Functional Source of Truth**.
-- Identify existing features/rules that might be affected by this task.
-
-**If CODEBASE.md exists:**
-
-- Load and read `./.gtd/CODEBASE.md`.
-- Use this as the **Technical Source of Truth**.
-- Reference existing modules/patterns when discussing implementation.
-
-**If neither exist:**
-
-- Inform user: "No system overview found. Consider running `/product-overview` and `/codebase-overview` first for better context."
-- Proceed with interview.
+### Codebase Overview
+@{./.gtd/CODEBASE.md}
 
 ---
 

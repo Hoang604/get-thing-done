@@ -18,6 +18,9 @@ Create executable plans (PLAN.md files) for a roadmap phase.
 **Default flow:** Research (if needed) → Plan → Verify → Write
 </objective>
 
+## User Request
+{{args}}
+
 <context>
 **Phase number:** $ARGUMENTS (optional — auto-detects next unplanned phase)
 

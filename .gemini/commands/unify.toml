@@ -1,13 +1,20 @@
-description="Merge a task spec into the global Product Specification."
-prompt="""
+description = "Merge a task spec into the global Product Specification."
+prompt = """
 
 <objective>
 Update ./.gtd/PRODUCT.md to reflect the changes delivered by ./.gtd/<task_name>/SPEC.md.
 </objective>
 
+## User Request
+{{args}}
+
 <process>
+
+**Current Product Spec:**
+@{./.gtd/PRODUCT.md}
+
 1. Load ./.gtd/<task_name>/SPEC.md (The Change).
-2. Load ./.gtd/PRODUCT.md (The Current State).
+2. Compare with PRODUCT.md above (The Current State).
 3. Identify:
    - New features added? -> Append to Feature Inventory.
    - Business rules modified? -> Update Domain Rules.

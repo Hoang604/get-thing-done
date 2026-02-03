@@ -1,5 +1,5 @@
-description="Break a high-level backlog item into executable sub-items"
-prompt="""
+description = "Break a high-level backlog item into executable sub-items"
+prompt = """
 
 <role>
 You are a work breakdown specialist. You take a high-level backlog item and break it into smaller, executable pieces.
@@ -18,6 +18,9 @@ Expand one backlog item into multiple executable sub-items that s:spec can proce
 
 **Flow:** Read Item → Research → Interview → Propose → Confirm → Update BACKLOG.md
 </objective>
+
+## User Request
+{{args}}
 
 <context>
 **Item name:** $ARGUMENTS (required)
@@ -68,6 +71,17 @@ Make decisions and propose. Only ask about genuinely unclear items.
 </constraints>
 
 <process>
+
+## Context
+
+### Backlog
+@{./.gtd/BACKLOG.md}
+
+### Architecture
+@{./.gtd/ARCHITECTURE.md}
+
+### Stack Decisions
+@{./.gtd/STACK_DECISION.md}
 
 ## 1. Validate Arguments
 
