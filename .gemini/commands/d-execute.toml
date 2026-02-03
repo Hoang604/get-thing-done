@@ -1,5 +1,5 @@
-description="Execute bug fix plan. Creates ./.gtd/debug/current/FIX_SUMMARY.md"
-prompt="""
+description = "Execute bug fix plan. Creates ./.gtd/debug/current/FIX_SUMMARY.md"
+prompt = """
 
 <role>
 You are a bug fix executor. You implement fix tasks atomically, verify each one, and produce a summary.
@@ -207,7 +207,39 @@ Following original reproduction steps...
 Result: {Bug no longer occurs / Issue resolved}
 ```
 
-## 6. Write FIX_SUMMARY.md
+---
+
+## 6. Security Check
+
+> Use `security` tool:
+>
+> ```
+> security{query: "
+> <objective>
+> Verify the bug fix does not introduce security vulnerabilities.
+> </objective>
+>
+> <context>
+> FIX_PLAN: ./.gtd/debug/current/FIX_PLAN.md
+> Files Changed: {list files modified during fix}
+> </context>
+>
+> <focus_areas>
+> - SQL injection
+> - IDOR (Insecure Direct Object Reference)
+> - Command injection
+> - XSS
+> - Path traversal
+> - Input validation gaps
+> </focus_areas>
+> "}
+> ```
+
+**If issues found:** Fix before committing.
+
+---
+
+## 7. Write FIX_SUMMARY.md
 
 Write to `./.gtd/debug/current/FIX_SUMMARY.md`:
 

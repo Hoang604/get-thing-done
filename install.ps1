@@ -17,8 +17,8 @@ if ([string]::IsNullOrEmpty($TargetDir)) {
 $ScriptDir = $PSScriptRoot
 
 if ($Global) {
-    # Global install: skills -> global_skills, workflows -> global_workflows
-    $SkillsDir = Join-Path $TargetDir "global_skills"
+    # Global install: skills -> skills, workflows -> global_workflows
+    $SkillsDir = Join-Path $TargetDir "skills"
     $WorkflowsDir = Join-Path $TargetDir "global_workflows"
     # Use absolute path for SKILLS_ROOT, convert to forward slashes for markdown compatibility
     $AbsTarget = (Resolve-Path $TargetDir -ErrorAction SilentlyContinue).Path
@@ -26,7 +26,7 @@ if ($Global) {
         # Path might not exist yet, assume it's absolute if global
         $AbsTarget = $TargetDir
     }
-    $SkillsRoot = Join-Path $AbsTarget "global_skills"
+    $SkillsRoot = Join-Path $AbsTarget "skills"
 } else {
     # Local install: skills -> skills, workflows -> workflows
     $SkillsDir = Join-Path $TargetDir "skills"

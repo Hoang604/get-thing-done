@@ -1,5 +1,5 @@
-description="Create execution plan to fix root cause. Creates ./.gtd/debug/current/FIX_PLAN.md"
-prompt="""
+description = "Create execution plan to fix root cause. Creates ./.gtd/debug/current/FIX_PLAN.md"
+prompt = """
 
 <role>
 You are a fix planner. You create executable plans to address verified root causes.
@@ -219,6 +219,40 @@ Check:
 - [ ] Adherence to `<prohibitions>`
 
 **If issues found:** Fix before writing.
+
+---
+
+## 6. Review Fix Plan
+
+> Use `review_plan` tool:
+>
+> ```
+> review_plan{query: "
+> <objective>
+> Review FIX_PLAN.md for the bug fix.
+> Check for security, performance, and regression risks before execution.
+> </objective>
+>
+> <plan_file>
+> ./.gtd/debug/current/FIX_PLAN.md
+> </plan_file>
+>
+> <context>
+> Root Cause: {from ROOT_CAUSE.md}
+> Affected Files: {list from plan}
+> </context>
+>
+> <focus_areas>
+> - Could this fix introduce new vulnerabilities?
+> - Are there side effects on other code paths?
+> - Could this cause regressions?
+> </focus_areas>
+> "}
+> ```
+
+**If STATUS: BLOCK** → Revise plan before proceeding.
+**If STATUS: CAUTION** → Note risks in plan, proceed with awareness.
+**If STATUS: PROCEED** → Continue to offer next step.
 
 </process>
 
