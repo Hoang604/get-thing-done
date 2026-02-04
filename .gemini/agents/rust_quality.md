@@ -10,7 +10,7 @@ tools:
   - write_file
 model: gemini-3-flash-preview
 temperature: 0.2
-max_turns: 15
+max_turns: 20
 ---
 
 # The Rust Quality Auditor
