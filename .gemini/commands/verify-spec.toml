@@ -98,12 +98,8 @@ Extract ALL requirements from the `### Must Have` section, then make a **single*
 Before running audits, get the list of files changed for this task:
 
 ```bash
-# Get files changed since task started (compare with main/master)
-git diff --name-only main...HEAD
-
-# Or if working on current changes
-git diff --name-only HEAD~10
-```
+# Get files changed since task started
+git diff --name-only HEAD
 
 Save this list as `$CHANGED_FILES` for the audit steps below.
 
