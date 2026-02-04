@@ -134,19 +134,26 @@ mkdir -p "./.gtd/<task_name>/$PHASE"
 
 ## 5. Handle Research
 
-**Check for existing research:**
+**5a. Identify Discovery Level:**
+Analyze the phase objective from ROADMAP.md and assign a Level (0-3) based on the `<discovery_levels>` rubric.
 
-```bash
-ls "./.gtd/<task_name>/$PHASE/RESEARCH.md" >/dev/null 2>&1
-```
+**5b. Execution Path:**
 
-**If exists AND `--research` NOT set:**
+- **IF LEVEL 0 (Skip):** Proceed to Step 6.
+- **IF LEVEL 1 (Quick):** 
+  - Investgate the code yourself to resolve specific technical unknowns.
+  - Display results to self-context. **Do NOT create RESEARCH.md.**
+  - Proceed to Step 6.
+- **IF LEVEL 2/3 (Standard/Deep) OR `--research` IS SET:**
 
-- Display: "Using existing research"
-- Skip to step 6
+  - **Check for existing research:**
+    ```bash
+    ls "./.gtd/<task_name>/$PHASE/RESEARCH.md" >/dev/null 2>&1
+    ```
+  - **If exists AND `--research` NOT set:** Display "Using existing research" and skip to Step 6.
 
-**If research needed:**
-Display:
+  - **If research needed:**
+    Display:
 
 ```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
