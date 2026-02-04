@@ -60,6 +60,9 @@ Extract ALL requirements from the `### Must Have` section, then make a **single*
 > <objective>
 > Verify implementation of ALL Must Have requirements for task: <task_name>
 > </objective>
+> <output_file>
+> ./.gtd/<task_name>/audit/COMPLETION.md
+> </output_file>
 >
 > <requirements>
 > {paste all must-have items here, numbered}

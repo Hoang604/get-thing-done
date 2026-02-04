@@ -350,7 +350,7 @@ Display:
 
 ## 9. Review Plan (Conditional)
 
-**If ANY task has complexity = Medium or High:**
+**If ANY task has complexity = Medium or High, you MUST:**
 
 > Use `review_plan` tool:
 >
