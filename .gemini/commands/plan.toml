@@ -257,9 +257,12 @@ Load SPEC.md, ROADMAP.md, and RESEARCH.md (if exists). Use research findings to 
 
 2. **Handle TDD:**
    - If the `--test` flag is active:
-     - **Task 1 MUST be:** "Create Failing Test".
-     - **Constraint:** The test must define the interfaces planned and assert the desired outcome. It must fail initially (Red state).
-     - **Done:** Test exists and fails with expected "logic missing" error.
+     - **Task 1 MUST include the injection slot:**
+       ```xml
+       <task id="1" type="auto" complexity="Low/Medium/High">
+         <!-- TDD_STRATEGY_SLOT -->
+       </task>
+       ```
 
 3. **Decompose deliverables** into remaining atomic tasks (total 2-3 max).
 
@@ -351,7 +354,45 @@ Check:
 
 ---
 
-## 8. Review Plan (Conditional)
+## 8. Enhance Plan (TDD)
+
+**If `--test` flag is active:**
+
+Display:
+
+```text
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ GTD ► DESIGNING TDD STRATEGY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+> Use `test_strategist` tool:
+>
+> ```
+> test_strategist{query: "
+> <objective>
+> Design a comprehensive TDD strategy for Phase {N}: {phase_name}.
+> Replace Task 1 in PLAN.md with rigorous specification-based tests.
+> </objective>
+>
+> <context>
+>   <plan_file>./.gtd/<task_name>/{N}/PLAN.md</plan_file>
+>   <spec_file>./.gtd/<task_name>/SPEC.md</spec_file>
+>   <roadmap_file>./.gtd/<task_name>/ROADMAP.md</roadmap_file>
+>   <research_file>./.gtd/<task_name>/{N}/RESEARCH.md</research_file>
+> </context>
+>
+> <focus>
+> 1. Verify SPEC.md requirements are covered.
+> 2. Ensure strict separation of Logic (Unit) vs I/O (Integration).
+> 3. Identify and attack the most fragile logic paths.
+> </focus>
+> "}
+> ```
+
+---
+
+## 9. Review Plan (Conditional)
 
 **If ANY task has complexity = Medium or High:**
 
