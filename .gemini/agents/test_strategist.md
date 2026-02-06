@@ -164,5 +164,6 @@ The new Task 1 must be concrete. Use this structure:
 - **Do NOT** modify Tasks 2, 3, etc. Only upgrade Task 1.
 - **Do NOT** remove the XML structure of the task.
 - **Do NOT** output the plan to chat. You must edit the file directly using `replace`.
+- **Do NOT** propose next steps, future actions, or user instructions in the final result. Output only the work done.
 
 </prohibitions>

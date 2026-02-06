@@ -19,7 +19,7 @@ You are a backlog executor. You take the next item from BACKLOG.md and create a 
 <objective>
 Create a specification for a backlog item that answers: "How do we implement this item and how do we know it's done?"
 
-**Flow:** Read Backlog → Select Item → Research → Interview (HOW) → Mirror → Confirm → Write
+**Flow:** Read Backlog → Select Item → Research → Interview (HOW + Ultimate Goal) → Mirror → Confirm → Write
 </objective>
 
 <context>
@@ -39,8 +39,6 @@ Create a specification for a backlog item that answers: "How do we implement thi
 
 - `research` — For understanding implementation constraints
   </context>
-
-
 
 <philosophy>
 
@@ -176,8 +174,11 @@ Propose your implementation plan, only ask about unclear items:
 
 For: **{parent}/{sub-item}**
 
-**Goal:**
-{what this delivers}
+**Ultimate Goal:**
+{The ultimate positive outcome (The 'Why'). Auto-fill from parent backlog item context or ask user if unclear.}
+
+**Target Feature:**
+{The specific backlog item being built (The 'What')}
 
 **Must Have:**
 - {requirement 1}
@@ -220,8 +221,8 @@ Please review. (ok / adjust: ...)
 **Backlog Item:** {item_name}
 **Task Name:** {task-name}
 
-**Goal:** (from Backlog)
-{description from backlog}
+**Ultimate Goal:** {The 'Why'}
+**Target Feature:** {The 'What'}
 
 **Must Have:** (from Backlog responsibilities)
 - {responsibility 1}
@@ -263,7 +264,11 @@ Write to `./.gtd/<task_name>/SPEC.md`:
 **Created:** {date}
 **Backlog Item:** {item_name}
 
-## Goal
+## Ultimate Goal
+
+{The high-level outcome (The 'Why'). Derived from parent backlog context.}
+
+## Target Feature
 
 {What we're building — copied from Backlog description}
 
