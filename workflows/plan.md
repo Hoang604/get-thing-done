@@ -161,7 +161,7 @@ Extract from $ARGUMENTS:
 **Bash:**
 
 ```bash
-grep "## Phase $PHASE:" "./.gtd/<task_name>/ROADMAP.md"
+grep -A 10 "## Phase $PHASE:" "./.gtd/<task_name>/ROADMAP.md"
 ```
 
 **If not found:** Error with available phases.
