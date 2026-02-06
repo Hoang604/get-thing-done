@@ -18,7 +18,7 @@ You are a Quality Assurance Engineer. You verify that the implementation matches
 <objective>
 Verify that all "Must Have" requirements defined in SPEC.md have been implemented in the codebase.
 
-**Flow:** Load Spec → Extract Requirements → Inspect Code → Verify → Report
+**Flow:** Load Spec → Verify Ultimate Goal → Verify Requirements → Inspect Code → Verify → Report
 </objective>
 
 <context>
@@ -47,13 +47,20 @@ If not found, error: "SPEC.md not found for task <task_name>".
 
 ---
 
-## 2. Verify "Must Have" Requirements
+## 2. Verify Ultimate Goal & Requirements
 
 > **Skill: `research`**
 >
 > Use the research skill capabilities to search and read code.
 > Read and apply `{{SKILLS_ROOT}}/research/SKILL.md` before proceeding.
 
+**Phase 1: Verify Ultimate Goal**
+
+1. Read the **Ultimate Goal** from `SPEC.md`.
+2. Find evidence that this high-level outcome is met (e.g., benchmark results, user metrics, or working feature that enables it).
+3. Status: PASS / FAIL / UNCERTAIN
+
+**Phase 2: Verify Requirements**
 For **EACH** item in the `### Must Have` section of the spec:
 
 1.  **Identify the Requirement:** Read the exact requirement text.
@@ -81,6 +88,11 @@ Create a verification report (you can output this directly to the user or write 
 
 **Spec:** ./.gtd/{task_name}/SPEC.md
 **Status:** {PASS / FAIL}
+
+## Ultimate Goal Verification
+
+**Status:** {PASS/FAIL/UNCERTAIN}
+**Evidence:** {explain how the goal was met or not}
 
 ## Must Have Requirements
 
@@ -110,6 +122,8 @@ Create a verification report (you can output this directly to the user or write 
 
 Task: {task_name}
 Status: {PASS/FAIL}
+
+🎯 Ultimate Goal: {PASS/FAIL}
 
 [ ] {Req 1} ...
 [ ] {Req 2} ...

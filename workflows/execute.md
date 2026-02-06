@@ -35,8 +35,6 @@ Execute all tasks in a plan and produce a summary of what was done.
 - Source code changes
   </context>
 
-
-
 <standards_and_constraints>
 
 <execution_philosophy>
@@ -207,8 +205,11 @@ After all tasks, check plan's success criteria:
  GTD ► VERIFYING PHASE {N}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [✓] {criterion 1}
-[✓] {criterion 2}
+...
+[✓] Must Have: {Requirement 1}
 ```
+
+**Action:** Update the `ROADMAP.md` file to mark requirements as `[x]`.
 
 **If any fail:** Attempt to fix or ask user.
 
@@ -264,6 +265,11 @@ Write to `./.gtd/<task_name>/$PHASE/SUMMARY.md`:
 - [x] {criterion 1}
 - [x] {criterion 2}
 
+## Spec Requirements Implemented
+
+- [x] Must Have: {Requirement 1}
+- [x] Nice To Have: {Requirement 2}
+
 ## Files Changed
 
 - `{file 1}` — {what changed}
@@ -280,13 +286,19 @@ feat(phase-{N}): {short description}
 
 ## 6. Update Roadmap Status
 
-Update `./.gtd/<task_name>/ROADMAP.md` phase status:
+Update `./.gtd/<task_name>/ROADMAP.md`:
 
-```markdown
-### Phase {N}: {Name}
+1. Mark phase status:
 
-**Status**: ✅ Complete
-```
+   ```markdown
+   ### Phase {N}: {Name}
+
+   **Status**: ✅ Complete
+   ```
+
+2. Mark completed requirements:
+   - Find the requirements listed in `Spec Requirements Implemented`
+   - Mark them as `[x]` in the `## Must-Haves` and `## Nice-To-Haves` sections of ROADMAP.md.
 
 </process>
 

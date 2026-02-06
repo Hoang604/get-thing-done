@@ -238,7 +238,11 @@ Load SPEC.md, ROADMAP.md, and RESEARCH.md (if exists). Use research findings to 
    - If a task is rated **High** complexity: Insert a `checkpoint:human-verify` task immediately after it.
    - The checkpoint action must read: "STOP. Review the implementation of {file} for {specific_risk}."
 
-5. Define done criteria for each.
+5. Select relevant requirements:
+   - Identify which Must Have / Nice To Have items from SPEC.md this phase addresses.
+   - List them explicitly.
+
+6. Define done criteria for each.
 
 ### 6c. Write PLAN.md
 
@@ -260,6 +264,13 @@ is_tdd: { true/false }
 ## Verification Strategy
 
 {How will we verify this phase is done? E.g., "Automated tests", "Manual UI walkthrough", "Log inspection"}
+
+## Spec Requirements
+
+<!-- List the specific requirements from SPEC.md that this phase addresses -->
+
+- [ ] Must Have: {Requirement 1}
+- [ ] Nice To Have: {Requirement 2}
 
 ## Context
 

@@ -31,8 +31,6 @@ Create a roadmap that answers: "In what order do we build this?"
 - `./.gtd/<task_name>/ROADMAP.md`
   </context>
 
-
-
 <philosophy>
 
 ## Phases Are Deliverables
@@ -69,7 +67,12 @@ fi
 
 ## 2. Extract Requirements
 
-Read `./.gtd/<task_name>/SPEC.md` and list all must have and nice to have.
+Read `./.gtd/<task_name>/SPEC.md` and extract:
+
+- Ultimate Goal (The "Why")
+- Target Feature (The "What")
+- Must Have requirements
+- Nice to Have requirements
 
 Create a mental checklist:
 
@@ -89,6 +92,11 @@ For each criterion, ask:
 - What does this enable?
 
 Group related criteria into phases.
+
+**Critical Check:** Does this grouping align with the **Ultimate Goal**?
+
+- If the goal is "Speed", does the first phase enable measuring speed?
+- If the goal is "User Conversion", does the first phase touch the user journey?
 
 ---
 
@@ -110,12 +118,13 @@ Write to `./.gtd/<task_name>/ROADMAP.md`:
 # Roadmap
 
 **Spec:** ./.gtd/<task_name>/SPEC.md
-**Goal:** {goal}
+**Ultimate Goal:** {ultimate_goal}
+**Target Feature:** {target_feature}
 **Created:** {date}
 
 ## Strategy
 
-{Explain the phased approach. E.g., "Back-end first to secure data model, then UI," or "Vertical slice first to prove viability."}
+{Explain the phased approach. Explicitly state how this strategy achieves the Ultimate Goal. E.g., "We build the core engine first to verify the speed improvement (Ultimate Goal) before building the UI."}
 
 ## Must-Haves
 

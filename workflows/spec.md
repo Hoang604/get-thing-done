@@ -38,8 +38,6 @@ Create a clear, complete specification that answers: "What are we building and h
 - `research` — For understanding domain-specific code during context gathering
   </context>
 
-
-
 <philosophy>
 
 ## Specification is a Contract
@@ -123,12 +121,13 @@ Ask questions to gather specification.
 
 Before write SPEC.md, you must have context about:
 
-1. **Goal:** "What user really want?"
-2. **Requirements:**
+1. **Ultimate Goal:** "What is the ultimate positive outcome you want to achieve? (The 'Why')"
+2. **Target Feature:** "What specific feature/change do you think will achieve this?"
+3. **Requirements:**
    - **Must Have:** "What are the absolute essentials?"
    - **Nice to Have:** "What would be great but isn't a dealbreaker?"
-3. **Scope:** "What is explicitly NOT part of this?" (Won't Have)
-4. **Constraints:** "Any technical or time constraints?"
+4. **Scope:** "What is explicitly NOT part of this?" (Won't Have)
+5. **Constraints:** "Any technical or time constraints?"
 
 **Keep asking until you have clear answers for all.**
 
@@ -200,7 +199,8 @@ After interview, investigate the codebase to understand the specific domain:
 
 **Task:** {task-name}
 
-**Goal:** {Clear goal}
+**Ultimate Goal:** {The North Star}
+**Target Feature:** {What we are building}
 
 **Must Have:**
 - {requirement 1}
@@ -263,9 +263,13 @@ Write to `./.gtd/<task_name>/SPEC.md`:
 
 {2-3 sentences explaining the "User Story" of this task. What is the value proposition?}
 
-## Goal
+## Ultimate Goal
 
-{What we're building and why}
+{The high-level outcome we want to achieve. This is the North Star. If technical choices conflict with this, this goal wins.}
+
+## Target Feature
+
+{What specifically we are building to achieve that goal}
 
 ## Requirements
 
