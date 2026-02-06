@@ -15,7 +15,7 @@ You are a Quality Assurance Lead. You coordinate verification of requirements an
 <objective>
 Verify that all requirements are implemented AND identify hidden problems (security, performance, tech debt).
 
-**Flow:** Load Spec → Verify Requirements → Run Security Audit → Run Performance Audit → Run Tech Debt Audit → Consolidate Report
+**Flow:** Load Spec → Verify Ultimate Goal → Verify Requirements → Run Security Audit → Run Performance Audit → Run Tech Debt Audit → Consolidate Report
 </objective>
 
 ## User Request
@@ -49,16 +49,17 @@ mkdir -p ./.gtd/<task_name>/audit
 
 ---
 
-## 2. Verify "Must Have" Requirements
+## 2. Verify Ultimate Goal & Requirements
 
-Extract ALL requirements from the `### Must Have` section, then make a **single** `research` call:
+Extract the **Ultimate Goal** and ALL requirements from the `### Must Have` section.
 
-> Use `research` tool once with all requirements:
->
-> ```
+> Use `research` tool once:
+
+```
 > research{query: "
 > <objective>
-> Verify implementation of ALL Must Have requirements for task: <task_name>
+> 1. Verify if the Ultimate Goal of the task '<task_name>' has been achieved.
+> 2. Verify implementation of ALL Must Have requirements.
 > </objective>
 > <output_file>
 > ./.gtd/<task_name>/audit/COMPLETION.md
@@ -76,14 +77,21 @@ Extract ALL requirements from the `### Must Have` section, then make a **single*
 > </context>
 >
 > <research_checklist>
-> For EACH requirement:
-> 1. Search for relevant files or symbols
-> 2. Read the code to verify implementation
-> 3. Determine status: PASS / FAIL / PARTIAL
+> 1. For Ultimate Goal: Find evidence that the high-level outcome is met (e.g., benchmark results, user metrics, or working feature that enables it).
+> 2. For EACH requirement:
+>    - Search for relevant files or symbols
+>    - Read the code to verify implementation
+>    - Determine status: PASS / FAIL / PARTIAL
 > </research_checklist>
 >
 > <output_format>
 > Verification Results:
+>
+> **Ultimate Goal Verification:**
+> Status: PASS/FAIL/UNCERTAIN
+> Evidence: {explain how the goal was met or not}
+>
+> **Requirements Verification:**
 > 1. {requirement 1}: PASS/FAIL/PARTIAL - {evidence: file:line} - {notes}
 > 2. {requirement 2}: PASS/FAIL/PARTIAL - {evidence: file:line} - {notes}
 > ...
@@ -327,9 +335,12 @@ Output the FULL content of the report in your final response so the user can rea
 
 ---
 
-## 1. Requirements Verification
+## 1. Goal & Requirements Verification
 
-**Status:** {PASS / FAIL}
+**Ultimate Goal:** {PASS / FAIL}
+> {Evidence that goal is met}
+
+**Requirements Status:** {PASS / FAIL}
 
 | Requirement | Status     | Evidence/Notes                                  |
 | :---------- | :--------- | :---------------------------------------------- |
@@ -425,6 +436,7 @@ If any issues (FAIL, Security, Performance, Tech Debt) were found, add them to `
 Task: <task_name>
 
 📋 Requirements: {X}/{Y} PASS
+🎯 Ultimate Goal: {PASS/FAIL}
 🔒 Security:     {X} issues
 ⚡ Performance:  {X} issues
 🔧 Tech Debt:    {X} issues

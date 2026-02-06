@@ -162,10 +162,16 @@ Gather specification using `ask_user` tool.
 ask_user({
   questions: [
     {
-      header: "Goal",
+      header: "Ultimate Goal",
       type: "text",
-      question: "What is the main goal of this feature?",
-      placeholder: "e.g., Allow users to export reports as PDF..."
+      question: "What is the ultimate positive outcome you want to achieve? (The 'Why')",
+      placeholder: "e.g. System runs 2x faster, User conversion increases..."
+    },
+    {
+      header: "Target Feature",
+      type: "text",
+      question: "What specific feature/change do you think will achieve this?",
+      placeholder: "e.g., Create worker threads, Add PDF export..."
     },
     {
       header: "Must Have",
@@ -207,7 +213,8 @@ ask_user({
       type: "choice",
       question: "Which section needs changes?",
       options: [
-        { label: "Goal", description: "Change the main objective" },
+        { label: "Ultimate Goal", description: "Change the high-level objective" },
+        { label: "Target Feature", description: "Change the specific solution" },
         { label: "Must Have", description: "Modify requirements" },
         { label: "Nice to Have", description: "Adjust optional features" },
         { label: "Won't Have", description: "Update exclusions" },
@@ -307,7 +314,8 @@ After interview, investigate the codebase to understand the specific domain:
 
 **Task:** {task-name}
 
-**Goal:** {Clear goal}
+**Ultimate Goal:** {The North Star}
+**Target Feature:** {What we are building}
 
 **Must Have:**
 - {requirement 1}
@@ -370,9 +378,13 @@ Write to `./.gtd/<task_name>/SPEC.md`:
 
 {2-3 sentences explaining the "User Story" of this task. What is the value proposition?}
 
-## Goal
+## Ultimate Goal
 
-{What we're building and why}
+{The high-level outcome we want to achieve. This is the North Star. If technical choices conflict with this, this goal wins.}
+
+## Target Feature
+
+{What specifically we are building to achieve that goal}
 
 ## Requirements
 
