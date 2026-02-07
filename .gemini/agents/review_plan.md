@@ -3,6 +3,8 @@ name: review_plan
 description: |
   Review execution plans for security, performance, and design risks BEFORE code is written. Analyzes task intent, not code.
 
+  The only parameter that this tool receive is query.
+
   **Query format (XML-structured):**
   ```
   <scope>Path to PLAN.md to review (REQUIRED)</scope>

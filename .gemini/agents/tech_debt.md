@@ -3,6 +3,8 @@ name: tech_debt
 description: |
   Scan code for technical debt: code duplication, dead code, missing abstractions, tight coupling, maintainability issues.
 
+  The only parameter that this tool receive is query.
+
   **Query format (XML-structured):**
   ```
   <scope>Files, directories, or module to scan (REQUIRED)</scope>

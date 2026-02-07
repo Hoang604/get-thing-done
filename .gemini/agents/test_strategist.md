@@ -3,6 +3,8 @@ name: test_strategist
 description: |
   Design TDD test suites based on architectural plans. Injects test strategy into PLAN.md by replacing TDD_STRATEGY_SLOT placeholder.
 
+  The only parameter that this tool receive is query.
+
   **Query format (XML-structured):**
   ```
   <scope>Path to PLAN.md containing TDD_STRATEGY_SLOT (REQUIRED)</scope>

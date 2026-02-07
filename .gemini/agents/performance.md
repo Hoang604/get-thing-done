@@ -3,6 +3,8 @@ name: performance
 description: |
   Scan code for performance issues (N+1 queries, missing indexes, unbounded loops, memory leaks, inefficient algorithms).
 
+  The only parameter that this tool receive is query.
+
   **Query format (XML-structured):**
   ```
   <scope>Files, directories, or feature to scan (REQUIRED)</scope>

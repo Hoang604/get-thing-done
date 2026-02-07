@@ -3,6 +3,8 @@ name: ts_quality
 description: |
   Review TypeScript/JavaScript code for type safety, React antipatterns, async issues, and modern JS practices.
 
+  The only parameter that this tool receive is query.
+
   **Query format (XML-structured):**
   ```
   <scope>TS/JS files or directories to review (REQUIRED)</scope>

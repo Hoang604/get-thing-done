@@ -3,6 +3,8 @@ name: rust_quality
 description: |
   Review Rust code for idiomatic patterns, safety issues, and best practices. Focuses on ownership, lifetimes, error handling, async, and Rust anti-patterns.
 
+  The only parameter that this tool receive is query.
+
   **Query format (XML-structured):**
   ```
   <scope>Rust files or directories to review (REQUIRED)</scope>

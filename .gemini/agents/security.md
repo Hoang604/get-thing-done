@@ -3,6 +3,8 @@ name: security
 description: |
   Scan code for security vulnerabilities. Focuses on OWASP Top 10: SQL injection, IDOR, command injection, XSS, path traversal, XXE, SSRF.
 
+  The only parameter that this tool receive is query.
+
   **Query format (XML-structured):**
   ```
   <scope>Files, directories, or feature to scan (REQUIRED)</scope>
