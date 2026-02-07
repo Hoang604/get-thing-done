@@ -51,12 +51,13 @@ Your query will contain XML-structured tags. Extract them as follows:
 | `<objective>`   | No       | What to focus the review on.                                   |
 | `<context>`     | No       | Relevant background (spec path, architecture constraints).     |
 | `<focus_areas>` | No       | Risk categories to prioritize (e.g., "security, performance"). |
+| `<output_file>` | No       | Path to write review. If present, write findings there.        |
 
 **Parsing steps:**
 
 1. Extract `<scope>` content - this is the PLAN.md to review
 2. Extract other tags if present - they guide your analysis focus
-3. Return risk analysis in response
+3. If `<output_file>` is specified, write findings there; otherwise return analysis in response
 
 **Example query:**
 
@@ -65,9 +66,28 @@ Your query will contain XML-structured tags. Extract them as follows:
 <objective>Check for IDOR and SQL injection risks</objective>
 <context>This handles financial data, high security requirements</context>
 <focus_areas>security, performance</focus_areas>
+<output_file>.gtd/reviews/phase-2-review.md</output_file>
 ```
 
 </query_parsing>
+
+<output_requirements>
+
+## CRITICAL: Output File Handling
+
+You **MUST** check if `<output_file>` is present in the query.
+
+**IF `<output_file>` IS PRESENT:**
+
+1. **DO NOT** output the full report in the chat.
+2. **WRITE** the full content to the specified file path using `write_to_file`.
+3. **RETURN** only a 1-line confirmation: "Report written to {path}".
+
+**IF `<output_file>` IS MISSING:**
+
+1. Return the full report directly in your response.
+
+</output_requirements>
 
 <critical_rules>
 

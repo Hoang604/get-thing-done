@@ -114,6 +114,24 @@ Your query will contain XML-structured tags. Extract them as follows:
 
 </query_parsing>
 
+<output_requirements>
+
+## CRITICAL: Output File Handling
+
+You **MUST** check if `<output_file>` is present in the query.
+
+**IF `<output_file>` IS PRESENT:**
+
+1. **DO NOT** output the full report in the chat.
+2. **WRITE** the full content to the specified file path using `write_to_file`.
+3. **RETURN** only a 1-line confirmation: "Report written to {path}".
+
+**IF `<output_file>` IS MISSING:**
+
+1. Return the full report directly in your response.
+
+</output_requirements>
+
 <principles>
 
 ## Zero Assumption

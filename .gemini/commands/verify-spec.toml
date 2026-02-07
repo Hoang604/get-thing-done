@@ -53,51 +53,54 @@ mkdir -p ./.gtd/<task_name>/audit
 
 Extract the **Ultimate Goal** and ALL requirements from the `### Must Have` section.
 
-> Use `research` tool once:
+> Use `research` tool once with **STRICT FIDELITY** to this template.
+> ⚠️ **CRITICAL: You MUST use the EXACT XML format below. Do NOT summarize or simplify.**
+> ⚠️ **Fail if you do not include ALL of these tags: `<objective>`, `<output_file>`, `<requirements>`, `<context>`, `<research_checklist>`, `<output_format>`.**
 
 ```
-> research{query: "
-> <objective>
-> 1. Verify if the Ultimate Goal of the task '<task_name>' has been achieved.
-> 2. Verify implementation of ALL Must Have requirements.
-> </objective>
-> <output_file>
-> ./.gtd/<task_name>/audit/COMPLETION.md
-> </output_file>
->
-> <requirements>
-> {paste all must-have items here, numbered}
-> 1. {requirement 1}
-> 2. {requirement 2}
-> ...
-> </requirements>
->
-> <context>
-> Spec: ./.gtd/<task_name>/SPEC.md
-> </context>
->
-> <research_checklist>
-> 1. For Ultimate Goal: Find evidence that the high-level outcome is met (e.g., benchmark results, user metrics, or working feature that enables it).
-> 2. For EACH requirement:
->    - Search for relevant files or symbols
->    - Read the code to verify implementation
->    - Determine status: PASS / FAIL / PARTIAL
-> </research_checklist>
->
-> <output_format>
-> Verification Results:
->
-> **Ultimate Goal Verification:**
-> Status: PASS/FAIL/UNCERTAIN
-> Evidence: {explain how the goal was met or not}
->
-> **Requirements Verification:**
-> 1. {requirement 1}: PASS/FAIL/PARTIAL - {evidence: file:line} - {notes}
-> 2. {requirement 2}: PASS/FAIL/PARTIAL - {evidence: file:line} - {notes}
-> ...
-> </output_format>
-> "}
-> ```
+research{query: "
+<objective>
+1. Verify if the Ultimate Goal of the task '<task_name>' has been achieved.
+2. Verify implementation of ALL Must Have requirements.
+</objective>
+
+<output_file>
+./.gtd/<task_name>/audit/COMPLETION.md
+</output_file>
+
+<requirements>
+{paste all must-have items here, numbered}
+1. {requirement 1}
+2. {requirement 2}
+...
+</requirements>
+
+<context>
+Spec: ./.gtd/<task_name>/SPEC.md
+</context>
+
+<research_checklist>
+1. For Ultimate Goal: Find evidence that the high-level outcome is met (e.g., benchmark results, user metrics, or working feature that enables it).
+2. For EACH requirement:
+   - Search for relevant files or symbols
+   - Read the code to verify implementation
+   - Determine status: PASS / FAIL / PARTIAL
+</research_checklist>
+
+<output_format>
+Verification Results:
+
+**Ultimate Goal Verification:**
+Status: PASS/FAIL/UNCERTAIN
+Evidence: {explain how the goal was met or not}
+
+**Requirements Verification:**
+1. {requirement 1}: PASS/FAIL/PARTIAL - {evidence: file:line} - {notes}
+2. {requirement 2}: PASS/FAIL/PARTIAL - {evidence: file:line} - {notes}
+...
+</output_format>
+"}
+```
 
 ---
 
@@ -115,105 +118,108 @@ Save this list as `$CHANGED_FILES` for the audit steps below.
 
 ## 4. Security Audit
 
-> Use `security` tool:
->
-> ```
-> security{query: "
-> <objective>
-> Scan for security vulnerabilities in code related to task: <task_name>
-> </objective>
->
-> <output_file>
-> ./.gtd/<task_name>/audit/SECURITY.md
-> </output_file>
->
-> <files_to_scan>
-> {$CHANGED_FILES - list from git diff above}
-> </files_to_scan>
->
-> <context>
-> Spec: ./.gtd/<task_name>/SPEC.md
-> </context>
->
-> <focus_areas>
-> - SQL injection
-> - IDOR (Insecure Direct Object Reference)
-> - Command injection
-> - XSS (Cross-Site Scripting)
-> - Path traversal
-> - XXE (XML External Entity)
-> - SSRF (Server-Side Request Forgery)
-> </focus_areas>
-> "}
-> ```
+> Use `security` tool with **STRICT FIDELITY** to this template.
+> ⚠️ **CRITICAL: Do NOT simplify. You MUST include ALL of these tags: `<objective>`, `<output_file>`, `<files_to_scan>`, `<context>`, `<focus_areas>`.**
+
+```
+security{query: "
+<objective>
+Scan for security vulnerabilities in code related to task: <task_name>
+</objective>
+
+<output_file>
+./.gtd/<task_name>/audit/SECURITY.md
+</output_file>
+
+<files_to_scan>
+{$CHANGED_FILES - list from git diff above}
+</files_to_scan>
+
+<context>
+Spec: ./.gtd/<task_name>/SPEC.md
+</context>
+
+<focus_areas>
+- SQL injection
+- IDOR (Insecure Direct Object Reference)
+- Command injection
+- XSS (Cross-Site Scripting)
+- Path traversal
+- XXE (XML External Entity)
+- SSRF (Server-Side Request Forgery)
+</focus_areas>
+"}
+```
 
 ---
 
 ## 5. Performance Audit
 
-> Use `performance` tool:
->
-> ```
-> performance{query: "
-> <objective>
-> Scan for performance issues in code related to task: <task_name>
-> </objective>
->
-> <output_file>
-> ./.gtd/<task_name>/audit/PERFORMANCE.md
-> </output_file>
->
-> <files_to_scan>
-> {$CHANGED_FILES - list from git diff above}
-> </files_to_scan>
->
-> <context>
-> Spec: ./.gtd/<task_name>/SPEC.md
-> </context>
->
-> <focus_areas>
-> - N+1 queries
-> - Missing indexes
-> - Unbounded loops
-> - Memory leaks
-> - Blocking operations
-> </focus_areas>
-> "}
-> ```
+> Use `performance` tool with **STRICT FIDELITY** to this template.
+> ⚠️ **CRITICAL: Do NOT simplify. You MUST include ALL of these tags: `<objective>`, `<output_file>`, `<files_to_scan>`, `<context>`, `<focus_areas>`.**
+
+```
+performance{query: "
+<objective>
+Scan for performance issues in code related to task: <task_name>
+</objective>
+
+<output_file>
+./.gtd/<task_name>/audit/PERFORMANCE.md
+</output_file>
+
+<files_to_scan>
+{$CHANGED_FILES - list from git diff above}
+</files_to_scan>
+
+<context>
+Spec: ./.gtd/<task_name>/SPEC.md
+</context>
+
+<focus_areas>
+- N+1 queries
+- Missing indexes
+- Unbounded loops
+- Memory leaks
+- Blocking operations
+</focus_areas>
+"}
+```
 
 ---
 
 ## 6. Technical Debt Audit
 
-> Use `tech_debt` tool:
->
-> ```
-> tech_debt{query: "
-> <objective>
-> Scan for technical debt in code related to task: <task_name>
-> </objective>
->
-> <output_file>
-> ./.gtd/<task_name>/audit/TECH_DEBT.md
-> </output_file>
->
-> <files_to_scan>
-> {$CHANGED_FILES - list from git diff above}
-> </files_to_scan>
->
-> <context>
-> Spec: ./.gtd/<task_name>/SPEC.md
-> </context>
->
-> <focus_areas>
-> - Code duplication
-> - Dead code
-> - Missing abstractions
-> - Tight coupling
-> - Poor error handling
-> </focus_areas>
-> "}
-> ```
+> Use `tech_debt` tool with **STRICT FIDELITY** to this template.
+> ⚠️ **CRITICAL: Do NOT simplify. You MUST include ALL of these tags: `<objective>`, `<output_file>`, `<files_to_scan>`, `<context>`, `<focus_areas>`.**
+
+```
+tech_debt{query: "
+<objective>
+Scan for technical debt in code related to task: <task_name>
+</objective>
+
+<output_file>
+./.gtd/<task_name>/audit/TECH_DEBT.md
+</output_file>
+
+<files_to_scan>
+{$CHANGED_FILES - list from git diff above}
+</files_to_scan>
+
+<context>
+Spec: ./.gtd/<task_name>/SPEC.md
+</context>
+
+<focus_areas>
+- Code duplication
+- Dead code
+- Missing abstractions
+- Tight coupling
+- Poor error handling
+</focus_areas>
+"}
+```
 
 ---
 
@@ -229,34 +235,35 @@ echo "$CHANGED_FILES" | grep -E '.(ts|tsx|js|jsx)$'
 
 If matches exist, run audit:
 
-> Use `ts_quality` tool:
->
-> ```
-> ts_quality{query: "
-> <objective>
-> Review TypeScript code quality for task: <task_name>
-> </objective>
->
-> <output_file>
-> ./.gtd/<task_name>/audit/TS_QUALITY.md
-> </output_file>
->
-> <files_to_scan>
-> {TS/JS files from $CHANGED_FILES}
-> </files_to_scan>
->
-> <context>
-> Spec: ./.gtd/<task_name>/SPEC.md
-> </context>
->
-> <focus_areas>
-> - Type safety (no any)
-> - React hooks rules
-> - Async patterns
-> - Error handling
-> </focus_areas>
-> "}
-> ```
+> Use `ts_quality` tool with **STRICT FIDELITY** to this template.
+> ⚠️ **CRITICAL: Do NOT simplify. You MUST include ALL of these tags: `<objective>`, `<output_file>`, `<files_to_scan>`, `<context>`, `<focus_areas>`.**
+
+```
+ts_quality{query: "
+<objective>
+Review TypeScript code quality for task: <task_name>
+</objective>
+
+<output_file>
+./.gtd/<task_name>/audit/TS_QUALITY.md
+</output_file>
+
+<files_to_scan>
+{TS/JS files from $CHANGED_FILES}
+</files_to_scan>
+
+<context>
+Spec: ./.gtd/<task_name>/SPEC.md
+</context>
+
+<focus_areas>
+- Type safety (no any)
+- React hooks rules
+- Async patterns
+- Error handling
+</focus_areas>
+"}
+```
 
 ---
 
@@ -272,35 +279,36 @@ echo "$CHANGED_FILES" | grep '.rs$'
 
 If Rust files exist, run audit:
 
-> Use `rust_quality` tool:
->
-> ```
-> rust_quality{query: "
-> <objective>
-> Review Rust code quality for task: <task_name>
-> </objective>
->
-> <output_file>
-> ./.gtd/<task_name>/audit/RUST_QUALITY.md
-> </output_file>
->
-> <files_to_scan>
-> {Rust files from $CHANGED_FILES}
-> </files_to_scan>
->
-> <context>
-> Spec: ./.gtd/<task_name>/SPEC.md
-> </context>
->
-> <focus_areas>
-> - Ownership and borrowing patterns
-> - Error handling (unwrap usage)
-> - Async patterns
-> - Idiomatic Rust
-> - Performance (unnecessary allocations)
-> </focus_areas>
-> "}
-> ```
+> Use `rust_quality` tool with **STRICT FIDELITY** to this template.
+> ⚠️ **CRITICAL: Do NOT simplify. You MUST include ALL of these tags: `<objective>`, `<output_file>`, `<files_to_scan>`, `<context>`, `<focus_areas>`.**
+
+```
+rust_quality{query: "
+<objective>
+Review Rust code quality for task: <task_name>
+</objective>
+
+<output_file>
+./.gtd/<task_name>/audit/RUST_QUALITY.md
+</output_file>
+
+<files_to_scan>
+{Rust files from $CHANGED_FILES}
+</files_to_scan>
+
+<context>
+Spec: ./.gtd/<task_name>/SPEC.md
+</context>
+
+<focus_areas>
+- Ownership and borrowing patterns
+- Error handling (unwrap usage)
+- Async patterns
+- Idiomatic Rust
+- Performance (unnecessary allocations)
+</focus_areas>
+"}
+```
 
 ---
 

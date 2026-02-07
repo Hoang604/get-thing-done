@@ -211,17 +211,23 @@ Result: {Bug no longer occurs / Issue resolved}
 
 ## 6. Security Check
 
-> Use `security` tool:
+> **Before calling security, extract:**
+> 1. List of files modified during the fix
+>
+> **Then call `security` tool:**
 >
 > ```
 > security{query: "
+> <scope>{files_modified_during_fix}</scope>
+>
 > <objective>
 > Verify the bug fix does not introduce security vulnerabilities.
 > </objective>
 >
 > <context>
+> ## Fix Context
 > FIX_PLAN: ./.gtd/debug/current/FIX_PLAN.md
-> Files Changed: {list files modified during fix}
+> Note: Focus on changes introduced by the fix.
 > </context>
 >
 > <focus_areas>
@@ -232,6 +238,10 @@ Result: {Bug no longer occurs / Issue resolved}
 > - Path traversal
 > - Input validation gaps
 > </focus_areas>
+>
+> <output_file>
+> ./.gtd/debug/current/SECURITY_CHECK.md
+> </output_file>
 > "}
 > ```
 

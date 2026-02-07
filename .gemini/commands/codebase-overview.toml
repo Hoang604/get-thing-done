@@ -151,21 +151,34 @@ For each major directory/module, classify:
 
 **If unclear:** Apply research tool to understand.
 
-> Use `research` tool with a structured query for each unclear module:
+> **Before calling research, extract:**
+> 1. Path of the unclear module
+> 2. Known properties (type, location)
+>
+> **Then call `research` tool:**
 >
 > ```
 > research{query: "
+> <scope>{module_path}</scope>
+>
 > <objective>
 > Investigate module at: {module_path}
 > Determine its purpose, key responsibilities, and integration points.
 > </objective>
 >
-> <research_checklist>
-> 1. Read key files in this module
-> 2. Identify public exports/interfaces
-> 3. Trace data flows in/out of this module
-> 4. Document dependencies on other modules
-> </research_checklist>
+> <context>
+> ## Module Context
+> Path: {module_path}
+> Type: {Domain/Infrastructure/API/Shared - if known}
+> Location: {module_path}
+> </context>
+>
+> <focus_areas>
+> - Read key files in this module
+> - Identify public exports/interfaces
+> - Trace data flows in/out of this module
+> - Document dependencies on other modules
+> </focus_areas>
 >
 > <output_format>
 > Module summary:

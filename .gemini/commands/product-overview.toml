@@ -58,24 +58,30 @@ List the Core Entities and their key relationships.
 
 ## 4. Extract Business Rules
 
-> Use `research` tool with a structured query:
+> **Before calling research, extract:**
+> 1. Relevant validation and service layer paths
+>
+> **Then call `research` tool:**
 >
 > ```
 > research{query: "
+> <scope>{validation_and_service_paths}</scope>
+>
 > <objective>
 > Extract business rules from validation and service layers.
 > </objective>
 >
 > <context>
-> - Validation files: {paths from CODEBASE.md}
-> - Service layers: {paths from CODEBASE.md}
+> ## Scan Context
+> Validation files: {paths from CODEBASE.md}
+> Service layers: {paths from CODEBASE.md}
 > </context>
 >
-> <research_checklist>
-> 1. Find `if` statements that throw errors or return 400s
-> 2. Identify constraints enforced on data (e.g., lengths, formats)
-> 3. Document state transitions and their guards
-> </research_checklist>
+> <focus_areas>
+> - Find `if` statements that throw errors or return 400s
+> - Identify constraints enforced on data (e.g., lengths, formats)
+> - Document state transitions and their guards
+> </focus_areas>
 >
 > <output_format>
 > List of Business Rules:

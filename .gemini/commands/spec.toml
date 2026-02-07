@@ -243,26 +243,34 @@ ask_user({
 
 After interview, investigate the codebase to understand the specific domain:
 
-> Use `research` tool with a structured query:
+> **Before calling research, extract:**
+> 1. User's specific goal (from interview)
+> 2. Must-Have requirements (from interview)
+> 3. Known constraints (from interview)
+>
+> **Then call `research` tool:**
 >
 > ```
 > research{query: "
+> <scope>{codebase paths relevant to this goal}</scope>
+>
 > <objective>
 > Research the codebase to validate requirements for: {user's goal from interview}
 > </objective>
 >
 > <context>
+> ## User Requirements
 > Must-Haves: {list must-haves from interview}
 > Nice-to-Haves: {list nice-to-haves from interview}
 > Constraints: {list constraints from interview}
 > </context>
 >
-> <research_checklist>
-> 1. Identify modules/files relevant to this goal
-> 2. Find existing patterns for similar features
-> 3. Detect hidden dependencies user may not know
-> 4. Flag potential conflicts with existing code
-> </research_checklist>
+> <focus_areas>
+> - Identify modules/files relevant to this goal
+> - Find existing patterns for similar features
+> - Detect hidden dependencies user may not know
+> - Flag potential conflicts with existing code
+> </focus_areas>
 >
 > <output_format>
 > Domain Research Notes covering:

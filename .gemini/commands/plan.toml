@@ -161,37 +161,43 @@ Analyze the phase objective from ROADMAP.md and assign a Level (0-3) based on th
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-> Use `research` tool with a structured query:
+> **Before calling research, YOU must extract and summarize:**
+> 1. From ROADMAP.md: Phase name, objective, dependencies on previous phases
+> 2. From SPEC.md: Relevant "Must Have" and "Nice To Have" requirements for this phase
+> 3. Scope boundaries: Which files/modules are in scope, which are out
+>
+> **Then call `research` tool with pre-digested context:**
 >
 > ```
 > research{query: "
+> <scope>{files and directories to investigate}</scope>
+>
 > <objective>
-> Research implementation details for Phase {N}: {phase_name}
-> Goal: {phase_objective from ROADMAP.md}
+> Research implementation for Phase {N}: {phase_name}
 > </objective>
 >
-> <output_file>./.gtd/<task_name>/{N}/RESEARCH.md</output_file>
->
 > <context>
-> - Spec: ./.gtd/<task_name>/SPEC.md
-> - Roadmap: ./.gtd/<task_name>/ROADMAP.md
-> - Phase Dir: ./.gtd/<task_name>/{N}/
+> ## Phase Context
+> Goal: {paste extracted phase objective from ROADMAP.md}
+> Depends on: {list completed phases this depends on, or 'None'}
+>
+> ## Relevant Requirements (from SPEC.md)
+> - {Must Have requirement 1 relevant to this phase}
+> - {Must Have requirement 2 relevant to this phase}
+> - {Nice To Have if applicable}
+>
+> ## Scope Boundaries
+> - Focus on: {directories/files to modify}
+> - Out of scope: {what NOT to touch}
 > </context>
 >
-> <research_checklist>
-> 1. Identify existing components to modify
-> 2. Find similar patterns to reuse
-> 3. Check for constraints (types, schemas, config)
-> 4. Verify dependency versions/availability
-> </research_checklist>
+> <focus_areas>
+> - Existing patterns to reuse
+> - Technical constraints/dependencies
+> - Potential pitfalls
+> </focus_areas>
 >
-> <output_format>
-> Research Notes covering:
-> - Technical Approach
-> - Key Files to Touch
-> - Pseudo-code/Snippets
-> - Potential Pitfalls
-> </output_format>
+> <output_file>./.gtd/<task_name>/{N}/RESEARCH.md</output_file>
 > "}
 > ```
 
@@ -367,22 +373,34 @@ Display:
 
 **If ANY task has complexity = Medium or High, you MUST:**
 
-> Use `review_plan` tool:
+> **Before calling review_plan, extract:**
+> 1. The Medium/High complexity tasks and their descriptions
+> 2. Key architecture constraints from SPEC.md
+>
+> **Then call `review_plan` tool:**
 >
 > ```
 > review_plan{query: "
+> <scope>./.gtd/<task_name>/{N}/PLAN.md</scope>
+>
 > <objective>
-> Review PLAN.md for Phase {N}: {phase_name}
-> Check for security, performance, and design risks before execution.
+> Review for security, performance, logic flaw and design risks before execution
 > </objective>
 >
-> <plan_file>
-> ./.gtd/<task_name>/{N}/PLAN.md
-> </plan_file>
+> <context>
+> ## Phase Context
+> Phase {N}: {phase_name}
+> Goal: {phase objective}
 >
-> <tasks_to_review>
-> {list only Medium/High complexity tasks with their descriptions}
-> </tasks_to_review>
+> ## Tasks to Review (Medium/High Complexity)
+> - Task {id}: {name} - Complexity: {level}
+>   Risk: {why this needs review}
+>
+> ## Architecture Constraints
+> - {key constraints from SPEC that apply}
+> </context>
+>
+> <focus_areas>security, performance, logic, design</focus_areas>
 > "}
 > ```
 

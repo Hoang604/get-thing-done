@@ -68,26 +68,32 @@ fi
 
 ## 2. Trace Code Paths
 
-> Use `research` tool with a structured query:
+> **Before calling research, extract:**
+> 1. Symptom description from SYMPTOM.md
+> 2. Triggering function/endpoint
+>
+> **Then call `research` tool:**
 >
 > ```
 > research{query: "
+> <scope>{entry_point_file_if_known}</scope>
+>
 > <objective>
 > Trace code paths related to bug symptom.
-> Symptom: {symptom summary from SYMPTOM.md}
 > </objective>
 >
 > <context>
-> - Symptom File: ./.gtd/debug/current/SYMPTOM.md
-> - Entry Point: {function/endpoint that triggers the symptom}
+> ## Symptom Context
+> Symptom: {symptom summary from SYMPTOM.md}
+> Entry Point: {function/endpoint that triggers the symptom}
 > </context>
 >
-> <research_checklist>
-> 1. Identify entry points that trigger the symptom
-> 2. Trace execution flow (branches, conditions, error handling)
-> 3. Examine suspect areas (complex logic, state management, external deps)
-> 4. Check related files (config, schema, dependencies)
-> </research_checklist>
+> <focus_areas>
+> - Identify entry points that trigger the symptom
+> - Trace execution flow (branches, conditions, error handling)
+> - Examine suspect areas (complex logic, state management, external deps)
+> - Check related files (config, schema, dependencies)
+> </focus_areas>
 >
 > <output_format>
 > Code Trace Findings:

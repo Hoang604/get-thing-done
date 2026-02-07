@@ -213,27 +213,36 @@ Proceeding with this item. Let me research the implementation...
 
 ## 3. Domain Research Phase
 
-> Use `research` tool with a structured query:
+> **Before calling research, extract:**
+> 1. Backlog item goal/description
+> 2. Tech stack and constraints from parent item
+>
+> **Then call `research` tool:**
 >
 > ```
 > research{query: "
+> <scope>{codebase paths relevant to this item}</scope>
+>
 > <objective>
 > Research implementation constraints for backlog item: {item_name}
-> Goal: {description from backlog}
 > </objective>
 >
 > <context>
+> ## Backlog Context
+> Item: {parent}/{sub-item}
+> Goal: {description from backlog}
+> Tech Stack: {from backlog}
+>
+> ## Relevant Docs
 > - CODEBASE.md: ./.gtd/CODEBASE.md
-> - Backlog Item: {parent}/{sub-item}
-> - Tech Stack: {from backlog}
 > </context>
 >
-> <research_checklist>
-> 1. Identify relevant existing code
-> 2. Note dependencies and integration points
-> 3. Identify technical constraints and risks
-> 4. Find patterns to reuse
-> </research_checklist>
+> <focus_areas>
+> - Identify relevant existing code
+> - Note dependencies and integration points
+> - Identify technical constraints and risks
+> - Find patterns to reuse
+> </focus_areas>
 >
 > <output_format>
 > Implementation Research:
