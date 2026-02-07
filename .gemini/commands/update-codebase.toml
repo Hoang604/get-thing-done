@@ -47,6 +47,7 @@ List the knowledge gained in this session. Examples:
 - "Discovered `OrderProcessor.handlePayment()` calls `PaymentGateway.charge()` → `LedgerService.record()` flow"
 - "Found that `utils/cache.ts` is actually a write-through cache to Redis, not in-memory"
 - "Identified pattern: all handlers use `withTransaction()` wrapper"
+- "See that there is no npm run check-type exist but must run npx tsc --noEmit"
 
 **Format your findings:**
 
