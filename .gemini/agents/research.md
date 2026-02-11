@@ -3,6 +3,8 @@ name: research
 description: |
   Trace execution paths and document how code actually behaves. Use for understanding features, walking code flows, tracing data origins, or finding orphaned events.
 
+  Only use for complex research problem.
+
   The only parameter that this tool receive is query.
 
   **Query format (XML-structured):**
