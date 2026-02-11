@@ -32,7 +32,7 @@ tools:
   - search_file_content
 model: gemini-3-flash-preview
 temperature: 0.2
-max_turns: 10
+max_turns: 20
 ---
 
 # The Plan Reviewer

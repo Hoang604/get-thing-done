@@ -50,16 +50,16 @@ Create executable plans (PLAN.md files) for a roadmap phase.
 | ------------ | --------------------------------------- | ---------------------------- |
 | 0 - Skip     | Pure internal work, no new dependencies | No research                  |
 | 1 - Quick    | Single known library, low risk, related to some files          | Quick search, no RESEARCH.md |
-| 2 - Standard | 2-3 options, new integration, related to multiple component            | Create RESEARCH.md using research tool|
+| 2 - Standard | 2-3 options, new integration, related to multiple component            | Deep research by your self, create RESEARCH.md inside ./.gtd/<task_name>/{phase}|
 | 3 - Deep     | Architectural decision, high risk       | Full research using research tool                |
 </discovery_levels>
 
 <complexity_rubric>
 | Level      | Guide                                                                                   | Action                             |
 | :--------- | :-------------------------------------------------------------------------------------- | :--------------------------------- |
-| **Low**    | "Boilerplate/CRUD. I have 100% certainty."                                              | Standard flow.                     |
-| **Medium** | "I know the pattern, but there are edge cases."                                         | Standard flow, but detailed tasks. |
-| **High**   | "Tricky. Critical state transitions, ambiguous requirements, or >10% chance of error."  | **MANDATORY CHECKPOINT.**          |
+| **Low**    | Pure transforms, CRUD, wiring, config. No shared state, no timing concerns.             | Standard flow.                     |
+| **Medium** | Touches multiple components, has edge cases, or modifies existing contracts.             | Standard flow, but detailed tasks. |
+| **High**   | Involves concurrency, state machines, event ordering, locks, data integrity, or dynamic env. | **MANDATORY CHECKPOINT.**          |
 
 **Rule for High Complexity:**
 1. Insert `checkpoint:human-verify` task immediately after.
@@ -144,7 +144,12 @@ Analyze the phase objective from ROADMAP.md and assign a Level (0-3) based on th
   - Investgate the code yourself to resolve specific technical unknowns.
   - Display results to self-context. **Do NOT create RESEARCH.md.**
   - Proceed to Step 6.
-- **IF LEVEL 2/3 (Standard/Deep) OR `--research` IS SET:**
+- **IF LEVEL 2 (Standard):** 
+  - Investgate the code yourself to resolve specific technical unknowns.
+  - Trace the information flow carefully, identify what can be reuse, what rule must be follow
+  - Create the RESEARCH.md
+  - Proceed to Step 6.
+- **IF LEVEL 3 (Deep) OR `--research` IS SET:**
 
   - **Check for existing research:**
     ```bash

@@ -64,6 +64,18 @@ if [ -d "$SOURCE_GEMINI/hooks" ]; then
     echo "  ✓ Hooks: $(ls -1 "$GEMINI_DIR/hooks/" 2>/dev/null | wc -l) files"
 fi
 
+# Copy GEMINI.md (thinking protocol)
+if [ -f "$SCRIPT_DIR/GEMINI.md" ]; then
+    if [ "$GLOBAL_FLAG" = "--global" ]; then
+        GEMINI_MD_TARGET="$HOME/.gemini/GEMINI.md"
+    else
+        GEMINI_MD_TARGET="./GEMINI.md"
+    fi
+    echo "Copying GEMINI.md..."
+    cp -f "$SCRIPT_DIR/GEMINI.md" "$GEMINI_MD_TARGET"
+    echo "  ✓ GEMINI.md → $GEMINI_MD_TARGET"
+fi
+
 # Update settings.json with hooks configuration (only for global install)
 if [ "$GLOBAL_FLAG" = "--global" ]; then
     SETTINGS_FILE="$GEMINI_DIR/settings.json"
