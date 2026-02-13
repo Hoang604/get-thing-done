@@ -56,10 +56,86 @@ if (Test-Path $SkillsSource) {
     Write-Host "  ✓ Skills: $skillCount directories"
 }
 
+# Copy hooks
+$HooksSource = Join-Path $SourceGemini "hooks"
+if (Test-Path $HooksSource) {
+    Write-Host "Copying hooks..."
+    New-Item -ItemType Directory -Force -Path (Join-Path $GeminiDir "hooks") | Out-Null
+    Copy-Item -Path (Join-Path $HooksSource "*") -Destination (Join-Path $GeminiDir "hooks") -Recurse -Force
+    $hookCount = (Get-ChildItem (Join-Path $GeminiDir "hooks\*.js")).Count
+    Write-Host "  ✓ Hooks: $hookCount files"
+}
+
+# Copy GEMINI.md (thinking protocol)
+$GeminiMdSource = Join-Path $ScriptDir "GEMINI.md"
+if (Test-Path $GeminiMdSource) {
+    if ($Global) {
+        $GeminiMdTarget = Join-Path $env:USERPROFILE ".gemini\GEMINI.md"
+    } else {
+        $GeminiMdTarget = Join-Path (Get-Location).Path "GEMINI.md"
+    }
+    Write-Host "Copying GEMINI.md..."
+    Copy-Item -Path $GeminiMdSource -Destination $GeminiMdTarget -Force
+    Write-Host "  ✓ GEMINI.md → $GeminiMdTarget"
+}
+
+# Update settings.json with hooks configuration (only for global install)
+if ($Global) {
+    $SettingsFile = Join-Path $GeminiDir "settings.json"
+    if (Test-Path $SettingsFile) {
+        Write-Host "Updating settings.json with hooks configuration..."
+        
+        # Use node to merge hooks config, preserving existing hooks
+        $NodeSettingsFile = $SettingsFile.Replace('\', '/')
+        
+        $nodeScript = @"
+const fs = require('fs');
+const settings = JSON.parse(fs.readFileSync('$NodeSettingsFile', 'utf8'));
+
+const newHook = {
+    type: 'command',
+    command: 'node ~/.gemini/hooks/before.js',
+    name: 'Rules',
+    description: 'Add rules to prevent gemini do stupid thing',
+    timeout: 5000
+};
+
+// Initialize hooks structure if not exists
+if (!settings.hooks) {
+    settings.hooks = {};
+}
+if (!settings.hooks.BeforeAgent) {
+    settings.hooks.BeforeAgent = [];
+}
+
+// Find or create the hooks array entry
+let hooksEntry = settings.hooks.BeforeAgent.find(e => e.hooks);
+if (!hooksEntry) {
+    hooksEntry = { hooks: [] };
+    settings.hooks.BeforeAgent.push(hooksEntry);
+}
+
+// Check if this hook already exists (by name)
+const existingIndex = hooksEntry.hooks.findIndex(h => h.name === newHook.name);
+if (existingIndex >= 0) {
+    hooksEntry.hooks[existingIndex] = newHook;
+} else {
+    hooksEntry.hooks.push(newHook);
+}
+
+fs.writeFileSync('$NodeSettingsFile', JSON.stringify(settings, null, 2) + '\n');
+"@
+        node -e $nodeScript
+        Write-Host "  ✓ Hooks configuration added to settings.json"
+    } else {
+        Write-Host "  ⚠ settings.json not found at $SettingsFile, skipping hooks configuration"
+    }
+}
+
 Write-Host ""
 Write-Host "✓ Installation complete!"
 Write-Host ""
 Write-Host "Installed to: $GeminiDir"
 Write-Host "  /commands - Workflow commands (*.toml)"
 Write-Host "  /agents   - Sub-agents (*.md)"
-Write-Host "  /skills   - Research skills"
+Write-Host "  /hooks    - BeforeAgent hook"
