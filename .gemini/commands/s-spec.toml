@@ -275,10 +275,14 @@ Propose your implementation plan, only ask about unclear items:
 
 ```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GTD ► PROPOSED SPECIFICATION
+ GTD ► CONFIRMING UNDERSTANDING
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-For: **{parent}/{sub-item}**
+**Backlog Item:** {item_name}
+**Task Name:** {task-name}
+
+**Synopsis:**
+{2-3 sentences explaining the "User Story" of this task. What is the value proposition?}
 
 **Ultimate Goal:**
 {The ultimate positive outcome (The 'Why'). Auto-fill from parent backlog item context or ask user if unclear.}
@@ -308,52 +312,31 @@ For: **{parent}/{sub-item}**
 - {unclear item, if any — or "None"}
 
 ─────────────────────────────────────────────────────
-Please review. (ok / adjust: ...)
 ```
 
-**Wait for confirmation before writing SPEC.md.**
+Then confirm using `ask_user`:
 
-## 4. Write SPEC.md
-
-**Task name comes from backlog item name.**
-
-**Summarize implementation plan:**
-
-```text
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GTD ► CONFIRMING SPECIFICATION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-**Backlog Item:** {item_name}
-**Task Name:** {task-name}
-
-**Ultimate Goal:** {The 'Why'}
-**Target Feature:** {The 'What'}
-
-**Must Have:** (from Backlog responsibilities)
-- {responsibility 1}
-- {responsibility 2}
-
-**Implementation Approach:**
-- {approach based on interview}
-
-**Tech Stack:** (from Backlog)
-- {tech from backlog}
-
-**Won't Have:** (this version)
-- {exclusions based on MVP discussion}
-
-**Constraints:**
-- {from research}
-
-─────────────────────────────────────────────────────
-
-Is this correct? (yes/no/clarify)
+```javascript
+ask_user({
+  questions: [
+    {
+      header: "Confirm Spec",
+      type: "choice",
+      question: "Is this specification correct?",
+      options: [
+        { label: "Yes, write it", description: "Proceed to write SPEC.md" },
+        { label: "No, let me clarify", description: "I need to correct something" }
+      ]
+    }
+  ]
+})
 ```
 
 **Wait for explicit confirmation.**
 
-## 5. Write SPEC.md
+## 4. Write SPEC.md
+
+Write to `./.gtd/<task_name>/SPEC.md`:
 
 **Bash:**
 
@@ -369,6 +352,10 @@ Write to `./.gtd/<task_name>/SPEC.md`:
 **Status:** FINALIZED
 **Created:** {date}
 **Backlog Item:** {item_name}
+
+## Synopsis
+
+{2-3 sentences explaining the "User Story" of this task. What is the value proposition?}
 
 ## Ultimate Goal
 
