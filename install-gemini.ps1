@@ -35,7 +35,7 @@ if (Test-Path $CommandsSource) {
     Write-Host "Copying commands..."
     Copy-Item -Path (Join-Path $CommandsSource "*") -Destination (Join-Path $GeminiDir "commands") -Recurse -Force
     $commandCount = (Get-ChildItem (Join-Path $GeminiDir "commands\*.toml")).Count
-    Write-Host "  ✓ Commands: $commandCount files"
+    Write-Host "  [OK] Commands: $commandCount files"
 }
 
 # Copy agents
@@ -44,7 +44,7 @@ if (Test-Path $AgentsSource) {
     Write-Host "Copying agents..."
     Copy-Item -Path (Join-Path $AgentsSource "*") -Destination (Join-Path $GeminiDir "agents") -Recurse -Force
     $agentCount = (Get-ChildItem (Join-Path $GeminiDir "agents\*.md")).Count
-    Write-Host "  ✓ Agents: $agentCount files"
+    Write-Host "  [OK] Agents: $agentCount files"
 }
 
 # Copy skills
@@ -53,7 +53,7 @@ if (Test-Path $SkillsSource) {
     Write-Host "Copying skills..."
     Copy-Item -Path (Join-Path $SkillsSource "*") -Destination (Join-Path $GeminiDir "skills") -Recurse -Force
     $skillCount = (Get-ChildItem (Join-Path $GeminiDir "skills") -Directory).Count
-    Write-Host "  ✓ Skills: $skillCount directories"
+    Write-Host "  [OK] Skills: $skillCount directories"
 }
 
 # Copy hooks
@@ -63,7 +63,7 @@ if (Test-Path $HooksSource) {
     New-Item -ItemType Directory -Force -Path (Join-Path $GeminiDir "hooks") | Out-Null
     Copy-Item -Path (Join-Path $HooksSource "*") -Destination (Join-Path $GeminiDir "hooks") -Recurse -Force
     $hookCount = (Get-ChildItem (Join-Path $GeminiDir "hooks\*.js")).Count
-    Write-Host "  ✓ Hooks: $hookCount files"
+    Write-Host "  [OK] Hooks: $hookCount files"
 }
 
 # Copy GEMINI.md (thinking protocol)
@@ -76,7 +76,7 @@ if (Test-Path $GeminiMdSource) {
     }
     Write-Host "Copying GEMINI.md..."
     Copy-Item -Path $GeminiMdSource -Destination $GeminiMdTarget -Force
-    Write-Host "  ✓ GEMINI.md → $GeminiMdTarget"
+    Write-Host "  [OK] GEMINI.md -> $GeminiMdTarget"
 }
 
 # Update settings.json with hooks configuration (only for global install)
@@ -85,55 +85,17 @@ if ($Global) {
     if (Test-Path $SettingsFile) {
         Write-Host "Updating settings.json with hooks configuration..."
         
-        # Use node to merge hooks config, preserving existing hooks
-        $NodeSettingsFile = $SettingsFile.Replace('\', '/')
-        
-        $nodeScript = @"
-const fs = require('fs');
-const settings = JSON.parse(fs.readFileSync('$NodeSettingsFile', 'utf8'));
-
-const newHook = {
-    type: 'command',
-    command: 'node ~/.gemini/hooks/before.js',
-    name: 'Rules',
-    description: 'Add rules to prevent gemini do stupid thing',
-    timeout: 5000
-};
-
-// Initialize hooks structure if not exists
-if (!settings.hooks) {
-    settings.hooks = {};
-}
-if (!settings.hooks.BeforeAgent) {
-    settings.hooks.BeforeAgent = [];
-}
-
-// Find or create the hooks array entry
-let hooksEntry = settings.hooks.BeforeAgent.find(e => e.hooks);
-if (!hooksEntry) {
-    hooksEntry = { hooks: [] };
-    settings.hooks.BeforeAgent.push(hooksEntry);
-}
-
-// Check if this hook already exists (by name)
-const existingIndex = hooksEntry.hooks.findIndex(h => h.name === newHook.name);
-if (existingIndex >= 0) {
-    hooksEntry.hooks[existingIndex] = newHook;
-} else {
-    hooksEntry.hooks.push(newHook);
-}
-
-fs.writeFileSync('$NodeSettingsFile', JSON.stringify(settings, null, 2) + '\n');
-"@
-        node -e $nodeScript
-        Write-Host "  ✓ Hooks configuration added to settings.json"
+        # Use external JS file to merge hooks config, avoiding PS parsing issues
+        $UpdateScript = Join-Path $ScriptDir "update-settings.js"
+        node $UpdateScript $SettingsFile
+        Write-Host "  [OK] Hooks configuration added to settings.json"
     } else {
-        Write-Host "  ⚠ settings.json not found at $SettingsFile, skipping hooks configuration"
+        Write-Host "  [!] settings.json not found at $SettingsFile, skipping hooks configuration"
     }
 }
 
 Write-Host ""
-Write-Host "✓ Installation complete!"
+Write-Host "[OK] Installation complete!"
 Write-Host ""
 Write-Host "Installed to: $GeminiDir"
 Write-Host "  /commands - Workflow commands (*.toml)"
