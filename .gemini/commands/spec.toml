@@ -243,10 +243,9 @@ ask_user({
 
 ---
 
-## 4. Domain Research Phase (NEW mode)
+## 4. Domain Research Phase (Optional, NEW mode)
 
-After interview, investigate the codebase to understand the specific domain:
-
+**Research only if needed:** If you already have enough context from the interview and your current knowledge of the codebase to build a complete spec, you MAY skip this. Otherwise, investigate the codebase to understand the specific domain:
 > **Before calling research, extract:**
 > 1. User's specific goal (from interview)
 > 2. Must-Have requirements (from interview)

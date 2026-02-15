@@ -33,7 +33,6 @@ fi
 # Create target directories
 mkdir -p "$GEMINI_DIR/commands"
 mkdir -p "$GEMINI_DIR/agents"
-mkdir -p "$GEMINI_DIR/skills"
 
 # Copy commands
 if [ -d "$SOURCE_GEMINI/commands" ]; then
@@ -47,13 +46,6 @@ if [ -d "$SOURCE_GEMINI/agents" ]; then
     echo "Copying agents..."
     cp -r "$SOURCE_GEMINI/agents/"* "$GEMINI_DIR/agents/"
     echo "  ✓ Agents: $(ls -1 "$GEMINI_DIR/agents/"*.md 2>/dev/null | wc -l) files"
-fi
-
-# Copy skills
-if [ -d "$SOURCE_GEMINI/skills" ]; then
-    echo "Copying skills..."
-    cp -r "$SOURCE_GEMINI/skills/"* "$GEMINI_DIR/skills/"
-    echo "  ✓ Skills: $(ls -1 "$GEMINI_DIR/skills/" 2>/dev/null | wc -l) directories"
 fi
 
 # Copy hooks

@@ -204,14 +204,16 @@ Parent: {parent-name}
 Tech: {tech stack from parent}
 
 ─────────────────────────────────────────────────────
-Proceeding with this item. Let me research the implementation...
+Proceeding with this item. Identifying implementation details...
 ```
 
 **Do NOT ask user to choose.** The backlog order is the authority.
 
 ---
 
-## 3. Domain Research Phase
+## 3. Domain Research Phase (Optional)
+
+**Research only if needed:** If the backlog item description and your current understanding of the codebase provide sufficient implementation context, you MAY skip this. Otherwise, investigate the codebase:
 
 > **Before calling research, extract:**
 > 1. Backlog item goal/description
