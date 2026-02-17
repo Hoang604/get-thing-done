@@ -15,7 +15,7 @@ const NO_FILE_WRITES_RULE = `**No file writes via run_shell_command tool**.`;
 const WORKFLOW_BOUNDARY_RULE = `<workflow_boundary>**Workflow Boundary**: When a workflow contains <forced_stop>, you MUST stop after complete that workflow. Never auto-chain workflow. Offering next steps ≠ executing them.</workflow_boundary>`;
 const WORKFLOW_PROCESS_RULE = `<workflow_process>**Workflow Process**: Workflows contain step-by-step instructions inside <process> tags. You MUST follow these steps strictly in order. Do not skip, reorder, or improvise.</workflow_process>`;
 const ONE_COMMAND_RULE = `<one_command>**One Command Per Turn**: Execute only the invoked workflow, step by step. Do not chain /plan → /execute in one turn.</one_command>`;
-const EXTERNAL_LIB_CLAIMS_RULE = `<external_lib_claims>**External Library Claims**: Claims about external lib API signatures, parameters, internal process, features or return types MUST be presented in response no matter how you confident about it, using a copy-paste ready verification block:
+const EXTERNAL_LIB_CLAIMS_RULE = `<external_lib_claims>**External Library Claims**: Claims about external lib (not internal code) API signatures, parameters, internal process, features or return types MUST be presented in response no matter how you confident about it, using a copy-paste ready verification block:
    "To make [feature] work, please verify my assumptions about \`[lib name with specific version]\`:
    - Assumption 1: [function A] takes [B] as parameter and does [C] so that we can use it to do [D] for [feature E]
    - Assumption 2: ..."</external_lib_claims>`;

@@ -6,7 +6,13 @@ if (!settingsPath) {
   process.exit(1);
 }
 
-const settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+let content = fs.readFileSync(settingsPath, "utf8");
+// Strip comments securely (preserving strings)
+content = content.replace(
+  /\\"|"(?:\\"|[^"])*"|(\/\/.*|\/\*[\s\S]*?\*\/)/g,
+  (m, g) => (g ? "" : m),
+);
+const settings = JSON.parse(content);
 
 const newHook = {
   type: "command",

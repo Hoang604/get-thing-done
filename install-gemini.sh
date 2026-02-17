@@ -76,7 +76,9 @@ if [ "$GLOBAL_FLAG" = "--global" ]; then
         # Use node to merge hooks config, preserving existing hooks
         node -e "
 const fs = require('fs');
-const settings = JSON.parse(fs.readFileSync('$SETTINGS_FILE', 'utf8'));
+const settingsContent = fs.readFileSync('$SETTINGS_FILE', 'utf8');
+const stripComments = (txt) => txt.replace(/\\\\\"|\"(?:\\\\\"|[^\"])*\"|(\/\/.*|\/\*[\s\\S]*?\*\/)/g, (m, g) => g ? \"\" : m);
+const settings = JSON.parse(stripComments(settingsContent));
 
 const newHook = {
     type: 'command',
