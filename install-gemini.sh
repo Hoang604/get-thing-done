@@ -119,6 +119,24 @@ fs.writeFileSync('$SETTINGS_FILE', JSON.stringify(settings, null, 2) + '\n');
     fi
 fi
 
+# Set environment variables to disable conflicting system prompt sections
+BASHRC="$HOME/.bashrc"
+ENV_VARS=(
+    "export GEMINI_PROMPT_COREMANDATES=0"
+    "export GEMINI_PROMPT_PRIMARYWORKFLOWS=0"
+    "export GEMINI_PROMPT_OPERATIONALGUIDELINES=0"
+)
+
+echo "Configuring environment variables in $BASHRC..."
+for var in "${ENV_VARS[@]}"; do
+    if ! grep -qF "$var" "$BASHRC" 2>/dev/null; then
+        echo "$var" >> "$BASHRC"
+        echo "  ✓ Added: $var"
+    else
+        echo "  ○ Already set: $var"
+    fi
+done
+
 echo ""
 echo "✓ Installation complete!"
 echo ""
@@ -126,3 +144,7 @@ echo "Installed to: $GEMINI_DIR"
 echo "  /commands - Workflow commands (*.toml)"
 echo "  /agents   - Sub-agents (*.md)"
 echo "  /hooks    - BeforeAgent hook"
+echo ""
+echo "⚠  IMPORTANT: To apply environment changes, run:"
+echo "     source ~/.bashrc"
+echo "   Then restart gemini-cli for changes to take effect."

@@ -17,9 +17,6 @@ description: |
   ```
 
   **Examples:**
-  Minimal: `<scope>src/services/auth.ts:login()</scope>`
-
-  Full:
   ```
   <scope>src/handlers/payment.ts</scope>
   <objective>How does refund flow work end-to-end?</objective>
