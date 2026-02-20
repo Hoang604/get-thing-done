@@ -11,7 +11,6 @@ const DECLARE_FOLLOW_UP_ACTIONS_RULE = `<declare_follow_up_actions>**Declare Fol
 const WORKFLOW_BOUNDARY_RULE = `<workflow_boundary>**Workflow Boundary**: When a workflow contains <forced_stop>, you MUST stop after complete that workflow. Never auto-chain workflow. Offering next steps ≠ executing them.</workflow_boundary>`;
 const WORKFLOW_PROCESS_RULE = `<workflow_process>**Workflow Process**: Workflows contain step-by-step instructions inside <process> tags. You MUST follow these steps strictly in order. Do not skip, reorder, or improvise.</workflow_process>`;
 const ONE_COMMAND_RULE = `<one_command>**One Command Per Turn**: Execute only the invoked workflow, step by step. Do not chain /plan → /execute in one turn.</one_command>`;
-const EDIT_RULE = `<edit_rule>**Edit rule**: When Write or Edit a file, you must provide the complete content, '// ...keep someFunction the same', or '... the rest ...' is banned forever.</edit_rule>`;
 const NO_ACTION_RULE = `<no_action>**No Action**: In this turn, you MUST NOT make any change to the codebase, just answer the question, or give your opinion, then stop. write_file and replace tool is banned in this turn.</no_action>`;
 
 let activeRules = [];
@@ -27,33 +26,38 @@ if (promptWithoutCodeSymbols.includes("?")) {
     "# MANDATORY RULES - APPLY NO MATTER WHAT YOU ARE DOING, NO MATTER WHAT PERSONA YOU ARE IN",
     NO_ACTION_RULE,
   ];
-} else {
-  if (prompt.includes("<process>")) {
-    activeRules = [
-      "# MANDATORY RULES - APPLY NO MATTER WHAT YOU ARE DOING, NO MATTER WHAT PERSONA YOU ARE IN",
-      WORKFLOW_BOUNDARY_RULE,
-      ONE_COMMAND_RULE,
-      WORKFLOW_PROCESS_RULE,
-      EDIT_RULE,
-    ];
-  } else {
-    activeRules = [
-      "# MANDATORY RULES - APPLY NO MATTER WHAT YOU ARE DOING, NO MATTER WHAT PERSONA YOU ARE IN",
-      EDIT_RULE,
-    ];
-  }
+  const rules = activeRules.join("\n\n");
+
+  let additionalContext = rules;
+
+  const output = {
+    decision: "allow",
+    hookSpecificOutput: {
+      hookEventName: "BeforeAgent",
+      additionalContext: additionalContext,
+    },
+  };
+
+  console.log(JSON.stringify(output));
+} else if (prompt.includes("<process>")) {
+  activeRules = [
+    "# MANDATORY RULES - APPLY NO MATTER WHAT YOU ARE DOING, NO MATTER WHAT PERSONA YOU ARE IN",
+    WORKFLOW_BOUNDARY_RULE,
+    ONE_COMMAND_RULE,
+    WORKFLOW_PROCESS_RULE,
+    EDIT_RULE,
+  ];
+  const rules = activeRules.join("\n\n");
+
+  let additionalContext = rules;
+
+  const output = {
+    decision: "allow",
+    hookSpecificOutput: {
+      hookEventName: "BeforeAgent",
+      additionalContext: additionalContext,
+    },
+  };
+
+  console.log(JSON.stringify(output));
 }
-
-const rules = activeRules.join("\n\n");
-
-let additionalContext = rules;
-
-const output = {
-  decision: "allow",
-  hookSpecificOutput: {
-    hookEventName: "BeforeAgent",
-    additionalContext: additionalContext,
-  },
-};
-
-console.log(JSON.stringify(output));

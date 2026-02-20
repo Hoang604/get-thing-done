@@ -179,6 +179,46 @@ After interview, investigate the codebase to understand the specific domain:
 
 ---
 
+## 4b. Challenge the Fit (NEW mode)
+
+**Before mirroring, evaluate whether the Target Feature actually achieves the Ultimate Goal.**
+
+The Target Feature may have been proposed by the user OR by you during the interview. Either way, you must evaluate the fit:
+
+1. Does the Target Feature directly lead to the Ultimate Goal?
+2. Could a simpler approach achieve the same goal?
+3. Did domain research reveal fundamental problems with this approach?
+
+**If the fit is strong → proceed to Mirror Phase.**
+
+**If the fit is weak or you see a better path:**
+
+Present your evaluation to the user with alternatives:
+
+```text
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ GTD ► EVALUATING APPROACH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Goal: {Ultimate Goal}
+Current Approach: {Target Feature}
+
+**Evaluation:**
+{why the fit is weak or a simpler path exists}
+
+**Alternatives:**
+1. Keep current approach — {brief justification}
+2. {simpler/better alternative} — {why it fits better}
+
+─────────────────────────────────────────────────────
+
+Which direction? (1/2/clarify)
+```
+
+**Wait for explicit confirmation before mirroring.**
+
+---
+
 ## 5. Mirror Phase
 
 **Determine task name automatically:**

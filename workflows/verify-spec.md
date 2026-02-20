@@ -34,52 +34,64 @@ Verify that all "Must Have" requirements defined in SPEC.md have been implemente
 
 <process>
 
-## 1. Load Specification
+## 1. Gather Context & Scope
 
 **Get Task Name:**
 
 - If provided in `$ARGUMENTS`, use it.
 - If not, check if `d-work` or similar has set a context, otherwise ask user: "Which task (spec) do you want to verify?"
 
-**Read Spec:**
-Read `./.gtd/<task_name>/SPEC.md`.
-If not found, error: "SPEC.md not found for task <task_name>".
+**Initialize Context:**
+
+1. Read `./.gtd/<task_name>/SPEC.md`. If not found, error: "SPEC.md not found".
+2. Run `git diff --name-only HEAD` and save the list of changed files.
+   - **CRITICAL:** You must ONLY audit these changed files. Do not scan the entire codebase.
 
 ---
 
-## 2. Verify Ultimate Goal & Requirements
+## 2. The Sequential Audit Loop
 
-> **Skill: `research`**
->
-> Use the research skill capabilities to search and read code.
-> Read and apply `{{SKILLS_ROOT}}/research/SKILL.md` before proceeding.
+You must perform the following 4 passes sequentially. Do not combine them mentally.
 
-**Phase 1: Verify Ultimate Goal**
+### Pass 1: Requirements Validation (The "What")
 
-1. Read the **Ultimate Goal** from `SPEC.md`.
-2. Find evidence that this high-level outcome is met (e.g., benchmark results, user metrics, or working feature that enables it).
-3. Status: PASS / FAIL / UNCERTAIN
+1. Read the **Ultimate Goal** and every `### Must Have` requirement from `SPEC.md`.
+2. Search the changed files for evidence of implementation.
+3. Status for each: PASS / FAIL / PARTIAL (with file:line evidence).
 
-**Phase 2: Verify Requirements**
-For **EACH** item in the `### Must Have` section of the spec:
+### Pass 2: Security & Defensibility (The "Armor")
 
-1.  **Identify the Requirement:** Read the exact requirement text.
-2.  **Search for Evidence:**
-    - Where should this be implemented? (Frontend types, Backend API, Database, Logic?)
-    - Use `grep_search` or `find_by_name` to locate relevant files or symbols.
-    - Read the code (`view_file/read_file`) to verify logic.
-3.  **Validate:**
-    - **Pass:** Code explicitly handles this requirement.
-    - **Fail:** Code missing or incomplete.
-    - **Partial:** Implemented but misses edge cases or details.
+Review the changed files specifically for these risks:
 
-**Note:** You must see the code. Do not assume.
+- **Injection:** Are SQL queries parameterized? Is `exec/spawn` sanitized?
+- **Auth/IDOR:** If fetching by ID, is ownership verified?
+- **XSS/SSRF:** Is user input escaped? Are outgoing URLs validated?
+  _Note findings (PASS / RISK)._
+
+### Pass 3: Performance & Scale (The "Engine")
+
+Review the changed files specifically for these risks:
+
+- **N+1 / Loops:** Are there database queries inside loops?
+- **Memory:** Are entire datasets loaded without pagination or limits?
+- **Blocking:** Are there synchronous I/O operations blocking the main thread?
+  _Note findings (PASS / RISK)._
+
+### Pass 4: Maintainability & Type Safety (The "Foundation")
+
+Review the changed files specifically for these risks:
+
+- **Tech Debt:** Hardcoded magic strings/numbers? Empty catch blocks? Overly long functions (>50 lines)?
+- **Type/Memory Safety:** Are there unsafe type casts, raw pointers, or "any/dynamic" types bypassing the compiler?
+- **Error Handling:** Are errors silently swallowed or panicked/crashed instead of properly propagated?
+- **Concurrency/State:** Are there floating unhandled promises/threads, or dangerous mutations of shared state?
+  _Note findings (PASS / RISK)._
 
 ---
 
-## 3. Report Findings
+## 3. Consolidate & Report
 
-Create a verification report (you can output this directly to the user or write to a file if lists are long).
+Create a comprehensive verification report. Output this directly to the user.
 
 **Format:**
 
@@ -87,28 +99,54 @@ Create a verification report (you can output this directly to the user or write 
 # Verification Report: {task_name}
 
 **Spec:** ./.gtd/{task_name}/SPEC.md
-**Status:** {PASS / FAIL}
+**Status:** {PASS / FAIL - based on requirements}
 
-## Ultimate Goal Verification
+## 1. Goal & Requirements Verification
 
-**Status:** {PASS/FAIL/UNCERTAIN}
-**Evidence:** {explain how the goal was met or not}
+**Ultimate Goal:** {PASS / FAIL}
 
-## Must Have Requirements
+> {Evidence that goal is met}
 
-| Requirement | Status     | Evidence/Notes                                  |
-| :---------- | :--------- | :---------------------------------------------- |
-| {Req 1}     | ✅ PASS    | Found in `file.ts:Method`. Handles X correctly. |
-| {Req 2}     | ❌ FAIL    | No code found for feature Y.                    |
-| {Req 3}     | ⚠️ PARTIAL | logic exists in `Z.ts` but missing validation.  |
+| Requirement | Status  | Evidence/Notes                                  |
+| :---------- | :------ | :---------------------------------------------- |
+| {Req 1}     | ✅ PASS | Found in `file.ts:Method`. Handles X correctly. |
+| {Req 2}     | ❌ FAIL | No code found for feature Y.                    |
+
+## 2. Security Audit
+
+- {List specific file:line findings or "✅ PASS: No vulnerabilities detected in changed files"}
+
+## 3. Performance Audit
+
+- {List specific file:line findings or "✅ PASS: No bottlenecks detected in changed files"}
+
+## 4. Tech Debt & Code Quality
+
+- {List specific file:line findings (including TS/Rust specific issues) or "✅ PASS: No major debt detected"}
 
 ## Summary
 
-- **Implemented:** X/Y
-- **Missing:** Z/Y
+- **Implemented:** X/Y Requirements
+- **Overall Recommendation:** {Proceed / Fix Critical Issues First}
+```
 
-**Recommendation:**
-{Proceed to Verification/Fix Missing Items}
+---
+
+## 4. Update Backlog
+
+If ANY requirement failed, or ANY audit (Security, Performance, Tech Debt) flagged an issue:
+
+1. Read `./.gtd/BACKLOG.md`.
+2. Append a new section `### Verification Findings: <task_name>` to the bottom.
+3. Add the findings as new checkbox items:
+
+```markdown
+### Verification Findings: {task_name}
+
+- [ ] **debt/{task_name}/security** — {security issue description}
+- [ ] **debt/{task_name}/perf** — {performance issue description}
+- [ ] **debt/{task_name}/tech-debt** — {tech debt description}
+- [ ] **debt/{task_name}/fix** — {failed requirement description}
 ```
 
 </process>

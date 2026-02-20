@@ -150,7 +150,10 @@ Proceeding with this item. Let me research the implementation...
 
 **Based on the backlog item:**
 
-1. Load `./.gtd/CODEBASE.md` if exists (current state)
+1. Load relevant context files if they exist:
+   - `./.gtd/CODEBASE.md` (current state)
+   - `./.gtd/ARCHITECTURE.md` (architectural decisions)
+   - `./.gtd/STACK_DECISION.md` (tech stack constraints)
 2. Identify relevant existing code
 3. Note dependencies and integration points
 4. Identify technical constraints

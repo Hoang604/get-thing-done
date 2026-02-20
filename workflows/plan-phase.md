@@ -221,16 +221,18 @@ Load SPEC.md, ROADMAP.md, and RESEARCH.md (if exists). Use research findings to 
 
 ### 6b. Decompose into Tasks
 
+**0. Evaluate Safety Brake:**
+
+- Before decomposing, explicitly ask: Does this phase attempt to build too much at once? Does it duplicate state? Does it violate the Single Source of Truth or lack centralized error handling?
+- If YES: **STOP.** Do not output a plan. Prompt the user to reconsider the architectural design in the roadmap.
+
 1. **Perform Task-Level Self-Calibration:**
    - For EACH task you define, simulate the implementation in your head.
    - Assign a Complexity Level (Low/Medium/High) based on the `<complexity_rubric>`.
-   - _Crucial:_ If you feel ANY hesitation about the "correct" way to implement a specific task, label that task as **High**.
+   - **Crucial Constraint:** For any `Medium` or `High` complexity task, you MUST perform a Mandatory Self-Audit (Security, Performance, Design) BEFORE writing the implementation action.
 
-2. **Handle TDD:**
-   - If the `--test` flag is active:
-     - **Task 1 MUST be:** "Create Failing Test".
-     - **Constraint:** The test must define the interfaces planned and assert the desired outcome. It must fail initially (Red state).
-     - **Done:** Test exists and fails with expected "logic missing" error.
+2. **Handle TDD (Adversarial Blueprint):**
+   - If the `--test` flag is active, Task 1 MUST NOT be a generic write-tests task. It must follow a strict adversarial blueprint evaluating the Logic Firewall (invariants/mocked I/O), Boundary Guard (real I/O), and Failure Recovery.
 
 3. **Decompose deliverables** into remaining atomic tasks (total 2-3 max).
 
@@ -240,9 +242,7 @@ Load SPEC.md, ROADMAP.md, and RESEARCH.md (if exists). Use research findings to 
 
 5. Select relevant requirements:
    - Identify which Must Have / Nice To Have items from SPEC.md this phase addresses.
-   - List them explicitly.
-
-6. Define done criteria for each.
+   - Define exact, measurable done criteria for each.
 
 ### 6c. Write PLAN.md
 
@@ -287,30 +287,60 @@ is_tdd: { true/false }
 
 ## Tasks
 
-<task id="1" type="auto" complexity="Low/Medium/High">
+<!-- If --test flag IS SET, replace Task 1 with this adversarial strategy: -->
+<task id="1" type="auto" complexity="High">
+  <name>TDD Strategy Formulation: {Phase Name}</name>
+  <risk>Prevents architectural drift and regression through invariant protection.</risk>
+  <files>{Specific test files to be created}</files>
+  <action>
+    Implement the following test suites. Ensure tests FAIL (Red) before implementation begins.
+
+    ### 1. Unit: The Logic Firewall ({Component Name})
+    *Focus: Pure Logic, Invariants & State Transitions. Mock all I/O.*
+    - [ ] Test: {Feature} - Happy Path -> Returns {Result}
+    - [ ] Test: {Feature} - Boundary Attack (Null/Empty/Max) -> Handles gracefully
+    - [ ] Test: Invariant Protection (Invalid state sequence) -> Rejects transition
+
+    ### 2. Integration: The Boundary Guard ({Boundary Name})
+    *Focus: I/O Wiring & Component Contracts.*
+    - [ ] Test: {Scenario} - Flow maintains DB integrity.
+
+    ### 3. Resilience & Errors
+    - [ ] Test: Failure Recovery - Dependency throws Error/Timeout -> Degrades gracefully.
+
+  </action>
+  <done>- Test files created and `npm test` reports specific missing logic failures.</done>
+</task>
+
+<!-- For standard implementation tasks: -->
+<task id="2" type="auto" complexity="Medium">
   <name>{Task name}</name>
-  <risk>{One sentence rationale if complexity > Low}</risk>
+  <risk>{Rationale if complexity > Low}</risk>
+  <self_audit>
+    <!-- MANDATORY FOR MEDIUM/HIGH COMPLEXITY: Evaluate risks BEFORE writing the action -->
+    - Security (IDOR/Injection/XSS/SSRF): {Pass / Risk: ...}
+    - Performance (N+1/Memory/Blocking): {Pass / Risk: ...}
+    - Architecture (Duplication/Single Source): {Pass / Risk: ...}
+  </self_audit>
   <files>{exact file paths}</files>
   <action>
     {Specific implementation instructions}
     - What to do
+    - How it mitigates the risks identified in the self_audit
     - What to avoid and WHY
   </action>
   <done>{How we know this task is complete}</done>
 </task>
 
-<task id="2" type="checkpoint:human-verify">
+<!-- If a task was High complexity, ensure a human-verify checkpoint follows it: -->
+<task id="3" type="checkpoint:human-verify">
   <name>STOP. Review the implementation of {file} for {specific_risk}</name>
-  <risk>{One sentence rationale if complexity > Low}</risk>
+  <risk>{One sentence rationale}</risk>
   <files>{exact file paths}</files>
   <action>
     {Specific review instructions}
   </action>
   <done>{How we know this task is complete}</done>
-</task>
-
-<task id="3" type="auto">
-  ...
 </task>
 
 ## Success Criteria
