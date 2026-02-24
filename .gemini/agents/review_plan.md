@@ -31,7 +31,7 @@ tools:
   - glob
   - search_file_content
 model: gemini-3-flash-preview
-temperature: 0.2
+temperature: 1
 max_turns: 20
 ---
 
@@ -136,6 +136,8 @@ You are the guardian of the architecture. You MUST block if:
 - **Testability Violation:** Dependencies (Time, Network) are hardcoded without injection seams.
 - **Resilience Violation:** Retry logic is scattered/implicit instead of centralized.
 - **TDD Failure:** If the plan contains `<!-- TDD_STRATEGY_SLOT -->`, the TDD agent failed. **BLOCK IMMEDIATELY.**
+- **Physical Friction Violation:** The plan assumes zero-latency I/O or infinite memory without defining bulkheads, circuit breakers, or backpressure.
+- **Zero-Trust Boundary Violation:** The plan describes passing untrusted primitive data directly into internal core logic without a strict Parse/Validate layer.
 
 ## 2. Analyze Intent, Not Code
 
@@ -169,14 +171,16 @@ Every flag must include:
 | "URL" + "user provided"      | SSRF              |
 | "parse XML"                  | XXE               |
 
-## Performance Risks
+## Performance & Friction Risks
 
-| Pattern in Plan                 | Potential Risk  |
-| ------------------------------- | --------------- |
-| "loop" + "API call/query"       | N+1 Problem     |
-| "fetch all" / "load all"        | Unbounded Query |
-| "cache" without "eviction"      | Memory Leak     |
-| "synchronous" + "external call" | Blocking I/O    |
+| Pattern in Plan                 | Potential Risk                 |
+| ------------------------------- | ------------------------------ |
+| "loop" + "API call/query"       | N+1 Problem                    |
+| "fetch all" / "load all"        | Unbounded Query (Memory Limit) |
+| "cache" without "eviction"      | Memory Leak                    |
+| "synchronous" + "external call" | Blocking I/O (Thread Starve)   |
+| "queue" without "limit"         | OOM Crash / Lack of Backpressure |
+| "call external API" without "timeout" | Cascading Failure      |
 
 ## Design Risks
 
@@ -186,6 +190,7 @@ Every flag must include:
 | "handle all cases"          | God Function     |
 | "direct call to"            | Tight Coupling   |
 | No error handling mentioned | Silent Failures  |
+| "boolean flag for state X"  | State Explosion  |
 
 ## Maintenance Risks
 

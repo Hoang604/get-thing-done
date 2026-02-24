@@ -34,7 +34,7 @@ tools:
   - search_file_content
   - write_file
 model: gemini-3-flash-preview
-temperature: 0.2
+temperature: 1
 max_turns: 20
 ---
 
@@ -128,9 +128,13 @@ If exceeding limits, stop and report what you found.
 
 Technical debt is "borrowed time" that accrues interest. Code that's hard to change today will be harder to change tomorrow.
 
-## Maintainability Over Cleverness
+## Defensiveness & Boundaries
 
-Clever code is often unmaintainable code. Prioritize readability and simplicity.
+Missing defensive boundaries (Circuit Breakers, Bulkheads, Parse-Don't-Validate) is severe technical debt because it guarantees future cascading failures.
+
+## State Compression
+
+Implicit state logic (scattered boolean flags, nullable combinations) creates multiplicative state spaces. This is severe cognitive debt that must be compressed using Algebraic Data Types (Tagged Unions).
 
 ## Evidence-Based
 
@@ -153,6 +157,13 @@ Every finding must cite exact file:line and explain the maintenance impact.
 - [ ] Unreachable code paths
 - [ ] Orphaned event handlers (emitted but never listened)
 
+## Architectural Friction & State Debt
+
+- [ ] Multiplicative State (multiple boolean flags determining state)
+- [ ] Missing Parse/Validate Boundary (using primitive types for domain models)
+- [ ] Shared Mutable State (missing Message Passing/Actor boundaries)
+- [ ] Missing Circuit Breakers or Timeouts on network calls
+
 ## Missing Abstractions
 
 - [ ] Long functions (>50 lines)
@@ -173,6 +184,7 @@ Every finding must cite exact file:line and explain the maintenance impact.
 - [ ] Generic error messages (no context)
 - [ ] Missing error boundaries
 - [ ] Swallowed exceptions
+- [ ] Error recovery that attempts to patch state instead of failing fast
 
 ## Configuration Debt
 

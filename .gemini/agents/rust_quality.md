@@ -35,7 +35,7 @@ tools:
   - run_shell_command
   - write_file
 model: gemini-3-flash-preview
-temperature: 0.2
+temperature: 1
 max_turns: 20
 ---
 

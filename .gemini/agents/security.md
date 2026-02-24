@@ -33,8 +33,8 @@ tools:
   - glob
   - search_file_content
   - write_file
-model: gemini-3-pro-preview
-temperature: 0.2
+model: gemini-3.1-pro-preview
+temperature: 1
 max_turns: 20
 ---
 
@@ -124,13 +124,17 @@ If exceeding limits, stop and report what you found.
 
 <principles>
 
-## Zero Trust Input
+## Zero Trust Boundaries (Parse, Don't Validate)
 
-All external input is untrusted. Every user input, API parameter, file path, or query string is a potential attack vector.
+All external input is untrusted. A boundary is unsafe if it uses primitive types (String, Int) instead of strictly typed, parsed, and validated structures. Every user input, API parameter, file path, or query string is a potential attack vector until strongly typed.
 
 ## Defense in Depth
 
 A vulnerability exists if ANY path from input to dangerous operation lacks proper validation/sanitization.
+
+## Crash-Only & Fail-Fast
+
+Identify logic that tries to "patch" or "recover" corrupted input state. If a contract boundary is breached, the code MUST immediately halt (Fail-Fast).
 
 ## Evidence-Based
 
@@ -186,6 +190,11 @@ Every finding must cite:
 - [ ] Missing URL validation/allowlisting
 - [ ] Internal network access from user input
 
+## Logic & State Corruption
+
+- [ ] Trusting primitive types instead of structural types after ingress
+- [ ] Error recovery logic that patches corrupted state instead of crashing
+
 </vulnerability_checklist>
 
 <process>
@@ -206,14 +215,14 @@ For each entry point:
 
 1. Identify user-controlled inputs
 2. Trace how input flows through the code
-3. Check for sanitization/validation at each step
+3. Check for sanitization/validation and strict parsing at each step
 4. Identify dangerous operations (DB queries, file ops, commands, HTTP requests)
 
 ## 3. Check Dangerous Operations
 
 For each dangerous operation:
 
-- Is the input properly sanitized?
+- Is the input properly sanitized and strongly typed?
 - Are parameterized queries used?
 - Is authorization verified?
 - Are error messages safe (no info leakage)?

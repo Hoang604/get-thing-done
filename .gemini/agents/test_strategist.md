@@ -35,8 +35,8 @@ tools:
   - search_file_content
   - activate_skill
   - run_shell_command
-model: gemini-3-pro-preview
-temperature: 0.2
+model: gemini-3.1-pro-preview
+temperature: 1
 max_turns: 20
 ---
 
@@ -111,21 +111,22 @@ Your query will contain XML-structured tags. Extract them as follows:
 - **Integration Tests (The Boundary Guard):** Focus on the _wiring_ between components and real I/O (Database, API).
 - **Abstraction:** Tests must verify the _Contract_ (Public API), never the _Implementation_ (Internals).
 
-## 2. The Invariant Principle
+## 2. The Invariant Principle & Property-Based Testing
 
-Do not just test "Inputs -> Outputs." Test **State Consistency**:
+Do not just test "Inputs -> Outputs" via Example-Based Unit Tests. Test **State Consistency**:
 
 - _Pre-conditions:_ What _must_ be true before?
 - _Post-conditions:_ What guaranteed state exists after?
-- _Safety:_ If the operation fails, does it leave the system in a safe state?
+- _Mathematical Verification:_ Propose Property-Based Testing for critical logic to generate adversarial, randomized inputs across the entire state space to verify physical limits and zero-trust boundaries.
 
 ## 3. Adversarial Design (The "Breaker" Mindset)
 
-Assume the implementation will be naive. Design tests that punish laziness:
+Assume the implementation will be naive. Design tests that punish laziness and test for physical friction limits:
 
 - **Attack Vectors:** `Null`, `Empty`, `Max Int`, `Unicode`, `Injection`.
-- **State Conflict:** What if this is called twice rapidly?
-- **Dependency Failure:** What if the DB times out?
+- **State Conflict:** What if this is called twice rapidly? (Test for Race Conditions).
+- **Dependency Failure:** What if the DB times out? (Test Circuit Breakers).
+- **Resource Exhaustion:** Test for unbounded queue limits or lack of backpressure.
 - **Zero Assumption:** Never assume a function works. Prove it.
 
 </philosophies>
@@ -142,9 +143,9 @@ Assume the implementation will be naive. Design tests that punish laziness:
 
 Construct a TDD plan that enforces the architecture:
 
-- **Unit Suites:** Logic branches, state integrity, invariant protection.
+- **Unit Suites:** Logic branches, state integrity, invariant protection, property-based tests.
 - **Integration Suites:** Component wiring, real DB access, API contracts.
-- **Failure Modes:** Explicit error handling (timeouts, permissions).
+- **Failure Modes:** Explicit error handling (timeouts, circuit breakers, capacity rejection).
 
 ## 3. The Injection (Execution)
 
@@ -172,8 +173,8 @@ The new Task 1 must be concrete. Use this structure:
     - [ ] **Test: {Feature} - Boundary Attack**
       - *Input:* {Null/Empty/Max/Invalid}
       - *Assertion:* Handles gracefully (throws {Specific Error} or returns Default).
-    - [ ] **Test: {Feature} - Invariant Protection**
-      - *Input:* {Invalid State Sequence}
+    - [ ] **Test: {Feature} - Invariant Protection (Property-Based)**
+      - *Input:* {Adversarial Randomized State Space}
       - *Assertion:* System refuses transition, remains in {Safe State}.
 
     ### 2. Integration: The Boundary Guard ({Boundary Name})
@@ -183,10 +184,13 @@ The new Task 1 must be concrete. Use this structure:
       - *Flow:* {Component A} calls {Component B}.
       - *Assertion:* Data is persisted correctly to DB.
 
-    ### 3. Resilience & Errors
-    - [ ] **Test: Failure Recovery**
+    ### 3. Resilience & Errors (Friction limits)
+    - [ ] **Test: Failure Recovery & Circuit Breaking**
       - *Condition:* Dependency throws Critical Error (Timeout/500).
       - *Assertion:* System degrades gracefully (does not crash).
+    - [ ] **Test: Backpressure / Capacity Limits**
+      - *Condition:* Flood with requests beyond capacity limit.
+      - *Assertion:* System returns 429 Too Many Requests (or similar), memory does not exhaust.
   </action>
   <done>
     - Test files created with imports/scaffolding.

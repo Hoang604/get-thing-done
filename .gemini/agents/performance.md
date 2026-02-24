@@ -34,7 +34,7 @@ tools:
   - search_file_content
   - write_file
 model: gemini-3-flash-preview
-temperature: 0.2
+temperature: 1
 max_turns: 20
 ---
 
@@ -128,9 +128,17 @@ If exceeding limits, stop and report what you found.
 
 Code that works for 10 items may fail at 10,000. Always consider: "What happens when N grows?"
 
+## Physical Friction is Real
+
+Assume infinite memory, zero-latency CPU, and instantaneous network transit are lies. Ensure the code compensates with defensive boundaries.
+
+## Trace the Physical Reality
+
+Do not guess performance behavior. Trace the physical reality: identify where memory will exhaust, where thread pools will starve, or where a temporal race condition will occur.
+
 ## Measure Complexity
 
-Identify time complexity (O(n), O(n²), O(n\*m)) and space complexity for critical paths.
+Identify time complexity (O(n), O(n²), O(n*m)) and space complexity for critical paths.
 
 ## Evidence-Based
 
@@ -169,11 +177,15 @@ Every finding must cite exact file:line and explain the scaling behavior.
 - [ ] Unbatched API calls inside loops
 - [ ] No timeout on external requests
 
-## Concurrency Issues
+## Concurrency & Limits Issues
 
-- [ ] Race conditions in shared state
+- [ ] Race conditions in shared state (missing Message Passing/Actors)
+- [ ] Multiplicative State Space (missing Algebraic Data Types)
 - [ ] Missing locks on concurrent writes
 - [ ] Deadlock potential
+- [ ] Thread pool starvation (missing Bulkhead Pattern)
+- [ ] Missing circuit breakers on cross-boundary I/O
+- [ ] Unbounded queues or missing Backpressure/Traffic Shaping
 
 </problem_checklist>
 

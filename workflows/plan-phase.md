@@ -1,5 +1,5 @@
 ---
-name: plan
+name: plan-phase
 description: Create execution plan for a phase. Creates ./.gtd/<task_name>/{phase}/PLAN.md
 argument-hint: "[phase] [--research] [--test]"
 ---
@@ -110,7 +110,7 @@ Each plan: **2-3 tasks max**. No exceptions.
 
 ## Self-Calibration: The "Gut Check"
 
-Before planning, you must assess the **Risk Profile** of this phase. Do not rely on a fixed list of keywords. Instead, simulate the implementation in your head and ask:
+Before planning, you must assess the **Risk** of this phase. Simulate the implementation in your head and ask:
 
 **"What is the probability that a Junior Developer would break the system implementing this?"**
 
@@ -118,15 +118,15 @@ Before planning, you must assess the **Risk Profile** of this phase. Do not rely
 
 | Level      | Internal Monologue Guide                                                                                                                                                      | Action                             |
 | :--------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------- |
-| **Low**    | "I can see the entire solution clearly. It is boilerplate or standard CRUD. I have 100% certainty."                                                                           | Standard flow.                     |
+| **Low**    | "It is boilerplate or standard CRUD. I have 100% certainty."                                                                           | Standard flow.                     |
 | **Medium** | "I know the pattern, but there are edge cases (null checks, state sync) I need to be careful about."                                                                          | Standard flow, but detailed tasks. |
-| **High**   | "This is tricky. It involves critical state transitions, ambiguous requirements, or I have to invent a new pattern. There is a >10% chance I might misunderstand the intent." | **MANDATORY CHECKPOINT.**          |
+| **High**   | "This is tricky. It involves critical state transitions, ambiguous requirements, or I have to invent a new pattern. There is a >10% chance I do thing wrong." | **MANDATORY CHECKPOINT.**          |
 
 **Rule for High Complexity:**
 
 1. You MUST insert a `checkpoint:human-verify` task immediately after the High Complexity task.
 2. You MUST explain _why_ it is High Complexity in the plan's context.
-
+might misunderstand the intent
 </complexity_rubric>
 
 </task_types>
@@ -154,17 +154,13 @@ Extract from $ARGUMENTS:
 - `--research` flag
 - `--test` flag
 
-**If no phase number:** Detect next unplanned phase from ROADMAP.md.
-
 ## 3. Validate Phase
 
 **Bash:**
 
 ```bash
-grep -A 10 "## Phase $PHASE:" "./.gtd/<task_name>/ROADMAP.md"
+grep -A 10 "### Phase $PHASE:" "./.gtd/<task_name>/ROADMAP.md"
 ```
-
-**If not found:** Error with available phases.
 **If found:** Extract phase name and objective.
 
 ## 4. Ensure Phase Directory
@@ -221,27 +217,21 @@ Load SPEC.md, ROADMAP.md, and RESEARCH.md (if exists). Use research findings to 
 
 ### 6b. Decompose into Tasks
 
-**0. Evaluate Safety Brake:**
-
-- Before decomposing, explicitly ask: Does this phase attempt to build too much at once? Does it duplicate state? Does it violate the Single Source of Truth or lack centralized error handling?
-- If YES: **STOP.** Do not output a plan. Prompt the user to reconsider the architectural design in the roadmap.
-
 1. **Perform Task-Level Self-Calibration:**
    - For EACH task you define, simulate the implementation in your head.
    - Assign a Complexity Level (Low/Medium/High) based on the `<complexity_rubric>`.
-   - **Crucial Constraint:** For any `Medium` or `High` complexity task, you MUST perform a Mandatory Self-Audit (Security, Performance, Design) BEFORE writing the implementation action.
+   - For any `Medium` or `High` complexity task, you MUST perform a Mandatory Self-Audit (Security, Performance, Design) BEFORE writing the implementation action.
 
 2. **Handle TDD (Adversarial Blueprint):**
-   - If the `--test` flag is active, Task 1 MUST NOT be a generic write-tests task. It must follow a strict adversarial blueprint evaluating the Logic Firewall (invariants/mocked I/O), Boundary Guard (real I/O), and Failure Recovery.
+   - If the `--test` flag is active, Task 1 MUST follow a strict adversarial blueprint evaluating the Logic Firewall (invariants/mocked I/O), Boundary Guard (real I/O), and Failure Recovery.
 
 3. **Decompose deliverables** into remaining atomic tasks (total 2-3 max).
 
 4. **Apply Safety Brakes:**
    - If a task is rated **High** complexity: Insert a `checkpoint:human-verify` task immediately after it.
-   - The checkpoint action must read: "STOP. Review the implementation of {file} for {specific_risk}."
 
 5. Select relevant requirements:
-   - Identify which Must Have / Nice To Have items from SPEC.md this phase addresses.
+   - Identify which requirement from SPEC.md this phase addresses.
    - Define exact, measurable done criteria for each.
 
 ### 6c. Write PLAN.md
@@ -263,7 +253,7 @@ is_tdd: { true/false }
 
 ## Verification Strategy
 
-{How will we verify this phase is done? E.g., "Automated tests", "Manual UI walkthrough", "Log inspection"}
+{How will we verify this phase is done?}
 
 ## Spec Requirements
 
@@ -300,14 +290,16 @@ is_tdd: { true/false }
     - [ ] Test: {Feature} - Happy Path -> Returns {Result}
     - [ ] Test: {Feature} - Boundary Attack (Null/Empty/Max) -> Handles gracefully
     - [ ] Test: Invariant Protection (Invalid state sequence) -> Rejects transition
+    - ...
 
     ### 2. Integration: The Boundary Guard ({Boundary Name})
     *Focus: I/O Wiring & Component Contracts.*
     - [ ] Test: {Scenario} - Flow maintains DB integrity.
+    - ...
 
     ### 3. Resilience & Errors
     - [ ] Test: Failure Recovery - Dependency throws Error/Timeout -> Degrades gracefully.
-
+    - ...
   </action>
   <done>- Test files created and `npm test` reports specific missing logic failures.</done>
 </task>
@@ -318,9 +310,9 @@ is_tdd: { true/false }
   <risk>{Rationale if complexity > Low}</risk>
   <self_audit>
     <!-- MANDATORY FOR MEDIUM/HIGH COMPLEXITY: Evaluate risks BEFORE writing the action -->
-    - Security (IDOR/Injection/XSS/SSRF): {Pass / Risk: ...}
-    - Performance (N+1/Memory/Blocking): {Pass / Risk: ...}
-    - Architecture (Duplication/Single Source): {Pass / Risk: ...}
+    - Security (IDOR/Injection/XSS/SSRF): {Risk: ...}
+    - Performance (N+1/Memory/Blocking): {Risk: ...}
+    - Architecture (Duplication/Single Source): {Risk: ...}
   </self_audit>
   <files>{exact file paths}</files>
   <action>
@@ -332,16 +324,7 @@ is_tdd: { true/false }
   <done>{How we know this task is complete}</done>
 </task>
 
-<!-- If a task was High complexity, ensure a human-verify checkpoint follows it: -->
-<task id="3" type="checkpoint:human-verify">
-  <name>STOP. Review the implementation of {file} for {specific_risk}</name>
-  <risk>{One sentence rationale}</risk>
-  <files>{exact file paths}</files>
-  <action>
-    {Specific review instructions}
-  </action>
-  <done>{How we know this task is complete}</done>
-</task>
+<!-- If and only if a task was High complexity, ensure a human-verify checkpoint follows it: -->
 
 ## Success Criteria
 
@@ -391,5 +374,5 @@ Also available:
 </offer_next>
 
 <forced_stop>
-STOP. The workflow is complete. Do NOT automatically run the next command. Wait for the user.
+Do NOT automatically run the next command. Wait for the user.
 </forced_stop>

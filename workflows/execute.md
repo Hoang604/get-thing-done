@@ -317,7 +317,7 @@ Files changed: {count}
 
 ─────────────────────────────────────────────────────
 ▶ Next Up
-/plan {N+1} — plan the next phase
+/plan-phase {N+1} — plan the next phase
 ─────────────────────────────────────────────────────
 ```
 

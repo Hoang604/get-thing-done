@@ -36,7 +36,7 @@ Verify that all requirements are implemented AND identify hidden problems (secur
 **Get Task Name:**
 
 - If provided in `$ARGUMENTS`, use it.
-- If not, ask user: "Which task (spec) do you want to verify?"
+- If not, ask user: "Which task (spec) do you want to verify"
 
 **Read Spec:**
 Read `./.gtd/<task_name>/SPEC.md`.
