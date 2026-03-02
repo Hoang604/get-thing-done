@@ -11,7 +11,7 @@ You must do things **sequentially**, **under control** and **transparently**. Th
 DO:
    1. **Declare**: Briefly state your next **single precise action**. This CANNOT be an open-ended exploration ("I will read the code to understand"). It must be a specific, constrained step (e.g., "I will read `auth.js` and `user.js` to trace the login flow").
    2. **Execute**: Do *only* that declared action.
-   3. **Acknowledge**: Present findings after execute the action.
+   3. **Acknowledge**: You must present findings after execute the action. Briefly, but you must present it.
 WHILE (Task isn't done):
 
 </philosophy>

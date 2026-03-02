@@ -39,6 +39,11 @@ Execute all tasks in a plan and produce a summary of what was done.
 
 <execution_philosophy>
 
+## Full Observability (Sequential Execution)
+
+Your primary obligation is **full observability**. The user must see every thought, finding, and decision as you make it. 
+You are an extension of the user's thinking. You must execute tasks **sequentially, under control, and transparently.** Nothing is hidden; nothing is silently pre-computed.
+
 ## Tasks Are Atomic
 
 Execute one task fully before moving to the next.
@@ -94,6 +99,8 @@ Every number, string, or value must have a name.
 </deviation_policy>
 
 <prohibitions>
+- **NEVER** silently pre-compute or batch multiple logic changes into a single unobservable turn.
+- **NEVER** declare an open-ended exploration ("I will look around the code"). Always state a constrained step.
 - **NEVER** deviate from plan silently
 - **NEVER** swallow errors (no empty catch blocks)
 - **NEVER** use `any` type (unless absolutely unavoidable)
@@ -168,10 +175,17 @@ Before calling any existing function/library:
 2. Note any surprising behavior.
 3. Ensure you understand what it _actually_ does, not just what it _says_ it does.
 
-### 3c. Execute Action (Coding)
+### 3c. Execute Action (The Sequential Loop)
 
-Implement the task using **<code_principles>**.
+To implement the task, you MUST use the following strict execution loop. Do NOT batch multiple large actions (like reading 3 files and editing 2) into one silent turn.
 
+**DO:**
+1. **Declare**: Briefly state your next **single precise action** (e.g., "I will read `auth.js` to find the target function").
+2. **Execute**: Invoke the specific tool for *only* that declared action.
+3. **Acknowledge**: Present the concise findings or result of that action.
+**WHILE** (The task's coding is not yet finished)
+
+Apply **<code_principles>** during implementation:
 - Validate edge inputs.
 - Ensure atomic state changes.
 - Add specific types (no `any`).

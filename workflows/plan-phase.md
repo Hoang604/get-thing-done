@@ -87,7 +87,7 @@ Each plan: **2-3 tasks max**. No exceptions.
 ## Blueprint Checklist
 
 - [ ] **Data Model:** Defined schemas (SQL/JSON) with exact types.
-- [ ] **Constraints:** What must ALWAYS be true? (e.g., "Balance >= 0").
+- [ ] **Constraints:** What must ALWAYS be true (e.g., "Balance >= 0").
 - [ ] **Failure Modes:** Handling partial failures and data corruption.
 - [ ] **Error Taxonomy:** Define Retryable vs Fatal errors.
       </design_principles>
@@ -112,7 +112,7 @@ Each plan: **2-3 tasks max**. No exceptions.
 
 Before planning, you must assess the **Risk** of this phase. Simulate the implementation in your head and ask:
 
-**"What is the probability that a Junior Developer would break the system implementing this?"**
+**"What is the probability that a Junior Developer would break the system implementing this"**
 
 ### Complexity Levels
 
@@ -253,7 +253,7 @@ is_tdd: { true/false }
 
 ## Verification Strategy
 
-{How will we verify this phase is done?}
+{How will we verify this phase is done}
 
 ## Spec Requirements
 
@@ -270,10 +270,10 @@ is_tdd: { true/false }
 
 ## Architecture Constraints
 
-- **Single Source:** {Where is the authoritative data?}
-- **Invariants:** {What must ALWAYS be true?}
-- **Resilience:** {How do we handle failures?}
-- **Testability:** {What needs to be injected/mocked?}
+- **Single Source:** {Where is the authoritative data}
+- **Invariants:** {What must ALWAYS be true}
+- **Resilience:** {How do we handle failures}
+- **Testability:** {What needs to be injected/mocked}
 
 ## Tasks
 
