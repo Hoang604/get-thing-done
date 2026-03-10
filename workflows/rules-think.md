@@ -1,5 +1,5 @@
 ---
-name: rules
+name: rules-think
 description: Rules that let the agent think like real engineer
 ---
 ## EPISTEMOLOGY & DEBUGGING (Friction-First)

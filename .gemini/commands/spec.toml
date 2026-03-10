@@ -103,6 +103,18 @@ Understand what needs to be SOLVED, not just what needs to be BUILT. The Target 
 
 The SPEC.md is the **single source of truth** for what we're building. Everything downstream (roadmap, plans, execution) derives from it.
 
+## Requirements Syntax (EARS)
+
+All requirements MUST follow the **Easy Approach to Requirements Syntax (EARS)** to reduce ambiguity:
+
+| Pattern | Keyword | Use Case | Template |
+| :--- | :--- | :--- | :--- |
+| **Ubiquitous** | (None) | Always-on property | The `<System>` shall `<Response>`. |
+| **Event-driven** | **When** | Specific trigger | **When** `<Trigger>`, the `<System>` shall `<Response>`. |
+| **State-driven** | **While** | Defined state/mode | **While** `<State>`, the `<System>` shall `<Response>`. |
+| **Unwanted** | **If/Then** | Error/Failure | **If** `<Condition>`, **then** the `<System>` shall `<Response>`. |
+| **Optional** | **Where** | Feature presence | **Where** `<Feature>`, the `<System>` shall `<Response>`. |
+
 ## Interview, Don't Interrogate
 
 You must know what user want by interview them, not guessing:
@@ -180,7 +192,7 @@ ask_user({
     {
       header: "Must Have",
       type: "text",
-      question: "What are the absolute essentials?",
+      question: "What are the absolute essentials? (Frame using EARS: When, While, Where, etc.)",
       placeholder: "List the core requirements..."
     },
     {
@@ -463,13 +475,16 @@ Write to `./.gtd/<task_name>/SPEC.md`:
 
 ## Requirements
 
+<!-- Use EARS keywords: When, While, Where, If/Then, Ubiquitous -->
+
 ### Must Have
 
-- [ ] {Measurable criterion 1}
+- [ ] **When** {Trigger}, the {System} shall {Action}.
+- [ ] {Requirement 2}
 
 ### Nice to Have
 
-- [ ] {Optional feature}
+- [ ] **Where** {Feature}, the {System} shall {Action}.
 
 ### Won't Have
 

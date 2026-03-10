@@ -31,14 +31,17 @@ Create a roadmap that answers: "In what order do we build this?"
 - `./.gtd/<task_name>/ROADMAP.md`
   </context>
 
-<philosophy>
+  <philosophy>
 
 ## Phases Are Deliverables
 
 Each phase should produce something **usable or testable**. Not "Phase 1: Research" — that's an activity, not a deliverable.
 
-Good: "Phase 1: Basic API endpoint that returns hardcoded data"
-Bad: "Phase 1: Set up project structure"
+## Requirements Syntax (EARS)
+
+Phases and criteria MUST align with **EARS** keywords to ensure testable outcomes:
+- **When** {Trigger}, the {System} shall {Action}.
+- **While** {State}, the {System} shall {Action}.
 
 ## Dependency-Driven Order
 
@@ -143,12 +146,12 @@ Write to `./.gtd/<task_name>/ROADMAP.md`:
 ### Phase 1: {name}
 
 **Status**: ⬜ Not Started
-**Objective**: {description}
+**Objective**: **When** the phase is complete, the {System} shall {Outcome}.
 
 ### Phase 2: {name}
 
 **Status**: ⬜ Not Started
-**Objective**: {description}
+**Objective**: {EARS description}
 
 ...
 </must-have>

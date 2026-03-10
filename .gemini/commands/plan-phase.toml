@@ -55,15 +55,15 @@ Create executable plans (PLAN.md files) for a roadmap phase.
 </discovery_levels>
 
 <complexity_rubric>
-| Level      | Guide                                                                                   | Action                             |
+| Level      | Guide (ISO 15288:6.3.4 Risk Management)                                                | Action                             |
 | :--------- | :-------------------------------------------------------------------------------------- | :--------------------------------- |
-| **Low**    | Pure transforms, CRUD, wiring, config. No shared state, no timing concerns.             | Standard flow.                     |
-| **Medium** | Touches multiple components, has edge cases, or modifies existing contracts.             | Standard flow, but detailed tasks. |
-| **High**   | Involves concurrency, state machines, event ordering, locks, data integrity, or dynamic env. | **MANDATORY CHECKPOINT.**          |
+| **Low**    | Boilerplate, CRUD, wiring, config. No shared state or timing concerns.                  | Standard flow.                     |
+| **Medium** | Touches multiple components, edge cases, or modifies existing contracts.                | Standard flow, detailed tasks.     |
+| **High**   | Concurrency, state machines, event ordering, data integrity, or dynamic env.            | **MANDATORY CHECKPOINT.**          |
 
 **Rule for High Complexity:**
 1. Insert `checkpoint:human-verify` task immediately after.
-2. Explain _why_ it is High Complexity.
+2. Explain the technical risk in terms of system integrity.
 </complexity_rubric>
 
 <task_types>
@@ -77,16 +77,17 @@ Create executable plans (PLAN.md files) for a roadmap phase.
 </decision_logic>
 
 <core_principles>
-1. **Gall's Law:** Start small. No big bang rewrites.
-2. **Single Source of Truth:** Do not duplicate state.
-3. **Complete Path:** Every producer needs a consumer. No orphaned events.
-4. **Testability First:** Design seams for Time, Network, Randomness.
-5. **Centralized Resilience:** Retry logic at the edge only.
+1. **Architecture Definition (15288:6.4.4):** Define "Seams" for external dependencies. No big bang rewrites.
+2. **Design Definition (15288:6.4.5):** Every producer needs a consumer. No orphaned events.
+3. **Traceability:** Every task MUST trace back to a requirement in SPEC.md.
+4. **Single Source of Truth:** Data MUST be normalized. No duplicated state.
+5. **Centralized Resilience:** Retry logic and circuit breakers MUST be at the edge only.
 </core_principles>
 
 <critical_rules>
 - **Aggressive Atomicity:** Each plan MUST have **2-3 tasks max**.
 - **No Implementation:** Do not write function bodies. Define interfaces only.
+- **Tag Separation:** Use `<requirement>` for EARS system behavior and `<action>` for exact agent execution sequences.
 - **TDD Contract:** If `--test` is active, Task 1 MUST be the `<!-- TDD_STRATEGY_SLOT -->`.
 </critical_rules>
 
@@ -258,11 +259,11 @@ is_tdd: { true/false }
 
 {What this phase delivers and why}
 
-## Verification Strategy
+## V&V Strategy (Verification & Validation)
 
-{How will we verify this phase is done? E.g., "Automated tests", "Manual UI walkthrough", "Log inspection"}
+{How will we verify this phase meets requirements - 15288:6.4.9/10}
 
-## Spec Requirements
+## Spec Requirements (Traceability)
 
 <!-- List the specific requirements from SPEC.md that this phase addresses -->
 - [ ] Must Have: {Requirement 1}
@@ -278,10 +279,12 @@ is_tdd: { true/false }
 
 - **Single Source:** {Where is the authoritative data?}
 - **Invariants:** {What must ALWAYS be true?}
-- **Resilience:** {How do we handle failures?}
-- **Testability:** {What needs to be injected/mocked?}
+- **Decision Rationale:** {Why this architectural choice was made}
+- **Testability:** {What needs to be injected/mocked (Design Seams)}
 
 ## Tasks
+
+<!-- All tasks and 'done' criteria MUST use EARS keywords where applicable -->
 
 <!-- If --test flag IS SET, inject the slot. If NOT set, use standard Task 1 -->
 {{#if test_flag}}
@@ -293,10 +296,12 @@ is_tdd: { true/false }
   <name>{Task name}</name>
   <risk>{One sentence rationale if complexity > Low}</risk>
   <files>{exact related file paths}</files>
+  <requirement>
+    **When** {Trigger}, the {System} shall {Action}.
+  </requirement>
   <action>
-    {Specific implementation instructions}
-    - What to do
-    - What to avoid and WHY
+    {Exact sequence of agent tool calls / code edits}
+    - Modify {file} to implement {logic}
   </action>
   <done>{How we know this task is complete}</done>
 </task>

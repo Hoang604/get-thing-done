@@ -7,8 +7,24 @@ set -e
 # Usage:
 #   ./install-gemini.sh                    # Local install to ./.gemini/
 #   ./install-gemini.sh --global           # Global install to ~/.gemini/
+#   ./install-gemini.sh --global --replace_systemmd  # Set up new system instructions
 
-GLOBAL_FLAG="${1:-}"
+GLOBAL_FLAG=""
+REPLACE_SYSTEM_MD=""
+
+for arg in "$@"; do
+    if [ "$arg" = "--global" ]; then
+        GLOBAL_FLAG="--global"
+    elif [ "$arg" = "--replace_systemmd" ]; then
+        REPLACE_SYSTEM_MD="true"
+    fi
+done
+
+if [ "$REPLACE_SYSTEM_MD" = "true" ] && [ "$GLOBAL_FLAG" != "--global" ]; then
+    echo "Error: --replace_systemmd can only be used with --global"
+    exit 1
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 if [ "$GLOBAL_FLAG" = "--global" ]; then
@@ -70,6 +86,29 @@ fi
 
 # Update settings.json with hooks configuration (only for global install)
 if [ "$GLOBAL_FLAG" = "--global" ]; then
+    if [ "$REPLACE_SYSTEM_MD" = "true" ]; then
+        echo "Replacing gemini-cli-system.md..."
+        if [ -f "$SCRIPT_DIR/gemini-cli-system.md" ]; then
+            cp -f "$SCRIPT_DIR/gemini-cli-system.md" "$GEMINI_DIR/gemini-cli-system.md"
+            echo "  ✓ gemini-cli-system.md → $GEMINI_DIR/gemini-cli-system.md"
+
+            # Update ~/.bashrc
+            BASHRC_FILE="$HOME/.bashrc"
+            EXPORT_LINE='export GEMINI_SYSTEM_MD="$HOME/.gemini/gemini-cli-system.md"'
+            
+            if [ -f "$BASHRC_FILE" ] && ! grep -qF "$EXPORT_LINE" "$BASHRC_FILE" 2>/dev/null; then
+                echo "" >> "$BASHRC_FILE"
+                echo "$EXPORT_LINE" >> "$BASHRC_FILE"
+                echo "  ✓ Added GEMINI_SYSTEM_MD to ~/.bashrc"
+                echo "  ⚠ Please run 'source ~/.bashrc' or restart your terminal."
+            else
+                echo "  ✓ GEMINI_SYSTEM_MD already in ~/.bashrc"
+            fi
+        else
+            echo "  ⚠ gemini-cli-system.md not found in $SCRIPT_DIR, skipping"
+        fi
+    fi
+
     SETTINGS_FILE="$GEMINI_DIR/settings.json"
     if [ -f "$SETTINGS_FILE" ]; then
         echo "Updating settings.json with hooks configuration..."
@@ -111,6 +150,14 @@ if (existingIndex >= 0) {
     hooksEntry.hooks.push(newHook);
 }
 
+// Update context.fileName if replace_systemmd is true
+if ('$REPLACE_SYSTEM_MD' === 'true') {
+    if (!settings.context) {
+        settings.context = {};
+    }
+    settings.context.fileName = ['SYSTEM_INSTRUCTIONS.md', 'CONTEXT.md', '.gtd/CODEBASE.md', '.gtd/ARCHITECTURE.md'];
+}
+
 fs.writeFileSync('$SETTINGS_FILE', JSON.stringify(settings, null, 2) + '\n');
 "
         echo "  ✓ Hooks configuration added to settings.json"
@@ -118,24 +165,6 @@ fs.writeFileSync('$SETTINGS_FILE', JSON.stringify(settings, null, 2) + '\n');
         echo "  ⚠ settings.json not found at $SETTINGS_FILE, skipping hooks configuration"
     fi
 fi
-
-# Set environment variables to disable conflicting system prompt sections
-BASHRC="$HOME/.bashrc"
-ENV_VARS=(
-    "export GEMINI_PROMPT_COREMANDATES=0"
-    "export GEMINI_PROMPT_PRIMARYWORKFLOWS=0"
-    "export GEMINI_PROMPT_OPERATIONALGUIDELINES=0"
-)
-
-echo "Configuring environment variables in $BASHRC..."
-for var in "${ENV_VARS[@]}"; do
-    if ! grep -qF "$var" "$BASHRC" 2>/dev/null; then
-        echo "$var" >> "$BASHRC"
-        echo "  ✓ Added: $var"
-    else
-        echo "  ○ Already set: $var"
-    fi
-done
 
 echo ""
 echo "✓ Installation complete!"
@@ -145,6 +174,3 @@ echo "  /commands - Workflow commands (*.toml)"
 echo "  /agents   - Sub-agents (*.md)"
 echo "  /hooks    - BeforeAgent hook"
 echo ""
-echo "⚠  IMPORTANT: To apply environment changes, run:"
-echo "     source ~/.bashrc"
-echo "   Then restart gemini-cli for changes to take effect."

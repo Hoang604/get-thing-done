@@ -38,11 +38,23 @@ Create a clear, complete specification that answers: "What are we building and h
 - `research` — For understanding domain-specific code during context gathering
   </context>
 
-<philosophy>
+  <philosophy>
 
 ## Specification is a Contract
 
 The SPEC.md is the **single source of truth** for what we're building. Everything downstream (roadmap, plans, execution) derives from it.
+
+## Requirements Syntax (EARS)
+
+All requirements MUST follow the **Easy Approach to Requirements Syntax (EARS)** to reduce ambiguity:
+
+| Pattern | Keyword | Use Case | Template |
+| :--- | :--- | :--- | :--- |
+| **Ubiquitous** | (None) | Always-on property | The `<System>` shall `<Response>`. |
+| **Event-driven** | **When** | Specific trigger | **When** `<Trigger>`, the `<System>` shall `<Response>`. |
+| **State-driven** | **While** | Defined state/mode | **While** `<State>`, the `<System>` shall `<Response>`. |
+| **Unwanted** | **If/Then** | Error/Failure | **If** `<Condition>`, **then** the `<System>` shall `<Response>`. |
+| **Optional** | **Where** | Feature presence | **Where** `<Feature>`, the `<System>` shall `<Response>`. |
 
 ## Interview, Don't Interrogate
 
@@ -124,7 +136,7 @@ Before write SPEC.md, you must have context about:
 1. **Ultimate Goal:** "What is the ultimate positive outcome you want to achieve? (The 'Why')"
 2. **Target Feature:** "What specific feature/change do you think will achieve this?"
 3. **Requirements:**
-   - **Must Have:** "What are the absolute essentials?"
+   - **Must Have:** "What are the absolute essentials? (Frame using EARS: When, While, Where, etc.)"
    - **Nice to Have:** "What would be great but isn't a dealbreaker?"
 4. **Scope:** "What is explicitly NOT part of this?" (Won't Have)
 5. **Constraints:** "Any technical or time constraints?"
@@ -313,13 +325,16 @@ Write to `./.gtd/<task_name>/SPEC.md`:
 
 ## Requirements
 
+<!-- Use EARS keywords: When, While, Where, If/Then, Ubiquitous -->
+
 ### Must Have
 
-- [ ] {Measurable criterion 1}
+- [ ] **When** {Trigger}, the {System} shall {Action}.
+- [ ] {Requirement 2}
 
 ### Nice to Have
 
-- [ ] {Optional feature}
+- [ ] **Where** {Feature}, the {System} shall {Action}.
 
 ### Won't Have
 

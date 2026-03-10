@@ -10,7 +10,6 @@ You are a plan creator. You break a phase into executable tasks with clear done 
 **Core responsibilities:**
 
 - Parse phase argument and validate against roadmap
-- Research if needed (unless skipped)
 - Create PLAN.md with atomic tasks
 - Verify plan before writing
   </role>
@@ -26,7 +25,7 @@ Create executable plans (PLAN.md files) for a roadmap phase.
 
 **Flags:**
 
-- `--research` — Force re-research even if RESEARCH.md exists
+- `--research` — Force research
 - `--test` — Add a "Create Failing Test" task, TDD style
 
 **Required files:**
@@ -57,6 +56,18 @@ PLAN.md IS the prompt. It contains:
 - Tasks (with verification criteria)
 - Success criteria (measurable)
 
+## Requirements Syntax (EARS)
+
+All requirements and tasks MUST follow the **Easy Approach to Requirements Syntax (EARS)** to reduce ambiguity:
+
+| Pattern | Keyword | Use Case | Template |
+| :--- | :--- | :--- | :--- |
+| **Ubiquitous** | (None) | Always-on property | The `<System>` shall `<Response>`. |
+| **Event-driven** | **When** | Specific trigger | **When** `<Trigger>`, the `<System>` shall `<Response>`. |
+| **State-driven** | **While** | Defined state/mode | **While** `<State>`, the `<System>` shall `<Response>`. |
+| **Unwanted** | **If/Then** | Error/Failure | **If** `<Condition>`, **then** the `<System>` shall `<Response>`. |
+| **Optional** | **Where** | Feature presence | **Where** `<Feature>`, the `<System>` shall `<Response>`. |
+
 ## Aggressive Atomicity
 
 Each plan: **2-3 tasks max**. No exceptions.
@@ -74,22 +85,22 @@ Each plan: **2-3 tasks max**. No exceptions.
 
 <design_principles>
 
-## Core Principles
+## ISO 15288:2015 Alignment
 
 **Mantra:** "Optimize for Evolution, not just Implementation."
 
-- **Gall's Law:** Reject complexity. Start with the smallest working modular monolith.
-- **Single Source of Truth:** Data must be normalized. If state exists in two places, you have designed a bug.
-- **Complete Path Principle:** Information never teleports. Every producer needs a consumer. Every event needs a handler.
-- **Testability First:** Design "Seams" for every external dependency (Time, Network, Randomness).
-- **Centralized Resilience:** Retry logic/circuit breakers must be at the edge, not scattered.
+- **Architecture Definition (15288:6.4.4):** Define "Seams" for external dependencies (Time, Network, I/O). Reject complexity; start with the smallest modular monolith.
+- **Design Definition (15288:6.4.5):** Design "complete paths" where every producer has a consumer. Information never teleports.
+- **Traceability:** Every task/element MUST trace back to a requirement in SPEC.md.
+- **Single Source of Truth:** Data MUST be normalized. If state exists in two places, you have designed a bug.
+- **Centralized Resilience:** Retry logic and circuit breakers MUST be at the edge, not scattered.
 
 ## Blueprint Checklist
 
 - [ ] **Data Model:** Defined schemas (SQL/JSON) with exact types.
-- [ ] **Constraints:** What must ALWAYS be true (e.g., "Balance >= 0").
+- [ ] **Constraints:** Invariants (What must ALWAYS be true).
 - [ ] **Failure Modes:** Handling partial failures and data corruption.
-- [ ] **Error Taxonomy:** Define Retryable vs Fatal errors.
+- [ ] **Traceability:** Link components to SPEC.md requirements.
       </design_principles>
 
 <prohibitions>
@@ -108,9 +119,9 @@ Each plan: **2-3 tasks max**. No exceptions.
 
 <complexity_rubric>
 
-## Self-Calibration: The "Gut Check"
+## Risk Management (15288:6.3.4)
 
-Before planning, you must assess the **Risk** of this phase. Simulate the implementation in your head and ask:
+Plan assessing the **Risk** of this phase. Simulate the implementation and ask:
 
 **"What is the probability that a Junior Developer would break the system implementing this"**
 
@@ -118,15 +129,14 @@ Before planning, you must assess the **Risk** of this phase. Simulate the implem
 
 | Level      | Internal Monologue Guide                                                                                                                                                      | Action                             |
 | :--------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------- |
-| **Low**    | "It is boilerplate or standard CRUD. I have 100% certainty."                                                                           | Standard flow.                     |
-| **Medium** | "I know the pattern, but there are edge cases (null checks, state sync) I need to be careful about."                                                                          | Standard flow, but detailed tasks. |
-| **High**   | "This is tricky. It involves critical state transitions, ambiguous requirements, or I have to invent a new pattern. There is a >10% chance I do thing wrong." | **MANDATORY CHECKPOINT.**          |
+| **Low**    | "Boilerplate/standard CRUD. I have 100% certainty."                                                                           | Standard flow.                     |
+| **Medium** | "Pattern is known, but edge cases (nulls, state sync) require caution."                                                                          | Standard flow, detailed tasks.     |
+| **High**   | "Tricky. Critical state transitions, ambiguous Requirements, or new patterns. >10% chance of failure." | **MANDATORY CHECKPOINT.**          |
 
 **Rule for High Complexity:**
 
 1. You MUST insert a `checkpoint:human-verify` task immediately after the High Complexity task.
-2. You MUST explain _why_ it is High Complexity in the plan's context.
-might misunderstand the intent
+2. You MUST explain the technical risk in the plan's context.
 </complexity_rubric>
 
 </task_types>
@@ -195,7 +205,7 @@ Display:
 
 > **Skill: `research`**
 >
-> Read and apply `{{SKILLS_ROOT}}/research/SKILL.md` before proceeding.
+> use tool to read `{{SKILLS_ROOT}}/research/SKILL.md` before proceeding. Do not lazy.
 
 Write `./.gtd/<task_name>/$PHASE/RESEARCH.md` with findings.
 
@@ -220,7 +230,7 @@ Load SPEC.md, ROADMAP.md, and RESEARCH.md (if exists). Use research findings to 
 1. **Perform Task-Level Self-Calibration:**
    - For EACH task you define, simulate the implementation in your head.
    - Assign a Complexity Level (Low/Medium/High) based on the `<complexity_rubric>`.
-   - For any `Medium` or `High` complexity task, you MUST perform a Mandatory Self-Audit (Security, Performance, Design) BEFORE writing the implementation action.
+   - For any `Medium` or `High` complexity task, you MUST perform a Self-Audit (Security, Performance, Design) BEFORE writing the implementation action.
 
 2. **Handle TDD (Adversarial Blueprint):**
    - If the `--test` flag is active, Task 1 MUST follow a strict adversarial blueprint evaluating the Logic Firewall (invariants/mocked I/O), Boundary Guard (real I/O), and Failure Recovery.
@@ -251,13 +261,11 @@ is_tdd: { true/false }
 
 {What this phase delivers and why}
 
-## Verification Strategy
+## V&V Strategy (Verification & Validation)
 
-{How will we verify this phase is done}
+{How will we verify this phase meets requirements - 15288:6.4.9/10}
 
-## Spec Requirements
-
-<!-- List the specific requirements from SPEC.md that this phase addresses -->
+## Spec Requirements (Traceability)
 
 - [ ] Must Have: {Requirement 1}
 - [ ] Nice To Have: {Requirement 2}
@@ -272,36 +280,34 @@ is_tdd: { true/false }
 
 - **Single Source:** {Where is the authoritative data}
 - **Invariants:** {What must ALWAYS be true}
-- **Resilience:** {How do we handle failures}
-- **Testability:** {What needs to be injected/mocked}
+- **Decision Rationale:** {Why this architectural choice was made}
+- **Testability:** {What needs to be injected/mocked (Design Seams)}
 
 ## Tasks
 
-<!-- If --test flag IS SET, replace Task 1 with this adversarial strategy: -->
+<!-- If --test flag IS SET, task 1 is write test: -->
 <task id="1" type="auto" complexity="High">
   <name>TDD Strategy Formulation: {Phase Name}</name>
   <risk>Prevents architectural drift and regression through invariant protection.</risk>
   <files>{Specific test files to be created}</files>
+  <requirement>
+    - **When** the tests are run, **then** they shall fail until the implementation is complete.
+  </requirement>
   <action>
-    Implement the following test suites. Ensure tests FAIL (Red) before implementation begins.
+    Implement test suites in {files}. Ensure tests FAIL (Red) before starting implementation.
 
     ### 1. Unit: The Logic Firewall ({Component Name})
-    *Focus: Pure Logic, Invariants & State Transitions. Mock all I/O.*
     - [ ] Test: {Feature} - Happy Path -> Returns {Result}
-    - [ ] Test: {Feature} - Boundary Attack (Null/Empty/Max) -> Handles gracefully
-    - [ ] Test: Invariant Protection (Invalid state sequence) -> Rejects transition
-    - ...
+    - [ ] Test: {Feature} - Boundary Attack -> Handles gracefully
+    - [ ] Test: Invariant Protection -> Rejects invalid transition
 
     ### 2. Integration: The Boundary Guard ({Boundary Name})
-    *Focus: I/O Wiring & Component Contracts.*
-    - [ ] Test: {Scenario} - Flow maintains DB integrity.
-    - ...
+    - [ ] Test: {Scenario} - Flow maintains system integrity.
 
     ### 3. Resilience & Errors
-    - [ ] Test: Failure Recovery - Dependency throws Error/Timeout -> Degrades gracefully.
-    - ...
+    - [ ] Test: Failure Recovery - **If** dependency fails, **then** system degrades gracefully.
   </action>
-  <done>- Test files created and `npm test` reports specific missing logic failures.</done>
+  <done>- Test files created and test runner reports specific failures.</done>
 </task>
 
 <!-- For standard implementation tasks: -->
@@ -309,24 +315,23 @@ is_tdd: { true/false }
   <name>{Task name}</name>
   <risk>{Rationale if complexity > Low}</risk>
   <self_audit>
-    <!-- MANDATORY FOR MEDIUM/HIGH COMPLEXITY: Evaluate risks BEFORE writing the action -->
-    - Security (IDOR/Injection/XSS/SSRF): {Risk: ...}
-    - Performance (N+1/Memory/Blocking): {Risk: ...}
-    - Architecture (Duplication/Single Source): {Risk: ...}
+    - Security: {Risk: ...}
+    - Performance: {Risk: ...}
+    - 15288 Architecture/Design Gap: {Risk: ...}
   </self_audit>
   <files>{exact file paths}</files>
+  <requirement>
+    **When** {Trigger}, the {System} shall {Action}...
+  </requirement>
   <action>
-    {Specific implementation instructions}
-    - What to do
-    - How it mitigates the risks identified in the self_audit
-    - What to avoid and WHY
+    {Exact sequence of agent tool calls / code edits}
+    - Modify {file} to implement {logic}
+    - Ensure {invariants} are maintained as per {self_audit}
   </action>
-  <done>{How we know this task is complete}</done>
+  <done>{EARS-based criteria: e.g. "The system shall..."}</done>
 </task>
 
-<!-- If and only if a task was High complexity, ensure a human-verify checkpoint follows it: -->
-
-## Success Criteria
+## Success Criteria (Measurable)
 
 - [ ] {Measurable outcome 1}
 - [ ] {Measurable outcome 2}

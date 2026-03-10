@@ -4,6 +4,26 @@ Workflows that help you write reliable code and debug efficiently. Simple and ea
 
 ## Antigravity Installation
 
+### Global Install (available everywhere)
+
+**Linux/macOS:**
+
+```bash
+git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
+cd gtd-temp && chmod +x *.sh && ./install.sh ~/.gemini/antigravity --global
+cd .. && rm -rf gtd-temp
+```
+
+**Windows (PowerShell):**
+
+```powershell
+git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
+cd gtd-temp; .\install.ps1 $env:USERPROFILE\.gemini\antigravity -Global
+cd ..; Remove-Item -Recurse -Force gtd-temp
+```
+
+
+
 ### Local Install (project-specific)
 
 Navigate to your project directory.
@@ -24,13 +44,17 @@ cd gtd-temp; .\install.ps1 ..\.agent
 cd ..; Remove-Item -Recurse -Force gtd-temp
 ```
 
-### Global Install (available everywhere)
+---
+
+## Gemini CLI Installation
+
+### Global Install
 
 **Linux/macOS:**
 
 ```bash
 git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
-cd gtd-temp && chmod +x *.sh && ./install.sh ~/.gemini/antigravity --global
+cd gtd-temp && chmod +x *.sh && ./install-gemini.sh --global 
 cd .. && rm -rf gtd-temp
 ```
 
@@ -38,15 +62,9 @@ cd .. && rm -rf gtd-temp
 
 ```powershell
 git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
-cd gtd-temp; .\install.ps1 $env:USERPROFILE\.gemini\antigravity -Global
+cd gtd-temp; .\install-gemini.ps1 -Global
 cd ..; Remove-Item -Recurse -Force gtd-temp
 ```
-
----
-
-## Gemini CLI Installation
-
-For Gemini CLI users, workflows are converted to TOML commands with inlined skills.
 
 ### Local Install (project-specific)
 
@@ -66,24 +84,6 @@ rm -rf gtd-temp
 git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
 .\gtd-temp\install-gemini.ps1
 Remove-Item -Recurse -Force gtd-temp
-```
-
-### Global Install
-
-**Linux/macOS:**
-
-```bash
-git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
-cd gtd-temp && chmod +x *.sh && ./install-gemini.sh --global
-cd .. && rm -rf gtd-temp
-```
-
-**Windows (PowerShell):**
-
-```powershell
-git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
-cd gtd-temp; .\install-gemini.ps1 -Global
-cd ..; Remove-Item -Recurse -Force gtd-temp
 ```
 
 ---
