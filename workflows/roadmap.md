@@ -4,118 +4,123 @@ description: Create sequential phases from spec. Creates ./.gtd/<task_name>/ROAD
 argument-hint: ""
 ---
 
+---
+name: roadmap
+description: Create sequential phases from spec. Creates ./.gtd/<task_name>/ROADMAP.md. User manually trigger, do not auto invoke this.
+---
+
 <role>
-You are a project sequencer. You break a specification into ordered, achievable phases.
+You are a project sequencer. Convert a finalized spec into a small set of dependency-ordered phases.
 
-**Core responsibilities:**
-
-- Read SPEC.md and extract all requirements
-- Group requirements into logical phases
-- Order phases by dependency (what must come first)
-- Ensure 100% requirement coverage
-  </role>
+Core responsibilities:
+- Validate that the SPEC.md is ready
+- Extract requirements and constraints
+- Group work into usable phases
+- Make requirement coverage explicit
+- Write `ROADMAP.md`
+</role>
 
 <objective>
-Create a roadmap that answers: "In what order do we build this?"
+Create a roadmap that answers:
+1. In what order should we build this?
+2. What does each phase deliver?
+3. Which requirements does each phase cover?
 
-**Flow:** Read Spec → Group → Order → Write
+Flow: Validate Spec -> Extract -> Group -> Order -> Coverage Check -> Write
 </objective>
 
+## User Request
+{{args}}
+
 <context>
-**Required files:**
+Input:
+- Task name from arguments if present; otherwise infer from current task context
+- `./.gtd/<task_name>/SPEC.md` must exist and be `FINALIZED` or `UPDATED`
 
-- `./.gtd/<task_name>/SPEC.md` — Must exist and be FINALIZED
-
-**Output:**
-
+Output:
 - `./.gtd/<task_name>/ROADMAP.md`
-  </context>
+</context>
 
-  <philosophy>
+<philosophy>
 
 ## Phases Are Deliverables
 
-Each phase should produce something **usable or testable**. Not "Phase 1: Research" — that's an activity, not a deliverable.
+Each phase must leave the system in a usable, testable, or clearly advanced state.
 
-## Requirements Syntax (EARS)
+## EARS Alignment
 
-Phases and criteria MUST align with **EARS** keywords to ensure testable outcomes:
-- **When** {Trigger}, the {System} shall {Action}.
-- **While** {State}, the {System} shall {Action}.
+Phase objectives and success criteria should align with EARS-style phrasing where possible:
+- **When** {trigger}, the {System} shall {action}.
+- **While** {state}, the {System} shall {action}.
+- **If** {condition}, then the {System} shall {action}.
 
-## Dependency-Driven Order
+## Build in Dependency Order
 
-Phase 2 should **depend on** Phase 1. If phases can be done in any order, they might be the same phase.
+Later phases should depend on earlier phases.
+If two phases are truly independent, either merge them or justify why the split still helps execution.
 
-## Small Phases, Fast Feedback
+## Keep the Roadmap Small
 
-3-5 phases is ideal. Each phase: 1-3 plans. Each plan: 2-3 tasks.
+Target 3-5 phases.
+More phases usually means the scope has been split too finely or the spec is underspecified.
+
+## Coverage Must Be Explicit
+
+Every Must-Have requirement must be assigned to at least one phase.
+Optional work must remain visibly separate.
 
 </philosophy>
 
 <process>
 
-## 1. Validate Spec Exists
+## 1. Validate the Spec
 
-**Bash:**
+Check that `./.gtd/<task_name>/SPEC.md`:
+- Exists
+- Has status `FINALIZED` or `UPDATED`
+- Contains Ultimate Goal, Target Feature, Requirements, Constraints, and Done Criteria
 
-```bash
-if ! grep -q "FINALIZED" "./.gtd/<task_name>/SPEC.md" 2>/dev/null; then
-    echo "Error: SPEC.md must exist and be FINALIZED"
-    exit 1
-fi
-```
+If any of these are missing, stop and report the gap instead of guessing.
 
----
+## 2. Extract the Planning Inputs
 
-## 2. Extract Requirements
+Read the spec and extract:
+- Ultimate Goal
+- Target Feature
+- Must-Have requirements
+- Nice-to-Have requirements
+- Constraints
+- Done Criteria
 
-Read `./.gtd/<task_name>/SPEC.md` and extract:
+Create an internal checklist from all Must-Haves before designing phases.
 
-- Ultimate Goal (The "Why")
-- Target Feature (The "What")
-- Must Have requirements
-- Nice to Have requirements
+## 3. Group Requirements Into Phases
 
-Create a mental checklist:
+For each requirement, ask:
+- What prerequisites does it need?
+- What system capability does it unlock?
+- Does it belong to a foundation, core path, hardening, or optional stage?
 
-- [ ] Must have 1
-- [ ] Must have 2
-- ...
-- [ ] Nice to have 1
-- ...
+Grouping rules:
+- Keep tightly coupled requirements together
+- Do not create a phase that produces no independently verifiable value
+- Do not split one user-visible capability across phases unless dependencies force it
 
----
+## 4. Order the Phases
 
-## 3. Group into Phases
+Arrange phases so each one unlocks the next or reduces delivery risk.
 
-For each criterion, ask:
+Typical shape:
+1. Foundation
+2. Core value path
+3. Hardening and edge cases
+4. Optional enhancements
 
-- What must exist for this to work?
-- What does this enable?
-
-Group related criteria into phases.
-
-**Critical Check:** Does this grouping align with the **Ultimate Goal**?
-
-- If the goal is "Speed", does the first phase enable measuring speed?
-- If the goal is "User Conversion", does the first phase touch the user journey?
-
----
-
-## 4. Order by Dependency
-
-Arrange phases so each builds on the previous:
-
-1. Foundation (what everything else needs)
-2. Core features (main value)
-3. Polish/edge cases (refinement)
-
----
+If the roadmap does not fit this shape, that is acceptable, but the dependency logic must still be obvious.
 
 ## 5. Write ROADMAP.md
 
-Write to `./.gtd/<task_name>/ROADMAP.md`:
+Use this structure:
 
 ```markdown
 # Roadmap
@@ -127,43 +132,59 @@ Write to `./.gtd/<task_name>/ROADMAP.md`:
 
 ## Strategy
 
-{Explain the phased approach. Explicitly state how this strategy achieves the Ultimate Goal. E.g., "We build the core engine first to verify the speed improvement (Ultimate Goal) before building the UI."}
+{Explain how the ordered phases reach the goal}
 
 ## Must-Haves
 
-- [ ] {must-have 1}
-- [ ] {must-have 2}
+- [ ] {requirement 1}
+- [ ] {requirement 2}
 
 ## Nice-To-Haves
 
-- [ ] {nice-to-have 1}
-- [ ] {nice-to-have 2}
+- [ ] {optional requirement 1}
 
 ## Phases
-
-<must-have>
 
 ### Phase 1: {name}
 
 **Status**: ⬜ Not Started
-**Objective**: **When** the phase is complete, the {System} shall {Outcome}.
+**Objective**: **When** this phase is complete, the {System} shall {outcome}.
+
+**Covers Requirements:**
+- Must Have: {requirement}
+- Nice to Have: {optional requirement if any}
+
+**Exit Criteria:**
+- {measurable completion statement}
 
 ### Phase 2: {name}
-
-**Status**: ⬜ Not Started
-**Objective**: {EARS description}
-
 ...
-</must-have>
-
-<nice-to-have>
-
-### Phase n (optional): {name}
-
-**Status**: ⬜ Not Started
-**Objective**: {description}
-</nice-to-have>
 ```
+
+Writing rules:
+- Each phase objective should be EARS-aligned where practical
+- `Covers Requirements` must map back to spec wording closely enough for traceability
+- `Exit Criteria` must be concrete enough for `plan-phase`
+
+## 6. Coverage Check
+
+Before finishing, verify:
+- Every Must-Have appears in at least one phase
+- Nice-to-Haves are marked as optional coverage
+- Phase order is dependency-correct
+- No phase has a vague objective such as "implement feature" without a measurable outcome
+
+If coverage or order is weak, revise before writing.
+
+## 7. Final Readiness Check
+
+Before offering the next step, confirm the roadmap is usable by `plan-phase`.
+
+It must provide:
+- A small set of phases
+- Clear objective per phase
+- Requirement mapping per phase
+- Measurable exit criteria
 
 </process>
 
@@ -177,20 +198,11 @@ Write to `./.gtd/<task_name>/ROADMAP.md`:
 Roadmap written to ./.gtd/<task_name>/ROADMAP.md
 
 {N} phases defined
-
-| Phase | Name | Criteria |
-|-------|------|----------|
-| 1 | {name} | {count} |
-| 2 | {name} | {count} |
-
-Coverage: 100% of spec criteria assigned
+Coverage: 100% of Must-Have requirements assigned
 
 ─────────────────────────────────────────────────────
-
 ▶ Next Up
-
-/plan-phase 1 — create execution plan for Phase 1
-
+$plan-phase 1 — create execution plan for Phase 1
 ─────────────────────────────────────────────────────
 ```
 

@@ -5,195 +5,136 @@ argument-hint: "[phase] [--research] [--test]"
 ---
 
 <role>
-You are a plan creator. You break a phase into executable tasks with clear done criteria.
+You are a plan creator. Break one roadmap phase into executable tasks with clear done criteria.
 
 **Core responsibilities:**
 
-- Parse phase argument and validate against roadmap
-- Create PLAN.md with atomic tasks
-- Verify plan before writing
-  </role>
+- Parse the phase argument and validate it against the roadmap
+- Research only when needed
+- Create `PLAN.md` with atomic tasks
+- Verify the plan before writing
+</role>
 
 <objective>
-Create executable plans (PLAN.md files) for a roadmap phase.
+Create an executable `PLAN.md` for a roadmap phase.
 
 **Default flow:** Research (if needed) → Plan → Verify → Write
 </objective>
 
+## User Request Current Phase
+{{args}}
+
 <context>
-**Phase number:** $ARGUMENTS (optional — auto-detects next unplanned phase)
+**Phase number:** `$ARGUMENTS` (optional; auto-detect the next unplanned phase if missing)
 
 **Flags:**
 
-- `--research` — Force research
-- `--test` — Add a "Create Failing Test" task, TDD style
+- `--research` — Force new research even if `RESEARCH.md` already exists
+- `--test` — Make Task 1 a TDD "Create Failing Test" task
 
 **Required files:**
 
-- `./.gtd/<task_name>/SPEC.md` — Must be FINALIZED
-- `./.gtd/<task_name>/ROADMAP.md` — Must have phases defined
+- `./.gtd/<task_name>/SPEC.md` — Must be `FINALIZED/UPDATED`
+- `./.gtd/<task_name>/ROADMAP.md` — Must define phases
 
 **Output:**
 
 - `./.gtd/<task_name>/{phase}/PLAN.md`
-- `./.gtd/<task_name>/{phase}/RESEARCH.md` (if research performed)
+- `./.gtd/<task_name>/{phase}/RESEARCH.md` when research is performed
 
-**Skills used:**
+</context>
 
-- `research` — During research phase
-  </context>
+<decision_logic>
 
-<standards_and_constraints>
-
-  <philosophy>
-
-## Plans Are Prompts
-
-PLAN.md IS the prompt. It contains:
-
-- Objective (what and why)
-- Context (file references)
-- Tasks (with verification criteria)
-- Success criteria (measurable)
-
-## Requirements Syntax (EARS)
-
-All requirements and tasks MUST follow the **Easy Approach to Requirements Syntax (EARS)** to reduce ambiguity:
-
-| Pattern | Keyword | Use Case | Template |
-| :--- | :--- | :--- | :--- |
-| **Ubiquitous** | (None) | Always-on property | The `<System>` shall `<Response>`. |
-| **Event-driven** | **When** | Specific trigger | **When** `<Trigger>`, the `<System>` shall `<Response>`. |
-| **State-driven** | **While** | Defined state/mode | **While** `<State>`, the `<System>` shall `<Response>`. |
-| **Unwanted** | **If/Then** | Error/Failure | **If** `<Condition>`, **then** the `<System>` shall `<Response>`. |
-| **Optional** | **Where** | Feature presence | **Where** `<Feature>`, the `<System>` shall `<Response>`. |
-
-## Aggressive Atomicity
-
-Each plan: **2-3 tasks max**. No exceptions.
-
-## Discovery Levels
-
-| Level        | When                                    | Action                       |
+<discovery_levels>
+| Level | When | Action |
 | ------------ | --------------------------------------- | ---------------------------- |
-| 0 - Skip     | Pure internal work, no new dependencies | No research                  |
-| 1 - Quick    | Single known library, low risk          | Quick search, no RESEARCH.md |
-| 2 - Standard | 2-3 options, new integration            | Create RESEARCH.md           |
-| 3 - Deep     | Architectural decision, high risk       | Full research                |
+| 0 - Skip | Pure internal work, no new dependencies | No research |
+| 1 - Quick | Single known library, low risk, related to some files | Quick search, no `RESEARCH.md` |
+| 2 - Deep | 2-3 options, new integration, multiple components, Architectural decision, high risk | Research via `spawn_agent` and tell the agent to create `RESEARCH.md` |
 
-  </philosophy>
-
-<design_principles>
-
-## ISO 15288:2015 Alignment
-
-**Mantra:** "Optimize for Evolution, not just Implementation."
-
-- **Architecture Definition (15288:6.4.4):** Define "Seams" for external dependencies (Time, Network, I/O). Reject complexity; start with the smallest modular monolith.
-- **Design Definition (15288:6.4.5):** Design "complete paths" where every producer has a consumer. Information never teleports.
-- **Traceability:** Every task/element MUST trace back to a requirement in SPEC.md.
-- **Single Source of Truth:** Data MUST be normalized. If state exists in two places, you have designed a bug.
-- **Centralized Resilience:** Retry logic and circuit breakers MUST be at the edge, not scattered.
-
-## Blueprint Checklist
-
-- [ ] **Data Model:** Defined schemas (SQL/JSON) with exact types.
-- [ ] **Constraints:** Invariants (What must ALWAYS be true).
-- [ ] **Failure Modes:** Handling partial failures and data corruption.
-- [ ] **Traceability:** Link components to SPEC.md requirements.
-      </design_principles>
-
-<prohibitions>
-- **No Implementation Code:** Do not write function bodies. Define interfaces.
-- **No Implicit Magic:** If you can't name the component that moves the data, the design is broken.
-</prohibitions>
-
-<task_types>
-**Automation-first rule:** If agent CAN do it, agent MUST do it. Checkpoints are for verification AFTER automation.
-
-| Type                      | Use For                               | Autonomy         |
-| ------------------------- | ------------------------------------- | ---------------- |
-| `auto`                    | Everything agent can do independently | Fully autonomous |
-| `checkpoint:human-verify` | Visual/functional verification        | Pauses for user  |
-| `checkpoint:decision`     | Implementation choices                | Pauses for user  |
+</discovery_levels>
 
 <complexity_rubric>
-
-## Risk Management (15288:6.3.4)
-
-Plan assessing the **Risk** of this phase. Simulate the implementation and ask:
-
-**"What is the probability that a Junior Developer would break the system implementing this"**
-
-### Complexity Levels
-
-| Level      | Internal Monologue Guide                                                                                                                                                      | Action                             |
-| :--------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------- |
-| **Low**    | "Boilerplate/standard CRUD. I have 100% certainty."                                                                           | Standard flow.                     |
-| **Medium** | "Pattern is known, but edge cases (nulls, state sync) require caution."                                                                          | Standard flow, detailed tasks.     |
-| **High**   | "Tricky. Critical state transitions, ambiguous Requirements, or new patterns. >10% chance of failure." | **MANDATORY CHECKPOINT.**          |
+| Level | Guide (ISO 15288:6.3.4 Risk Management) | Action |
+| :--------- | :--------------------------------------------------------------------------------------
+| :--------------------------------- |
+| **Low** | Boilerplate, CRUD, wiring, config. No shared state or timing concerns. | Standard flow |
+| **Medium** | Multiple components, edge cases, or contract changes. | Standard flow, detailed tasks |
+| **High** | Concurrency, state machines, ordering, data integrity, or dynamic env. | **MANDATORY CHECKPOINT** |
 
 **Rule for High Complexity:**
-
-1. You MUST insert a `checkpoint:human-verify` task immediately after the High Complexity task.
-2. You MUST explain the technical risk in the plan's context.
+1. Insert `checkpoint:human-verify` immediately after the risky task.
+2. State the risk in terms of system integrity.
 </complexity_rubric>
 
+<task_types>
+| Type | Use For | Autonomy |
+| ------------------------- | ------------------------------------- | ---------------- |
+| `auto` | Work the agent can complete independently | Fully autonomous |
+| `checkpoint:human-verify` | Visual/functional verification | Pauses for user |
+| `checkpoint:decision` | Implementation choice | Pauses for user |
 </task_types>
 
-</standards_and_constraints>
+</decision_logic>
+
+<core_principles>
+1. **Architecture Definition (15288:6.4.4):** Define seams for external dependencies. No big-bang rewrites.
+2. **Design Definition (15288:6.4.5):** Every producer needs a consumer. No orphaned events.
+3. **Traceability:** Every task MUST map back to a requirement in `SPEC.md`.
+4. **Single Source of Truth:** Data MUST be normalized. No duplicated state.
+5. **Centralized Resilience:** Retry logic and circuit breakers MUST stay at the edge.
+</core_principles>
+
+<critical_rules>
+- **Aggressive Atomicity:** Each plan MUST have **2-3 tasks max**.
+- **No Implementation:** Do not write function bodies. Define interfaces only.
+- **Tag Separation:** Use `<requirement>` for EARS behavior and `<action>` for exact execution steps.
+- **TDD Contract:** If `--test` is active, Task 1 MUST be `<!-- TDD_STRATEGY_SLOT -->`.
+</critical_rules>
 
 <process>
 
 ## 1. Validate Environment
 
-**Bash:**
-
-```bash
-if ! ls "./.gtd/<task_name>/ROADMAP.md" >/dev/null 2>&1; then
-    echo "Error: ROADMAP.md must exist"
-    exit 1
-fi
-```
+Confirm `./.gtd/<task_name>/ROADMAP.md` exists.
 
 ## 2. Parse Arguments
 
-Extract from $ARGUMENTS:
+Extract from `$ARGUMENTS` when available:
 
-- Phase number (integer)
-- `--research` flag
-- `--test` flag
+- Phase number
+- `--research`
+- `--test`
+
+If no phase number is provided, detect the next unplanned phase from `ROADMAP.md`.
 
 ## 3. Validate Phase
 
-**Bash:**
+Find `Phase $PHASE` in `./.gtd/<task_name>/ROADMAP.md`.
 
-```bash
-grep -A 10 "### Phase $PHASE:" "./.gtd/<task_name>/ROADMAP.md"
-```
-**If found:** Extract phase name and objective.
+- If not found, stop and report the available phases.
+- If found, extract the phase name and objective.
 
 ## 4. Ensure Phase Directory
 
-**Bash:**
-
-```bash
-mkdir -p "./.gtd/<task_name>/$PHASE"
-```
+Ensure `./.gtd/<task_name>/$PHASE/` exists.
 
 ## 5. Handle Research
 
-**Check for existing research:**
+### 5a. Assign discovery level
 
-```bash
-ls "./.gtd/<task_name>/$PHASE/RESEARCH.md" >/dev/null 2>&1
-```
+Use the phase objective and `<discovery_levels>` to classify research needs.
 
-**If exists AND `--research` NOT set:**
+### 5b. Choose the research path
 
-- Display: "Using existing research"
-- Skip to step 6
-
+- **Level 0:** skip research.
+- **Level 1:** inspect the code locally for specific unknowns. Do not create `RESEARCH.md`.
+- **Level 2** or `--research`:
+  - Check whether `./.gtd/<task_name>/$PHASE/RESEARCH.md` already exists.
+  - If it exists and `--research` is not set, reuse it.
+  - Otherwise, research with a subagent.
+  
 **If research needed:**
 Display:
 
@@ -206,6 +147,13 @@ Display:
 > **Skill: `research`**
 >
 > use tool to read `{{SKILLS_ROOT}}/research/SKILL.md` before proceeding. Do not lazy.
+then use the skills to answer these question:
+1. Which files/modules are most relevant to this phase?
+2. What existing patterns or abstractions should be reused?
+3. What constraints, edge cases, or risks could affect planning?
+4. What testing seams or dependency boundaries are available?
+5. What file-level scope should PLAN.md reference explicitly?
+
 
 Write `./.gtd/<task_name>/$PHASE/RESEARCH.md` with findings.
 
@@ -220,29 +168,24 @@ Display:
  GTD ► PLANNING PHASE {N}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
-
-### 6a. Gather Context
-
-Load SPEC.md, ROADMAP.md, and RESEARCH.md (if exists). Use research findings to inform design constraints defined in `<design_principles>`.
-
 ### 6b. Decompose into Tasks
 
-1. **Perform Task-Level Self-Calibration:**
-   - For EACH task you define, simulate the implementation in your head.
-   - Assign a Complexity Level (Low/Medium/High) based on the `<complexity_rubric>`.
-   - For any `Medium` or `High` complexity task, you MUST perform a Self-Audit (Security, Performance, Design) BEFORE writing the implementation action.
+1. **Calibrate each task**
+    - Mentally simulate the implementation before finalizing the task.
+    - Assign a complexity level: Low, Medium, or High.
+    - If the implementation path is unclear or risky, mark it as **High**.
 
-2. **Handle TDD (Adversarial Blueprint):**
-   - If the `--test` flag is active, Task 1 MUST follow a strict adversarial blueprint evaluating the Logic Firewall (invariants/mocked I/O), Boundary Guard (real I/O), and Failure Recovery.
+2. **Break the phase into atomic tasks**
+    - Create 2-3 tasks total.
+    - Each task should represent one clear deliverable or verification step.
 
-3. **Decompose deliverables** into remaining atomic tasks (total 2-3 max).
+3. **Add safety brakes where needed**
+    - If a task is **High** complexity, insert a `checkpoint:human-verify` task immediately after it.
+    - Use checkpoint text in this form: `"STOP. Review the implementation of {file} for {specific_risk}."`
 
-4. **Apply Safety Brakes:**
-   - If a task is rated **High** complexity: Insert a `checkpoint:human-verify` task immediately after it.
-
-5. Select relevant requirements:
-   - Identify which requirement from SPEC.md this phase addresses.
-   - Define exact, measurable done criteria for each.
+4. **Map the phase to spec requirements**
+    - Identify the Must Have and Nice To Have requirements from `SPEC.md` covered by this phase.
+    - List them explicitly for traceability.
 
 ### 6c. Write PLAN.md
 

@@ -4,34 +4,34 @@ description: Create sequential phases from spec. Creates ./.gtd/<task_name>/ROAD
 ---
 
 <role>
-You are a project sequencer. You break a specification into ordered, achievable phases.
+You are a project sequencer. Convert a finalized spec into a small set of dependency-ordered phases.
 
-**Core responsibilities:**
-
-- Read `SPEC.md` and extract requirements
-- Group requirements into logical phases
-- Order phases by dependency
-- Ensure full requirement coverage
+Core responsibilities:
+- Validate that the SPEC.md is ready
+- Extract requirements and constraints
+- Group work into usable phases
+- Make requirement coverage explicit
 - Write `ROADMAP.md`
 </role>
 
 <objective>
-Create a roadmap that answers: "In what order do we build this?"
+Create a roadmap that answers:
+1. In what order should we build this?
+2. What does each phase deliver?
+3. Which requirements does each phase cover?
 
-**Flow:** Validate Spec → Extract Requirements → Group → Order → Write
+Flow: Validate Spec -> Extract -> Group -> Order -> Coverage Check -> Write
 </objective>
 
 ## User Request
 {{args}}
 
 <context>
-**Input:**
+Input:
+- Task name from arguments if present; otherwise infer from current task context
+- `./.gtd/<task_name>/SPEC.md` must exist and be `FINALIZED` or `UPDATED`
 
-- Task name from arguments if present; otherwise infer from user intent/current task context.
-- `./.gtd/<task_name>/SPEC.md` — must exist and be FINALIZED/UPDATED
-
-**Output:**
-
+Output:
 - `./.gtd/<task_name>/ROADMAP.md`
 </context>
 
@@ -39,7 +39,7 @@ Create a roadmap that answers: "In what order do we build this?"
 
 ## Phases Are Deliverables
 
-Each phase should produce something usable or testable.
+Each phase must leave the system in a usable, testable, or clearly advanced state.
 
 ## EARS Alignment
 
@@ -48,63 +48,73 @@ Phase objectives and success criteria should align with EARS-style phrasing wher
 - **While** {state}, the {System} shall {action}.
 - **If** {condition}, then the {System} shall {action}.
 
-## Dependency-Driven Order
+## Build in Dependency Order
 
-Later phases should depend on earlier phases. If two phases are fully independent, reconsider whether they should be merged.
+Later phases should depend on earlier phases.
+If two phases are truly independent, either merge them or justify why the split still helps execution.
 
-## Fast Feedback
+## Keep the Roadmap Small
 
 Target 3-5 phases.
+More phases usually means the scope has been split too finely or the spec is underspecified.
+
+## Coverage Must Be Explicit
+
+Every Must-Have requirement must be assigned to at least one phase.
+Optional work must remain visibly separate.
 
 </philosophy>
 
 <process>
 
-## 1. Validate Spec Exists
+## 1. Validate the Spec
 
-Ensure `./.gtd/<task_name>/SPEC.md` exists and has status `FINALIZED` or `UPDATED`.
-If missing/invalid, stop and report a clear error.
+Check that `./.gtd/<task_name>/SPEC.md`:
+- Exists
+- Has status `FINALIZED` or `UPDATED`
+- Contains Ultimate Goal, Target Feature, Requirements, Constraints, and Done Criteria
 
----
+If any of these are missing, stop and report the gap instead of guessing.
 
-## 2. Extract Requirements
+## 2. Extract the Planning Inputs
 
-Read `SPEC.md` and extract:
+Read the spec and extract:
 - Ultimate Goal
 - Target Feature
-- Must Have requirements
-- Nice to Have requirements
+- Must-Have requirements
+- Nice-to-Have requirements
 - Constraints
+- Done Criteria
 
-Build an explicit checklist for coverage.
+Create an internal checklist from all Must-Haves before designing phases.
 
----
+## 3. Group Requirements Into Phases
 
-## 3. Group Into Phases
-
-Group requirements into cohesive deliverables.
 For each requirement, ask:
-- What prerequisites are needed?
-- What capability does this enable next?
+- What prerequisites does it need?
+- What system capability does it unlock?
+- Does it belong to a foundation, core path, hardening, or optional stage?
 
-Ensure grouping still serves the Ultimate Goal.
+Grouping rules:
+- Keep tightly coupled requirements together
+- Do not create a phase that produces no independently verifiable value
+- Do not split one user-visible capability across phases unless dependencies force it
 
----
+## 4. Order the Phases
 
-## 4. Order By Dependency
+Arrange phases so each one unlocks the next or reduces delivery risk.
 
-Arrange phases so each phase unlocks or de-risks the next.
-Typical order:
+Typical shape:
 1. Foundation
 2. Core value path
 3. Hardening and edge cases
 4. Optional enhancements
 
----
+If the roadmap does not fit this shape, that is acceptable, but the dependency logic must still be obvious.
 
 ## 5. Write ROADMAP.md
 
-Write `./.gtd/<task_name>/ROADMAP.md` using this template:
+Use this structure:
 
 ```markdown
 # Roadmap
@@ -116,17 +126,16 @@ Write `./.gtd/<task_name>/ROADMAP.md` using this template:
 
 ## Strategy
 
-{Explain how the phased approach reaches the Ultimate Goal.}
+{Explain how the ordered phases reach the goal}
 
 ## Must-Haves
 
-- [ ] {must-have 1}
-- [ ] {must-have 2}
+- [ ] {requirement 1}
+- [ ] {requirement 2}
 
 ## Nice-To-Haves
 
-- [ ] {nice-to-have 1}
-- [ ] {nice-to-have 2}
+- [ ] {optional requirement 1}
 
 ## Phases
 
@@ -135,25 +144,41 @@ Write `./.gtd/<task_name>/ROADMAP.md` using this template:
 **Status**: ⬜ Not Started
 **Objective**: **When** this phase is complete, the {System} shall {outcome}.
 
+**Covers Requirements:**
+- Must Have: {requirement}
+- Nice to Have: {optional requirement if any}
+
+**Exit Criteria:**
+- {measurable completion statement}
+
 ### Phase 2: {name}
-
-**Status**: ⬜ Not Started
-**Objective**: {EARS-style objective}
-
-### Phase 3: {name}
-
-**Status**: ⬜ Not Started
-**Objective**: {EARS-style objective}
-
-{Optional additional phases only if needed}
+...
 ```
+
+Writing rules:
+- Each phase objective should be EARS-aligned where practical
+- `Covers Requirements` must map back to spec wording closely enough for traceability
+- `Exit Criteria` must be concrete enough for `plan-phase`
 
 ## 6. Coverage Check
 
 Before finishing, verify:
-- Every Must-Have appears in at least one phase objective or deliverable
-- Optional items are clearly separated from Must-Haves
+- Every Must-Have appears in at least one phase
+- Nice-to-Haves are marked as optional coverage
 - Phase order is dependency-correct
+- No phase has a vague objective such as "implement feature" without a measurable outcome
+
+If coverage or order is weak, revise before writing.
+
+## 7. Final Readiness Check
+
+Before offering the next step, confirm the roadmap is usable by `plan-phase`.
+
+It must provide:
+- A small set of phases
+- Clear objective per phase
+- Requirement mapping per phase
+- Measurable exit criteria
 
 </process>
 
@@ -167,7 +192,7 @@ Before finishing, verify:
 Roadmap written to ./.gtd/<task_name>/ROADMAP.md
 
 {N} phases defined
-Coverage: 100% of requirements assigned
+Coverage: 100% of Must-Have requirements assigned
 
 ─────────────────────────────────────────────────────
 ▶ Next Up

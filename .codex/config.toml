@@ -24,11 +24,3 @@ config_file = "agents/performance.toml"
 [agents.tech_debt]
 description = "Technical debt auditor for maintainability risks and refactoring priorities."
 config_file = "agents/tech_debt.toml"
-
-[agents.ts_quality]
-description = "TypeScript/JavaScript quality reviewer for type safety and common bug-prone patterns."
-config_file = "agents/ts_quality.toml"
-
-[agents.rust_quality]
-description = "Rust quality reviewer for idiomatic usage, safety, and concurrency/error-handling pitfalls."
-config_file = "agents/rust_quality.toml"

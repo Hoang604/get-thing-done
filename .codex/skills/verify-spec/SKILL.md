@@ -61,12 +61,19 @@ Run a verification subagent with strict context:
 ```text
 spawn_agent({ agent_type: "explorer", message: "
 <objective>
-1. Verify if the Ultimate Goal of task '<task_name>' is achieved.
+1. Verify if the Ultimate Goal of the task '<task_name>' has been achieved.
 2. Verify implementation of ALL Must Have requirements.
 </objective>
 
+<output_file>
+./.gtd/<task_name>/audit/COMPLETION.md
+</output_file>
+
 <requirements>
 {paste all must-have items here, numbered}
+1. {requirement 1}
+2. {requirement 2}
+...
 </requirements>
 
 <context>
@@ -74,20 +81,24 @@ Spec: ./.gtd/<task_name>/SPEC.md
 </context>
 
 <research_checklist>
-1. For Ultimate Goal: find concrete evidence the outcome is met.
+1. For Ultimate Goal: Find evidence that the high-level outcome is met (e.g., benchmark results, user metrics, or working feature that enables it).
 2. For EACH requirement:
-   - find relevant files/symbols
-   - read code and behavior
-   - determine PASS / FAIL / PARTIAL
+   - Search for relevant files or symbols
+   - Read the code to verify implementation
+   - Determine status: PASS / FAIL / PARTIAL
 </research_checklist>
 
 <output_format>
-Ultimate Goal Verification:
-- Status: PASS/FAIL/UNCERTAIN
-- Evidence
+Verification Results:
 
-Requirements Verification:
-1. {requirement}: PASS/FAIL/PARTIAL - {evidence file:line} - {notes}
+**Ultimate Goal Verification:**
+Status: PASS/FAIL/UNCERTAIN
+Evidence: {explain how the goal was met or not}
+
+**Requirements Verification:**
+1. {requirement 1}: PASS/FAIL/PARTIAL - {evidence: file:line} - {notes}
+2. {requirement 2}: PASS/FAIL/PARTIAL - {evidence: file:line} - {notes}
+...
 </output_format>
 "})
 wait({ ids: ["<agent_id>"] })
@@ -113,13 +124,6 @@ Store the list as `$CHANGED_FILES` for audit scopes.
 
 Run all independent audits at the same time to reduce total runtime.
 
-**Prepare conditional scopes:**
-
-```bash
-TS_JS_FILES=$(echo "$CHANGED_FILES" | grep -E '\.(ts|tsx|js|jsx)$' || true)
-RUST_FILES=$(echo "$CHANGED_FILES" | grep -E '\.rs$' || true)
-```
-
 **Spawn subagents first, then wait once:**
 
 ```text
@@ -128,9 +132,13 @@ security_id = spawn_agent({ agent_type: "security", message: "
 Scan for security vulnerabilities in code related to task: <task_name>
 </objective>
 
-<scope>
-{$CHANGED_FILES}
-</scope>
+<output_file>
+./.gtd/<task_name>/audit/SECURITY.md
+</output_file>
+
+<files_to_scan>
+{$CHANGED_FILES - list from git diff above}
+</files_to_scan>
 
 <context>
 Spec: ./.gtd/<task_name>/SPEC.md
@@ -138,17 +146,13 @@ Spec: ./.gtd/<task_name>/SPEC.md
 
 <focus_areas>
 - SQL injection
-- IDOR
+- IDOR (Insecure Direct Object Reference)
 - Command injection
-- XSS
+- XSS (Cross-Site Scripting)
 - Path traversal
-- XXE
-- SSRF
+- XXE (XML External Entity)
+- SSRF (Server-Side Request Forgery)
 </focus_areas>
-
-<output_format>
-List findings with severity, file:line, description, and remediation hint.
-</output_format>
 "})
 
 performance_id = spawn_agent({ agent_type: "performance", message: "
@@ -156,9 +160,13 @@ performance_id = spawn_agent({ agent_type: "performance", message: "
 Scan for performance issues in code related to task: <task_name>
 </objective>
 
-<scope>
-{$CHANGED_FILES}
-</scope>
+<output_file>
+./.gtd/<task_name>/audit/PERFORMANCE.md
+</output_file>
+
+<files_to_scan>
+{$CHANGED_FILES - list from git diff above}
+</files_to_scan>
 
 <context>
 Spec: ./.gtd/<task_name>/SPEC.md
@@ -171,9 +179,6 @@ Spec: ./.gtd/<task_name>/SPEC.md
 - Memory leaks
 - Blocking operations
 </focus_areas>
-
-<output_format>
-List findings with impact, file:line, description, and mitigation.
 </output_format>
 "})
 
@@ -182,9 +187,13 @@ tech_debt_id = spawn_agent({ agent_type: "tech_debt", message: "
 Scan for technical debt in code related to task: <task_name>
 </objective>
 
-<scope>
-{$CHANGED_FILES}
-</scope>
+<output_file>
+./.gtd/<task_name>/audit/TECH_DEBT.md
+</output_file>
+
+<files_to_scan>
+{$CHANGED_FILES - list from git diff above}
+</files_to_scan>
 
 <context>
 Spec: ./.gtd/<task_name>/SPEC.md
@@ -197,50 +206,8 @@ Spec: ./.gtd/<task_name>/SPEC.md
 - Tight coupling
 - Poor error handling
 </focus_areas>
-
-<output_format>
-List findings with severity, file:line, description, and cleanup recommendation.
-</output_format>
 "})
-
-if TS_JS_FILES is not empty:
-  ts_quality_id = spawn_agent({ agent_type: "ts_quality", message: "
-<objective>
-Review TS/JS code quality for task: <task_name>
-</objective>
-
-<scope>
-{TS_JS_FILES}
-</scope>
-
-<focus_areas>
-- Type safety (avoid any where possible)
-- Hooks correctness
-- Async/error handling
-- Maintainability
-</focus_areas>
-"})
-
-if RUST_FILES is not empty:
-  rust_quality_id = spawn_agent({ agent_type: "rust_quality", message: "
-<objective>
-Review Rust code quality for task: <task_name>
-</objective>
-
-<scope>
-{RUST_FILES}
-</scope>
-
-<focus_areas>
-- Ownership/borrowing
-- Error handling (unwrap usage)
-- Async correctness
-- Idiomatic Rust
-- Unnecessary allocations
-</focus_areas>
-"})
-
-wait({ ids: [security_id, performance_id, tech_debt_id, ts_quality_id?, rust_quality_id?] })
+wait({ ids: [security_id, performance_id, tech_debt_id] })
 ```
 
 **Write results to files:**
@@ -339,8 +306,6 @@ Detailed findings are saved in the `audit/` folder.
 | Security | {PASS/FAIL} | `./.gtd/<task_name>/audit/SECURITY.md` |
 | Performance | {PASS/FAIL} | `./.gtd/<task_name>/audit/PERFORMANCE.md` |
 | Tech Debt | {PASS/FAIL} | `./.gtd/<task_name>/audit/TECH_DEBT.md` |
-| TS Quality | {PASS/FAIL/SKIP} | `./.gtd/<task_name>/audit/TS_QUALITY.md` |
-| Rust Quality | {PASS/FAIL/SKIP} | `./.gtd/<task_name>/audit/RUST_QUALITY.md` |
 
 ---
 
