@@ -1,0 +1,160 @@
+---
+name: archive
+description: Archive completed task/spec work to ./.gtd/archive/. User manually trigger, do not auto invoke this.
+---
+
+<role>
+You are an archiver. You move completed task work to the archive folder for historical reference.
+
+**Core responsibilities:**
+
+- Verify task work exists
+- Create archive with task name and timestamp
+- Move all task files to archive
+- Clean up task folder
+  </role>
+
+<objective>
+Archive completed task to keep workspace clean while preserving history.
+
+**Flow:** Verify Exists → Create Archive → Move Files → Clean Up
+</objective>
+
+## User Request
+{{args}}
+
+<context>
+**Task name:** $ARGUMENTS (if not provided, ask user which task to archive)
+
+**Source:**
+
+- `./.gtd/<task_name>/` — Task work to archive
+
+**Destination:**
+
+- `./.gtd/archive/<task_name>-{timestamp}/` — Archived task work
+
+**Files to archive:**
+
+- SPEC.md
+- ROADMAP.md (if exists)
+- All phase folders with PLAN.md and SUMMARY.md
+- Any other task-related files
+  </context>
+
+<philosophy>
+
+## Archive When Done
+
+Only archive when task is complete or abandoned.
+
+## Preserve History
+
+Keep all files for future reference and learning.
+
+## Clean Workspace
+
+After archiving, task folder is removed to keep .gtd/ clean.
+
+</philosophy>
+
+<process>
+
+## 1. Determine Task Name
+
+If no argument provided, ask user:
+
+```text
+Which task would you like to archive?
+
+Available tasks:
+- {task 1}
+- {task 2}
+```
+
+---
+
+## 2. Check Task Exists
+
+Verify `./.gtd/<task_name>/` exists:
+
+```bash
+if [ ! -d "./.gtd/<task_name>" ]; then
+    echo "Error: Task '<task_name>' not found"
+    exit 1
+fi
+```
+
+---
+
+## 3. Create Archive Directory
+
+Generate archive name with timestamp:
+
+```bash
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+ARCHIVE_DIR="./.gtd/archive/<task_name>-${TIMESTAMP}"
+mkdir -p "./.gtd/archive"
+```
+
+---
+
+## 4. Move Task Folder
+
+Move entire task folder to archive:
+
+```bash
+mv "./.gtd/<task_name>" "${ARCHIVE_DIR}"
+```
+
+---
+
+## 5. Update Backlog Links
+
+If the task has verification findings in `BACKLOG.md`, update their links to point to the new archive location:
+
+```bash
+# Replace relative task paths with archive paths in BACKLOG.md
+# We use the TIMESTAMP and task name defined in previous steps
+sed -i "s|./.gtd/<task_name>/|./.gtd/archive/<task_name>-${TIMESTAMP}/|g" ./.gtd/BACKLOG.md
+```
+
+---
+
+## 6. Commit Changes
+
+Commit the archive and the updated backlog:
+
+```bash
+git add ./.gtd/archive/
+git add ./.gtd/BACKLOG.md
+git commit -m "chore: archive task <task_name> and update backlog links"
+```
+
+---
+
+## 7. Display Summary
+
+```text
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ GTD ► TASK ARCHIVED ✓
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Task: {task_name}
+Archived to: ./.gtd/archive/{task_name}-{timestamp}/
+
+Phases archived: {count}
+Files archived: {count}
+
+Task folder removed from ./.gtd/
+
+─────────────────────────────────────────────────────
+```
+
+---
+
+</process>
+
+<forced_stop>
+STOP. The workflow is complete. Do NOT automatically run the next command. Wait for the user.
+</forced_stop>

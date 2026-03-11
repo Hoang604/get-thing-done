@@ -1,0 +1,426 @@
+---
+name: plan-phase
+description: Create execution plan for a phase. Creates ./.gtd/<task_name>/{phase}/PLAN.md. User manually trigger, do not auto invoke this.
+---
+
+<role>
+You are a plan creator. You break a phase into executable tasks with clear done criteria.
+
+**Core responsibilities:**
+
+- Parse phase argument and validate against roadmap
+- Research if needed (unless skipped)
+- Create PLAN.md with atomic tasks
+- Verify plan before writing
+</role>
+
+<objective>
+Create executable plans (PLAN.md files) for a roadmap phase.
+
+**Default flow:** Research (if needed) → Plan → Verify → Write
+</objective>
+
+## User Request Current Phase
+{{args}}
+
+<context>
+**Phase number:** `$ARGUMENTS` (optional; auto-detect next unplanned phase if unavailable)
+
+**Flags:**
+
+- `--research` — Force re-research even if RESEARCH.md exists
+- `--test` — Add a "Create Failing Test" task, TDD style
+
+**Required files:**
+
+- `./.gtd/<task_name>/SPEC.md` — Must be FINALIZED/UPDATED
+- `./.gtd/<task_name>/ROADMAP.md` — Must have phases defined
+
+**Output:**
+
+- `./.gtd/<task_name>/{phase}/PLAN.md`
+- `./.gtd/<task_name>/{phase}/RESEARCH.md` (if research performed)
+
+</context>
+
+<decision_logic>
+
+<discovery_levels>
+| Level | When | Action |
+| ------------ | --------------------------------------- | ---------------------------- |
+| 0 - Skip | Pure internal work, no new dependencies | No research |
+| 1 - Quick | Single known library, low risk, related to some files | Quick search, no RESEARCH.md |
+| 2 - Standard | 2-3 options, new integration, related to multiple components | Deep research by yourself, create RESEARCH.md |
+| 3 - Deep | Architectural decision, high risk | Full research via `spawn_agent` |
+</discovery_levels>
+
+<complexity_rubric>
+| Level | Guide (ISO 15288:6.3.4 Risk Management) | Action |
+| :--------- | :-------------------------------------------------------------------------------------- | :--------------------------------- |
+| **Low** | Boilerplate, CRUD, wiring, config. No shared state or timing concerns. | Standard flow. |
+| **Medium** | Touches multiple components, edge cases, or modifies existing contracts. | Standard flow, detailed tasks. |
+| **High** | Concurrency, state machines, event ordering, data integrity, or dynamic env. | **MANDATORY CHECKPOINT.** |
+
+**Rule for High Complexity:**
+1. Insert `checkpoint:human-verify` task immediately after.
+2. Explain the technical risk in terms of system integrity.
+</complexity_rubric>
+
+<task_types>
+| Type | Use For | Autonomy |
+| ------------------------- | ------------------------------------- | ---------------- |
+| `auto` | Everything agent can do independently | Fully autonomous |
+| `checkpoint:human-verify` | Visual/functional verification | Pauses for user |
+| `checkpoint:decision` | Implementation choices | Pauses for user |
+</task_types>
+
+</decision_logic>
+
+<core_principles>
+1. **Architecture Definition (15288:6.4.4):** Define seams for external dependencies. No big-bang rewrites.
+2. **Design Definition (15288:6.4.5):** Every producer needs a consumer. No orphaned events.
+3. **Traceability:** Every task MUST trace back to a requirement in SPEC.md.
+4. **Single Source of Truth:** Data MUST be normalized. No duplicated state.
+5. **Centralized Resilience:** Retry logic and circuit breakers MUST be at the edge only.
+</core_principles>
+
+<critical_rules>
+- **Aggressive Atomicity:** Each plan MUST have **2-3 tasks max**.
+- **No Implementation:** Do not write function bodies. Define interfaces only.
+- **Tag Separation:** Use `<requirement>` for EARS system behavior and `<action>` for exact agent execution sequences.
+- **TDD Contract:** If `--test` is active, Task 1 MUST be the `<!-- TDD_STRATEGY_SLOT -->`.
+</critical_rules>
+
+<process>
+
+## 1. Validate Environment
+
+**Bash:**
+
+```bash
+if ! ls "./.gtd/<task_name>/ROADMAP.md" >/dev/null 2>&1; then
+    echo "Error: ROADMAP.md must exist for <task_name>"
+    exit 1
+fi
+```
+
+## 2. Parse Arguments
+
+Extract from `$ARGUMENTS` when available:
+
+- Phase number (integer)
+- `--research` flag
+- `--test` flag
+
+**If no phase number:** Detect next unplanned phase from ROADMAP.md.
+
+## 3. Validate Phase
+
+**Bash:**
+
+```bash
+grep -A 10 "### Phase $PHASE:" "./.gtd/<task_name>/ROADMAP.md"
+```
+
+**If not found:** Error with available phases.
+**If found:** Extract phase name and objective.
+
+## 4. Ensure Phase Directory
+
+**Bash:**
+
+```bash
+mkdir -p "./.gtd/<task_name>/$PHASE"
+```
+
+## 5. Handle Research
+
+**5a. Identify Discovery Level:**
+Analyze the phase objective from ROADMAP.md and assign a level (0-3) based on the `<discovery_levels>` rubric.
+
+**5b. Execution Path:**
+
+- **IF LEVEL 0 (Skip):** Proceed to Step 6.
+- **IF LEVEL 1 (Quick):**
+  - Investigate the code yourself to resolve specific technical unknowns.
+  - Display results to self-context. **Do NOT create RESEARCH.md.**
+  - Proceed to Step 6.
+- **IF LEVEL 2 (Standard):**
+  - Investigate the code yourself to resolve specific technical unknowns.
+  - Trace information flow, identify reusable patterns, and capture constraints.
+  - Create `RESEARCH.md`.
+  - Proceed to Step 6.
+- **IF LEVEL 3 (Deep) OR `--research` IS SET:**
+  - **Check for existing research:**
+    ```bash
+    ls "./.gtd/<task_name>/$PHASE/RESEARCH.md" >/dev/null 2>&1
+    ```
+  - **If exists AND `--research` NOT set:** Display "Using existing research" and skip to Step 6.
+  - **If research is needed:**
+
+```text
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ GTD ► RESEARCHING PHASE {N}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+> **Before researching, YOU must extract and summarize:**
+> 1. From ROADMAP.md: Phase name, objective, dependencies on previous phases
+> 2. From SPEC.md: Relevant Must Have and Nice To Have requirements for this phase
+> 3. Scope boundaries: which files/modules are in scope vs out of scope
+>
+> **Then run a research subagent with pre-digested context:**
+>
+> ```
+> spawn_agent({ agent_type: "worker", message: "
+> {what need to explore before writting plan, and tell the worker to Write findings to `./.gtd/<task_name>/$PHASE/RESEARCH.md` and return only the summary finding to you.}
+> "})
+> wait({ ids: ["<agent_id>"] })
+> ```
+>
+> Read `./.gtd/<task_name>/$PHASE/RESEARCH.md` before continuing.
+
+---
+
+## 6. Create Plan
+
+Display:
+
+```text
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ GTD ► PLANNING PHASE {N}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### 6a. Gather Context
+
+Load SPEC.md, ROADMAP.md, and RESEARCH.md (if exists). Use research findings to inform design constraints.
+
+### 6b. Decompose into Tasks
+
+1. **Perform Task-Level Self-Calibration:**
+   - For EACH task you define, simulate the implementation in your head.
+   - Assign a Complexity Level (Low/Medium/High).
+   - If you feel ANY hesitation about the correct implementation path, label that task as **High**.
+
+2. **Decompose deliverables** into atomic tasks (total 2-3 max).
+
+3. **Apply Safety Brakes:**
+   - If a task is rated **High** complexity: insert a `checkpoint:human-verify` task immediately after it.
+   - Checkpoint action text: "STOP. Review the implementation of {file} for {specific_risk}."
+
+4. Select relevant requirements:
+   - Identify Must Have / Nice To Have items from SPEC.md this phase addresses.
+   - List them explicitly.
+
+### 6c. Write PLAN.md
+
+Write to `./.gtd/<task_name>/$PHASE/PLAN.md` using this template:
+
+```markdown
+phase: { N }
+created: { date }
+is_tdd: { true/false }
+
+---
+
+# Plan: Phase {N} - {Name}
+
+## Objective
+
+{What this phase delivers and why}
+
+## V&V Strategy (Verification & Validation)
+
+{How will we verify this phase meets requirements}
+
+## Spec Requirements (Traceability)
+
+<!-- List the specific requirements from SPEC.md that this phase addresses -->
+- [ ] Must Have: {Requirement 1}
+- [ ] Nice To Have: {Requirement 2}
+
+## Context
+
+- ./.gtd/<task_name>/SPEC.md
+- ./.gtd/<task_name>/ROADMAP.md
+- {relevant source files}
+
+## Architecture Constraints
+
+- **Single Source:** {Where is the authoritative data?}
+- **Invariants:** {What must ALWAYS be true?}
+- **Decision Rationale:** {Why this architectural choice was made}
+- **Testability:** {What needs to be injected/mocked (Design Seams)}
+
+## Tasks
+
+<!-- All tasks and 'done' criteria MUST use EARS keywords where applicable -->
+
+<!-- If --test flag IS SET, inject the slot. If NOT set, use standard Task 1 -->
+{{#if test_flag}}
+<task id="1" type="auto" complexity="Null">
+  <!-- TDD_STRATEGY_SLOT -->
+</task>
+{{else}}
+<task id="1" type="auto" complexity="Low/Medium/High">
+  <name>{Task name}</name>
+  <risk>{One sentence rationale if complexity > Low}</risk>
+  <files>{exact related file paths}</files>
+  <requirement>
+    **When** {Trigger}, the {System} shall {Action}.
+  </requirement>
+  <action>
+    {Exact sequence of agent tool calls / code edits}
+    - Modify {file} to implement {logic}
+  </action>
+  <done>{How we know this task is complete}</done>
+</task>
+{{/if}}
+
+<task id="2" type="checkpoint:human-verify">
+  <name>STOP. Review the implementation of {file} for {specific_risk}</name>
+  <risk>{One sentence rationale if complexity > Low}</risk>
+  <files>{exact related file paths}</files>
+  <action>
+    {Specific review instructions}
+  </action>
+  <done>{How we know this task is complete}</done>
+</task>
+
+<task id="3" type="auto">
+  ...
+</task>
+
+## Success Criteria
+
+- [ ] {Measurable outcome 1}
+- [ ] {Measurable outcome 2}
+```
+
+## 7. Verify Plan
+
+Check:
+
+- [ ] Tasks are specific (no "implement X")
+- [ ] Done criteria are measurable
+- [ ] 2-3 tasks max
+- [ ] All files specified
+- [ ] Adherence to `<critical_rules>`
+
+**If issues found:** Fix before finishing.
+
+---
+
+## 8. Enhance Plan (TDD)
+
+**If `--test` flag is active:**
+
+Display:
+
+```text
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ GTD ► DESIGNING TDD STRATEGY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+Use a subagent for test strategy:
+
+```text
+spawn_agent({ agent_type: "test_strategist", message: "
+<objective>
+Design a comprehensive TDD strategy for Phase {N}: {phase_name}.
+Replace Task 1 in PLAN.md with rigorous specification-based tests.
+</objective>
+
+<context>
+  <plan_file>./.gtd/<task_name>/{N}/PLAN.md</plan_file>
+  <spec_file>./.gtd/<task_name>/SPEC.md</spec_file>
+  <roadmap_file>./.gtd/<task_name>/ROADMAP.md</roadmap_file>
+  <research_file>./.gtd/<task_name>/{N}/RESEARCH.md</research_file>
+</context>
+
+<focus>
+1. Verify SPEC.md requirements are covered.
+2. Ensure strict separation of Logic (Unit) vs I/O (Integration).
+3. Identify and attack fragile logic paths.
+</focus>
+"})
+wait({ ids: ["<agent_id>"] })
+```
+
+Apply the returned strategy into `PLAN.md`.
+
+---
+
+## 9. Review Plan (Conditional)
+
+**If ANY task has complexity = Medium or High, you MUST:**
+
+Use a review subagent:
+
+```text
+spawn_agent({ agent_type: "review_plan", message: "
+<scope>./.gtd/<task_name>/{N}/PLAN.md</scope>
+
+<objective>
+Review for security, performance, logic flaws, and design risks before execution
+</objective>
+
+<context>
+## Phase Context
+Phase {N}: {phase_name}
+Goal: {phase objective}
+
+## Tasks to Review (Medium/High Complexity)
+- Task {id}: {name} - Complexity: {level}
+  Risk: {why this needs review}
+
+## Architecture Constraints
+- {key constraints from SPEC that apply}
+</context>
+
+<focus_areas>security, performance, logic, design</focus_areas>
+<output_format>Status: BLOCK | CAUTION | PROCEED, plus findings</output_format>
+"})
+wait({ ids: ["<agent_id>"] })
+```
+
+**If STATUS: BLOCK** → Revise plan before proceeding.
+**If STATUS: CAUTION** → Note risks in plan, proceed with awareness.
+**If STATUS: PROCEED** → Continue to offer next step.
+
+**If ALL tasks are Low complexity:** Skip review, proceed directly.
+
+</process>
+
+<offer_next>
+
+```text
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ GTD ► PHASE {N} PLANNED ✓
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Plan written to ./.gtd/<task_name>/{phase}/PLAN.md
+
+{X} tasks defined
+
+| Task | Name |
+|------|------|
+| 1 | {name} |
+| 2 | {name} |
+
+─────────────────────────────────────────────────────
+▶ Next Up
+$execute {N} — run this plan
+─────────────────────────────────────────────────────
+Also available:
+$discuss-plan {N} — review plan before executing
+─────────────────────────────────────────────────────
+```
+
+</offer_next>
+
+<forced_stop>
+STOP. The workflow is complete. Do NOT automatically run the next command. Wait for the user.
+</forced_stop>
