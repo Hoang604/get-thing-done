@@ -129,13 +129,45 @@ if (!(Test-Path $env:USERPROFILE/.claude)) { New-Item -ItemType Directory -Path 
 Copy-Item -Recurse -Force gtd-temp/.claude/* $env:USERPROFILE/.claude/
 Remove-Item -Recurse -Force gtd-temp
 ```
+## Codex CLI Installation
 
-## Core Philosophy
+### Global Install (available everywhere)
 
-- **Zero Assumption**: Never guess from names. Read the code to understand its true behavior.
-- **Atomicity**: Execute tasks as independent, verifiable units to prevent corruption.
-- **No Silent Failures**: All errors must be logged and handled; swallowing errors is forbidden.
-- **Plan Fidelity**: Implement exactly what is planned. Deviations require discussion.
+**Linux/macOS:**
+
+```bash
+git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
+cd gtd-temp && chmod +x *.sh && ./install-codex.sh --global
+cd .. && rm -rf gtd-temp
+```
+
+**Windows (PowerShell):**
+
+```powershell
+git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
+cd gtd-temp; .\install-codex.ps1 -Global
+cd ..; Remove-Item -Recurse -Force gtd-temp
+```
+
+### Local Install (project-specific)
+
+Navigate to your project directory.
+
+**Linux/macOS:**
+
+```bash
+git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
+cd gtd-temp && chmod +x *.sh && ./install-codex.sh
+cd .. && rm -rf gtd-temp
+```
+
+**Windows (PowerShell):**
+
+```powershell
+git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
+cd gtd-temp; .\install-codex.ps1
+cd ..; Remove-Item -Recurse -Force gtd-temp
+```
 
 ## Start Here (Default Workflow)
 
@@ -147,8 +179,6 @@ Most users should follow the **Develop Flow**:
 4. **[/execute](workflows/execute.md)** → implement and produce `./.gtd/<task>/<phase>/SUMMARY.md`
 5. **[/commit-spec](workflows/commit-spec.md)** → generate final commit message from summaries
 6. **[/archive](workflows/archive.md)** → archive completed task history
-
-If your CLI aliases `/plan` to `/plan-phase`, use whichever is configured in your environment.
 
 ## Which Flow To Use
 

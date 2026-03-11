@@ -136,9 +136,9 @@ Scan for security vulnerabilities in code related to task: <task_name>
 ./.gtd/<task_name>/audit/SECURITY.md
 </output_file>
 
-<files_to_scan>
+<scope>
 {$CHANGED_FILES - list from git diff above}
-</files_to_scan>
+</scope>
 
 <context>
 Spec: ./.gtd/<task_name>/SPEC.md
@@ -164,9 +164,9 @@ Scan for performance issues in code related to task: <task_name>
 ./.gtd/<task_name>/audit/PERFORMANCE.md
 </output_file>
 
-<files_to_scan>
+<scope>
 {$CHANGED_FILES - list from git diff above}
-</files_to_scan>
+</scope>
 
 <context>
 Spec: ./.gtd/<task_name>/SPEC.md
@@ -191,9 +191,9 @@ Scan for technical debt in code related to task: <task_name>
 ./.gtd/<task_name>/audit/TECH_DEBT.md
 </output_file>
 
-<files_to_scan>
+<scope>
 {$CHANGED_FILES - list from git diff above}
-</files_to_scan>
+</scope>
 
 <context>
 Spec: ./.gtd/<task_name>/SPEC.md
