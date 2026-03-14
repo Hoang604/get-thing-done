@@ -48,9 +48,9 @@ Rules:
 
 Use `spawn_agent` for domain research when needed.
 ```
-spawn_agent({ agent_type: "explorer", message: "<research query block>" })
-wait({ ids: ["<agent_id>"] })
-```
+const research_agent = spawn_agent({ agent_type: "explorer", message: "<research query block>" })
+wait({ ids: [research_agent.id], timeout_ms: 3600000 })
+close_agent({ id: research_agent.id })```
 
 </tools>
 

@@ -72,15 +72,7 @@ After archiving, task folder is removed to keep .gtd/ clean.
 
 ## 1. Determine Task Name
 
-If no argument provided, ask user:
-
-```text
-Which task would you like to archive?
-
-Available tasks:
-- {task 1}
-- {task 2}
-```
+If no argument provided, ask user which task they want to archive, and list available
 
 ---
 

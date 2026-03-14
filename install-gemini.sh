@@ -11,12 +11,15 @@ set -e
 
 GLOBAL_FLAG=""
 REPLACE_SYSTEM_MD=""
+AGGRESSIVE_FLAG=""
 
 for arg in "$@"; do
     if [ "$arg" = "--global" ]; then
         GLOBAL_FLAG="--global"
     elif [ "$arg" = "--replace_systemmd" ]; then
         REPLACE_SYSTEM_MD="true"
+    elif [ "$arg" = "--aggressive" ]; then
+        AGGRESSIVE_FLAG="true"
     fi
 done
 
@@ -69,6 +72,9 @@ if [ -d "$SOURCE_GEMINI/hooks" ]; then
     echo "Copying hooks..."
     mkdir -p "$GEMINI_DIR/hooks"
     cp -r "$SOURCE_GEMINI/hooks/"* "$GEMINI_DIR/hooks/"
+    if [ "$GLOBAL_FLAG" = "--global" ]; then
+        mkdir -p "$GEMINI_DIR/hooks/state"
+    fi
     echo "  ✓ Hooks: $(ls -1 "$GEMINI_DIR/hooks/" 2>/dev/null | wc -l) files"
 fi
 
@@ -110,6 +116,10 @@ if [ "$GLOBAL_FLAG" = "--global" ]; then
     fi
 
     SETTINGS_FILE="$GEMINI_DIR/settings.json"
+    if [ ! -f "$SETTINGS_FILE" ]; then
+        echo "{}" > "$SETTINGS_FILE"
+    fi
+
     if [ -f "$SETTINGS_FILE" ]; then
         echo "Updating settings.json with hooks configuration..."
         # Use node to merge hooks config, preserving existing hooks
@@ -119,35 +129,84 @@ const settingsContent = fs.readFileSync('$SETTINGS_FILE', 'utf8');
 const stripComments = (txt) => txt.replace(/\\\\\"|\"(?:\\\\\"|[^\"])*\"|(\/\/.*|\/\*[\s\\S]*?\*\/)/g, (m, g) => g ? \"\" : m);
 const settings = JSON.parse(stripComments(settingsContent));
 
-const newHook = {
-    type: 'command',
-    command: 'node ~/.gemini/hooks/before.js',
-    name: 'Rules',
-    description: 'Add rules to prevent gemini do stupid thing',
-    timeout: 5000
-};
+const hookDefinitions = [
+    {
+        event: 'BeforeAgent',
+        matcher: null,
+        hook: {
+            type: 'command',
+            command: 'node ~/.gemini/hooks/before.js',
+            name: 'Rules',
+            description: 'Inject concise behavioral rules before each turn',
+            timeout: 5000
+        }
+    },
+    {
+        event: 'AfterTool',
+        matcher: '*',
+        hook: {
+            type: 'command',
+            command: 'node ~/.gemini/hooks/after-tool.js',
+            name: 'AcknowledgeTool',
+            description: 'Record tool usage and require an acknowledgement on the next reply',
+            timeout: 5000
+        }
+    }
+];
+
+if ('$AGGRESSIVE_FLAG' === 'true') {
+    hookDefinitions.push({
+        event: 'AfterAgent',
+        matcher: null,
+        hook: {
+            type: 'command',
+            command: 'node ~/.gemini/hooks/after-agent.js',
+            name: 'ValidateAcknowledgement',
+            description: 'Reject post-tool replies that skip Findings and Next action',
+            timeout: 5000
+        }
+    });
+} else if (settings.hooks && settings.hooks['AfterAgent']) {
+    settings.hooks['AfterAgent'] = settings.hooks['AfterAgent'].map(entry => {
+        if (Array.isArray(entry.hooks)) {
+            entry.hooks = entry.hooks.filter(h => h.name !== 'ValidateAcknowledgement');
+        }
+        return entry;
+    }).filter(entry => !Array.isArray(entry.hooks) || entry.hooks.length > 0);
+    
+    if (settings.hooks['AfterAgent'].length === 0) {
+        delete settings.hooks['AfterAgent'];
+    }
+}
 
 // Initialize hooks structure if not exists
 if (!settings.hooks) {
     settings.hooks = {};
 }
-if (!settings.hooks.BeforeAgent) {
-    settings.hooks.BeforeAgent = [];
-}
 
-// Find or create the hooks array entry
-let hooksEntry = settings.hooks.BeforeAgent.find(e => e.hooks);
-if (!hooksEntry) {
-    hooksEntry = { hooks: [] };
-    settings.hooks.BeforeAgent.push(hooksEntry);
-}
+for (const definition of hookDefinitions) {
+    if (!settings.hooks[definition.event]) {
+        settings.hooks[definition.event] = [];
+    }
 
-// Check if this hook already exists (by name)
-const existingIndex = hooksEntry.hooks.findIndex(h => h.name === newHook.name);
-if (existingIndex >= 0) {
-    hooksEntry.hooks[existingIndex] = newHook;
-} else {
-    hooksEntry.hooks.push(newHook);
+    let hooksEntry = settings.hooks[definition.event].find((entry) => {
+        const matcher = Object.prototype.hasOwnProperty.call(entry, 'matcher') ? entry.matcher : null;
+        return matcher === definition.matcher && Array.isArray(entry.hooks);
+    });
+
+    if (!hooksEntry) {
+        hooksEntry = definition.matcher === null
+            ? { hooks: [] }
+            : { matcher: definition.matcher, hooks: [] };
+        settings.hooks[definition.event].push(hooksEntry);
+    }
+
+    const existingIndex = hooksEntry.hooks.findIndex((hook) => hook.name === definition.hook.name);
+    if (existingIndex >= 0) {
+        hooksEntry.hooks[existingIndex] = definition.hook;
+    } else {
+        hooksEntry.hooks.push(definition.hook);
+    }
 }
 
 // Update context.fileName if replace_systemmd is true
@@ -161,6 +220,7 @@ if ('$REPLACE_SYSTEM_MD' === 'true') {
 fs.writeFileSync('$SETTINGS_FILE', JSON.stringify(settings, null, 2) + '\n');
 "
         echo "  ✓ Hooks configuration added to settings.json"
+        echo "  ✓ Hook state directory ready at $GEMINI_DIR/hooks/state"
     else
         echo "  ⚠ settings.json not found at $SETTINGS_FILE, skipping hooks configuration"
     fi
@@ -172,5 +232,5 @@ echo ""
 echo "Installed to: $GEMINI_DIR"
 echo "  /commands - Workflow commands (*.toml)"
 echo "  /agents   - Sub-agents (*.md)"
-echo "  /hooks    - BeforeAgent hook"
+echo "  /hooks    - BeforeAgent, AfterTool, and AfterAgent hooks"
 echo ""

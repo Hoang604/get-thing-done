@@ -87,7 +87,7 @@ Create an executable `PLAN.md` for a roadmap phase.
 </core_principles>
 
 <critical_rules>
-- **Aggressive Atomicity:** Each plan MUST have **2-3 tasks max**.
+- **Aggressive Atomicity:** Each plan MUST have **2-3 tasks max (do not count the human checkpoint part)**.
 - **No Implementation:** Do not write function bodies. Define interfaces only.
 - **Tag Separation:** Use `<requirement>` for EARS behavior and `<action>` for exact execution steps.
 - **TDD Contract:** If `--test` is active, Task 1 MUST be `<!-- TDD_STRATEGY_SLOT -->`.
@@ -176,7 +176,7 @@ Display:
     - If the implementation path is unclear or risky, mark it as **High**.
 
 2. **Break the phase into atomic tasks**
-    - Create 2-3 tasks total.
+    - Create 2-3 tasks total (do not count the checkpoint:human-verify task).
     - Each task should represent one clear deliverable or verification step.
 
 3. **Add safety brakes where needed**
@@ -286,7 +286,7 @@ Check:
 
 - [ ] Tasks are specific (no "implement X")
 - [ ] Done criteria are measurable
-- [ ] 2-3 tasks max
+- [ ] 2-3 tasks max (without counting the checkpoint:human-verify task)
 - [ ] All files specified
 - [ ] Adherence to `<prohibitions>`
 

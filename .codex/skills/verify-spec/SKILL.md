@@ -16,7 +16,7 @@ You are a Quality Assurance Lead. You coordinate verification of requirements an
 <objective>
 Verify that all requirements are implemented and identify hidden problems (security, performance, tech debt).
 
-**Flow:** Load Spec → Verify Goal/Requirements → Run Audits → Consolidate Report
+**Flow:** Load Spec → Prepare Verification Inputs → Run All Audits in Parallel → Consolidate Report
 </objective>
 
 ## User Request
@@ -50,16 +50,35 @@ mkdir -p ./.gtd/<task_name>/audit
 
 ---
 
-## 2. Verify Ultimate Goal and Requirements
+## 2. Extract Verification Inputs
 
 Extract:
 - Ultimate Goal
 - All items from `### Must Have`
+Use these extracted items to populate the completion-verification prompt in Step 4.
 
-Run a verification subagent with strict context:
+---
+
+## 3. Get Changed Files
+
+Before running audits, collect changed files:
+
+```bash
+git diff --name-only HEAD
+```
+
+Store the list as `$CHANGED_FILES` for audit scopes.
+
+---
+
+## 4. Run All 4 Agents in Parallel
+
+Run the completion verification, security, performance, and tech-debt audits at the same time to reduce total runtime.
+
+**Spawn all four subagents first, then wait once:**
 
 ```text
-spawn_agent({ agent_type: "explorer", message: "
+spawn_agent({ agent_type: "worker", message: "
 <objective>
 1. Verify if the Ultimate Goal of the task '<task_name>' has been achieved.
 2. Verify implementation of ALL Must Have requirements.
@@ -101,33 +120,8 @@ Evidence: {explain how the goal was met or not}
 ...
 </output_format>
 "})
-wait({ ids: ["<agent_id>"] })
-```
 
-Write this result to `./.gtd/<task_name>/audit/COMPLETION.md`.
-
----
-
-## 3. Get Changed Files
-
-Before running audits, collect changed files:
-
-```bash
-git diff --name-only HEAD
-```
-
-Store the list as `$CHANGED_FILES` for audit scopes.
-
----
-
-## 4. Run Audits in Parallel
-
-Run all independent audits at the same time to reduce total runtime.
-
-**Spawn subagents first, then wait once:**
-
-```text
-security_id = spawn_agent({ agent_type: "security", message: "
+spawn_agent({ agent_type: "security", message: "
 <objective>
 Scan for security vulnerabilities in code related to task: <task_name>
 </objective>
@@ -155,7 +149,7 @@ Spec: ./.gtd/<task_name>/SPEC.md
 </focus_areas>
 "})
 
-performance_id = spawn_agent({ agent_type: "performance", message: "
+spawn_agent({ agent_type: "performance", message: "
 <objective>
 Scan for performance issues in code related to task: <task_name>
 </objective>
@@ -182,7 +176,7 @@ Spec: ./.gtd/<task_name>/SPEC.md
 </output_format>
 "})
 
-tech_debt_id = spawn_agent({ agent_type: "tech_debt", message: "
+spawn_agent({ agent_type: "tech_debt", message: "
 <objective>
 Scan for technical debt in code related to task: <task_name>
 </objective>
@@ -207,11 +201,21 @@ Spec: ./.gtd/<task_name>/SPEC.md
 - Poor error handling
 </focus_areas>
 "})
-wait({ ids: [security_id, performance_id, tech_debt_id] })
 ```
+
+Then:
+
+1. Store the returned ids for the completion, security, performance, and tech-debt agents.
+2. Call `wait({ ids: [<completion_agent_id>, <security_agent_id>, <performance_agent_id>, <tech_debt_agent_id>], timeout_ms: 3600000 })`.
+3. After `wait(...)` returns final statuses, call:
+   - `close_agent({ id: <completion_agent_id> })`
+   - `close_agent({ id: <security_agent_id> })`
+   - `close_agent({ id: <performance_agent_id> })`
+   - `close_agent({ id: <tech_debt_agent_id> })`
 
 **Write results to files:**
 
+- Completion → `./.gtd/<task_name>/audit/COMPLETION.md`
 - Security → `./.gtd/<task_name>/audit/SECURITY.md`
 - Performance → `./.gtd/<task_name>/audit/PERFORMANCE.md`
 - Tech Debt → `./.gtd/<task_name>/audit/TECH_DEBT.md`

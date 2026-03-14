@@ -19,9 +19,9 @@ Core responsibilities:
 
 <objective>
 Create a roadmap that answers:
-1. In what order should we build this?
-2. What does each phase deliver?
-3. Which requirements does each phase cover?
+1. In what order should we build this
+2. What does each phase deliver
+3. Which requirements does each phase cover
 
 Flow: Validate Spec -> Extract -> Group -> Order -> Coverage Check -> Write
 </objective>
@@ -94,9 +94,9 @@ Create an internal checklist from all Must-Haves before designing phases.
 ## 3. Group Requirements Into Phases
 
 For each requirement, ask:
-- What prerequisites does it need?
-- What system capability does it unlock?
-- Does it belong to a foundation, core path, hardening, or optional stage?
+- What prerequisites does it need
+- What system capability does it unlock
+- Does it belong to a foundation, core path, hardening, or optional stage
 
 Grouping rules:
 - Keep tightly coupled requirements together

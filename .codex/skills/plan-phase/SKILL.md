@@ -20,9 +20,6 @@ Create an executable `PLAN.md` for a roadmap phase.
 **Default flow:** Research (if needed) → Plan → Verify → Write
 </objective>
 
-## User Request Current Phase
-{{args}}
-
 <context>
 **Phase number:** `$ARGUMENTS` (optional; auto-detect the next unplanned phase if missing)
 
@@ -141,6 +138,9 @@ If deep research is needed, summarize first:
 3. Scope boundaries: in-scope vs out-of-scope files/modules
 Then run:
 
+1. Call `spawn_agent(...)` with `agent_type: "worker"` and this message:
+
+```text
 spawn_agent({ agent_type: "worker", message: "
 <objective>
 Research Phase {N}: {phase_name} well enough to support writing PLAN.md.
@@ -189,7 +189,11 @@ Return only a short summary with:
 - recommended file scope for the plan
 </return_to_caller>
 "})
-wait({ ids: ["<agent_id>"] })
+```
+
+2. Store the returned agent id.
+3. Call `wait({ ids: [<returned_agent_id>], timeout_ms: 3600000 })`.
+4. After `wait(...)` returns a final status, call `close_agent({ id: <returned_agent_id> })`.
 
 Read ./.gtd/<task_name>/$PHASE/RESEARCH.md before continuing.
 ---
@@ -360,8 +364,13 @@ Replace Task 1 in PLAN.md with rigorous specification-based tests.
 3. Identify and attack fragile logic paths.
 </focus>
 "})
-wait({ ids: ["<agent_id>"] })
 ```
+
+Then:
+
+1. Store the returned agent id.
+2. Call `wait({ ids: [<returned_agent_id>], timeout_ms: 3600000 })`.
+3. After `wait(...)` returns a final status, call `close_agent({ id: <returned_agent_id> })`.
 
 Apply the returned strategy into `PLAN.md`.
 
@@ -397,8 +406,13 @@ Goal: {phase objective}
 <focus_areas>security, performance, logic, design</focus_areas>
 <output_format>Status: BLOCK | CAUTION | PROCEED, plus findings</output_format>
 "})
-wait({ ids: ["<agent_id>"] })
 ```
+
+Then:
+
+1. Store the returned agent id.
+2. Call `wait({ ids: [<returned_agent_id>], timeout_ms: 3600000 })`.
+3. After `wait(...)` returns a final status, call `close_agent({ id: <returned_agent_id> })`.
 
 **If STATUS: BLOCK** → Revise plan before proceeding.
 **If STATUS: CAUTION** → Note risks in plan, proceed with awareness.

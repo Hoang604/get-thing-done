@@ -32,8 +32,6 @@ Output:
 - `./.gtd/<task_name>/SPEC.md`
 </context>
 
-<tools>
-
 ## User Interaction
 
 Ask directly in plain-text chat.
@@ -42,16 +40,6 @@ Rules:
 - Prefer 1-3 compact questions per round
 - Ask for free-form details in plain chat
 - Require explicit confirmation before writing or updating `SPEC.md`
-
-## Domain Research
-
-Use `spawn_agent` for domain research when needed.
-```
-spawn_agent({ agent_type: "explorer", message: "<research query block>" })
-wait({ ids: ["<agent_id>"] })
-```
-
-</tools>
 
 <philosophy>
 
@@ -173,7 +161,7 @@ If the fit is weak, stop and discuss alternatives with the user before writing.
 Determine the task name automatically.
 Do not ask the user to approve the task name unless it affects meaning.
 
-For NEW mode, summarize:
+For NEW mode, present:
 - Task
 - Ultimate Goal
 - Target Feature
@@ -183,12 +171,15 @@ For NEW mode, summarize:
 - Constraints
 - Done criteria
 
+All must have and nice to have must write in EARS-style phrasing.
+
 For MODIFY mode, summarize:
 - Existing task
 - Sections being changed
 - Exact content being changed
 - Reason for the change
 - Whether roadmap or plans may need regeneration
+
 
 Then require explicit confirmation.
 

@@ -61,7 +61,7 @@ Create an executable `PLAN.md` for a roadmap phase.
 | **High** | Concurrency, state machines, ordering, data integrity, or dynamic env. | **MANDATORY CHECKPOINT** |
 
 **Rule for High Complexity:**
-1. Insert `checkpoint:human-verify` immediately after the risky task.
+1. Insert `checkpoint:human-verify` immediately only after high complexity task.
 2. State the risk in terms of system integrity.
 </complexity_rubric>
 
@@ -70,7 +70,6 @@ Create an executable `PLAN.md` for a roadmap phase.
 | ------------------------- | ------------------------------------- | ---------------- |
 | `auto` | Work the agent can complete independently | Fully autonomous |
 | `checkpoint:human-verify` | Visual/functional verification | Pauses for user |
-| `checkpoint:decision` | Implementation choice | Pauses for user |
 </task_types>
 
 </decision_logic>
@@ -160,11 +159,11 @@ Relevant phase details:
 - Scope boundaries: {in_scope_and_out_of_scope}
 </context>
 <focus_areas>
-1. Which files/modules are most relevant to this phase?
-2. What existing patterns or abstractions should be reused?
-3. What constraints, edge cases, or risks could affect planning?
-4. What testing seams or dependency boundaries are available?
-5. What file-level scope should PLAN.md reference explicitly?
+1. Which files/modules are most relevant to this phase
+2. What existing patterns or abstractions should be reused
+3. What constraints, edge cases, or risks could affect planning
+4. What testing seams or dependency boundaries are available
+5. What file-level scope should PLAN.md reference explicitly
 </focus_areas>
 <output_file>./.gtd/<task_name>/{N}/RESEARCH.md</output_file>
 Do not write anything other than the output_file
@@ -237,8 +236,8 @@ is_tdd: { true/false }
 
 ## Architecture Constraints
 
-- **Single Source:** {Where is the authoritative data?}
-- **Invariants:** {What must ALWAYS be true?}
+- **Single Source:** {Where is the authoritative data}
+- **Invariants:** {What must ALWAYS be true}
 - **Decision Rationale:** {Why this architectural choice was made}
 - **Testability:** {What needs to be injected/mocked (Design Seams)}
 
