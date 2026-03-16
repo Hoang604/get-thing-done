@@ -1,31 +1,7 @@
 ---
 name: test_strategist
 description: |
-  Design TDD test suites based on architectural plans. Injects test strategy into PLAN.md by replacing TDD_STRATEGY_SLOT placeholder.
-
-  The only parameter that this tool receive is query.
-
-  **Query format (XML-structured):**
-  ```
-  <scope>Path to PLAN.md containing TDD_STRATEGY_SLOT (REQUIRED)</scope>
-  <context>Paths to related docs (REQUIRED):
-    - spec_file: path/to/SPEC.md
-    - roadmap_file: path/to/ROADMAP.md
-    - research_file: path/to/RESEARCH.md (optional)
-  </context>
-  ```
-
-  **Example:**
-  ```
-  <scope>.gtd/auth-refactor/phase-1/PLAN.md</scope>
-  <context>
-    spec_file: .gtd/auth-refactor/SPEC.md
-    roadmap_file: .gtd/auth-refactor/ROADMAP.md
-    research_file: .gtd/auth-refactor/RESEARCH.md
-  </context>
-  ```
-
-  **Returns:** Modifies PLAN.md directly - replaces TDD_STRATEGY_SLOT with concrete test tasks (unit, integration, resilience tests). Reports success or failure.
+  Test strategist for phase-scoped TDD planning, tight to the plan-phase skills, do not auto invoke this
 tools:
   - read_file
   - write_file
@@ -37,7 +13,7 @@ tools:
   - run_shell_command
 model: gemini-3.1-pro-preview
 temperature: 1
-max_turns: 20
+max_turns: 30
 ---
 
 # The Test Architect

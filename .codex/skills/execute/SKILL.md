@@ -17,7 +17,7 @@ Core responsibilities:
 <objective>
 Carry out a phase plan exactly as written, with explicit verification and deviation reporting.
 
-Flow: Load Plan -> Preflight -> Execute Sequentially -> Verify -> Summarize -> Update Roadmap
+Flow: Load Plan -> Preflight -> Execute Sequentially -> Debug (if needed) -> Verify -> Summarize -> Update Roadmap
 </objective>
 
 ## User Request Current Phase
@@ -36,6 +36,22 @@ Outputs:
 - Source code changes
 </context>
 
+<tools>
+
+Use specialist agents sparingly during execution.
+
+Rules:
+- Default to **no specialist**
+- Use `incident_debugging` when execution fails in a nontrivial way
+- Use **at most 1** additional specialist verification before closing a risky phase
+- Prefer:
+  - `correctness` for semantic/invariant-heavy behavior
+  - `reliability` for retries, queues, external I/O, timeout, or crash-recovery behavior
+  - `test_quality` when the phase added or heavily changed tests and confidence in those tests matters
+- Do not fan out to many audits during execution
+
+</tools>
+
 <standards_and_constraints>
 
 ## Execution Philosophy
@@ -44,6 +60,7 @@ Outputs:
 - Verify each task before moving on
 - Do not silently reinterpret the plan
 - Stop if the plan is incomplete, contradictory, or unsafe
+- Treat raw failures and failed checks as primary evidence, not as prompts for guesswork
 
 ## Code Principles
 
@@ -61,6 +78,7 @@ Outputs:
 | Missing dependency or tool | Install or configure if safe, then record it |
 | Unclear requirement | Stop and ask the user |
 | Architecture change needed | Stop and ask the user |
+| Nontrivial failure with unclear cause | Use `incident_debugging` before patching further |
 
 ## Prohibitions
 
@@ -85,6 +103,8 @@ Extract:
 - Files
 - Success criteria
 - Spec requirements
+- V&V strategy
+- Architecture constraints / invariants
 
 If the plan is missing required structure, stop and ask for the plan to be fixed first.
 
@@ -94,6 +114,8 @@ Before execution:
 - Read the files named in the current task
 - Read directly called dependencies before changing code
 - Confirm you understand the target behavior and done criteria
+- Identify what must remain true while this phase is in flight
+- Identify what validation evidence the plan expects before the phase can be called complete
 
 If the plan requires major guesswork at this stage, stop instead of improvising.
 
@@ -120,28 +142,66 @@ Execution rules:
 - Stay within the task's listed file scope unless a directly related dependency requires a small expansion
 - Record any such expansion in the summary as a deviation
 - Keep the work aligned to the task's requirement and done criteria
+- Preserve the phase invariants while editing; do not knowingly leave the system in an unsafe transitional state longer than necessary
 
 ## 4. Verify Each Task
 
 After each task:
 - Check the task's `done` criteria directly
 - Run tests, checks, or manual validation steps specified by the plan
-- If verification fails, fix it if the fix stays within the plan
+- Re-check the relevant invariants after risky changes
+- If verification fails because of an obvious local issue, fix it if the fix stays within the plan
+- If verification fails in a nontrivial way, use `incident_debugging` before applying more speculative fixes
 - If the failure suggests the plan is wrong, stop and ask the user
 
 Do not start the next task until the current task is verified.
 
-## 5. Verify the Whole Phase
+## 5. Debug Nontrivial Failures (Conditional)
+
+Trigger `incident_debugging` when one or more of these is true:
+- tests fail and the cause is not immediately local and obvious
+- runtime errors, stack traces, or logs contradict the expected behavior
+- repeated fixes are not collapsing the failure
+- the failure appears related to state, ordering, invariants, retries, or boundaries
+
+Use the raw failure evidence as input:
+- failing test output
+- stack traces
+- relevant logs
+- command used to reproduce
+
+Use the debugger to determine:
+- likely root cause
+- violated invariant or contract
+- safest fix direction
+
+Do not continue speculative patching until the failure mechanism is clearer.
+
+## 6. Verify the Whole Phase
 
 After all tasks:
 - Check each Success Criterion
 - Check each Spec Requirement listed in the plan
 - Confirm the resulting behavior matches the phase objective
+- Confirm the phase-level invariants still hold
+- Confirm the V&V strategy promised by the plan has actually been satisfied
 
 Only mark a requirement complete in `ROADMAP.md` if this phase actually implemented and verified it.
 If a requirement was only partially advanced, leave it unchecked.
 
-## 6. Write SUMMARY.md
+## 7. Specialist Verification (Conditional)
+
+Use **at most one** specialist before closing the phase if the dominant phase risk warrants extra confidence:
+
+- `correctness` for semantic logic, state transition, ordering, dedupe, or invariant-heavy work
+- `reliability` for retries, queues, timeout, external dependency, or crash-recovery work
+- `test_quality` for test-heavy phases where confidence in the tests matters
+
+Run this only for medium/high-risk phases or when local verification still leaves meaningful doubt.
+
+Apply only high-signal findings. Do not reopen the phase for speculative nits.
+
+## 8. Write SUMMARY.md
 
 Use this structure:
 
@@ -174,6 +234,10 @@ Use this structure:
 
 - None
 
+## Debugging Notes
+
+- None
+
 ## Success Criteria
 
 - [x] {criterion}
@@ -194,9 +258,10 @@ feat(phase-{N}): {short description}
 Summary rules:
 - Record only verified work as complete
 - Record any extra bug fixes or file-scope expansion under Deviations
+- If debugging occurred, record the root cause and the violated invariant or assumption briefly under `Debugging Notes`
 - Include enough evidence that a reviewer can see why the phase is complete
 
-## 7. Update ROADMAP.md
+## 9. Update ROADMAP.md
 
 After successful verification:
 - Mark the phase status as complete

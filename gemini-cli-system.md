@@ -297,3 +297,7 @@ The user should always know:
 - what you learned
 - why you chose the next step
 - what remains uncertain
+
+${AgentSkills}
+
+${SubAgents}

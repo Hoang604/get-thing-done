@@ -26,10 +26,10 @@ Rules:
     Next action: one concrete next step
 `;
 
-const WORKFLOW_BOUNDARY_RULE = `<workflow_boundary>**Workflow Boundary**: When a workflow contains <forced_stop>, you MUST stop after complete that workflow. Never auto-chain workflow. Offering next steps ≠ executing them.</workflow_boundary>`;
-const WORKFLOW_PROCESS_RULE = `<workflow_process>**Workflow Process**: Workflows contain step-by-step instructions inside <process> tags. You MUST follow these steps strictly in order. Do not skip, reorder, or improvise.</workflow_process>`;
-const ONE_COMMAND_RULE = `<one_command>**One Command Per Turn**: Execute only the invoked workflow, step by step. Do not chain /plan → /execute in one turn.</one_command>`;
-const NO_ACTION_RULE = `<no_action>**No Action**: In this turn, you MUST NOT make any change to the codebase, just answer the question, or give your opinion, then stop. write_file and replace tool is banned in this turn.</no_action>`;
+const WORKFLOW_BOUNDARY_RULE = `**Workflow Boundary**: When a workflow contains <forced_stop>, you MUST stop after complete that workflow. Never auto-chain workflow. Offering next steps ≠ executing them.`;
+const WORKFLOW_PROCESS_RULE = `**Workflow Process**: Workflows contain step-by-step instructions inside <process> tags. You MUST follow these steps strictly in order. Do not skip, reorder, or improvise.`;
+const ONE_COMMAND_RULE = `**One Command Per Turn**: Execute only the invoked workflow, step by step. Do not chain /plan → /execute in one turn.`;
+const NO_ACTION_RULE = `**No Action**: In this turn, you MUST NOT make any change to the codebase, just answer the question, or give your opinion, then stop. write_file and replace tool is banned in this turn.`;
 
 function emitRules(rules, separator = "\n\n") {
   console.log(

@@ -1,32 +1,7 @@
 ---
 name: tech_debt
 description: |
-  Scan code for technical debt: code duplication, dead code, missing abstractions, tight coupling, maintainability issues.
-
-  The only parameter that this tool receive is query.
-
-  **Query format (XML-structured):**
-  ```
-  <scope>Files, directories, or module to scan (REQUIRED)</scope>
-  <objective>What to audit (optional)</objective>
-  <context>Any relevant context from caller (optional)</context>
-  <focus_areas>Specific debt types: duplication, dead code, coupling (optional)</focus_areas>
-  <output_file>Path to write report (optional)</output_file>
-  ```
-
-  **Examples:**
-  Minimal: `<scope>src/services/</scope>`
-
-  Full:
-  ```
-  <scope>src/legacy/, src/utils/</scope>
-  <objective>Identify refactoring candidates before migration</objective>
-  <context>Preparing to migrate to new architecture, need to know what to keep</context>
-  <focus_areas>dead code, duplication, god classes</focus_areas>
-  <output_file>.gtd/migration/audit/TECH_DEBT.md</output_file>
-  ```
-
-  **Returns:** Markdown report with findings (severity, location, problematic pattern, maintenance impact, refactoring strategy).
+  Technical debt auditor for scoped, evidence-based maintainability reviews. Audits only the provided files, directories, or module scope; identifies credible maintenance drag such as duplication, dead code, hidden coupling, oversized units, poor boundaries, configuration debt, and test debt; and reports findings with severity, confidence, file/line evidence, maintenance impact, and smallest effective refactoring. Expects XML input: <scope> required (files, dirs, or module to audit); <objective> optional (what debt to assess); <context> optional (migration, refactor, or delivery background); <focus_areas> optional (specific debt types to prioritize); <output_file> optional (path to write report instead of returning it in chat).
 tools:
   - read_file
   - list_directory
@@ -35,7 +10,7 @@ tools:
   - write_file
 model: gemini-3-flash-preview
 temperature: 1
-max_turns: 20
+max_turns: 30
 ---
 
 # The Technical Debt Auditor

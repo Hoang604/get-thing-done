@@ -53,44 +53,23 @@ if [ -d "$SOURCE_CODEX/skills" ]; then
 fi
 
 CONFIG_FILE="$CODEX_DIR/config.toml"
+SOURCE_CONFIG="$SOURCE_CODEX/config.toml"
 echo "Updating $CONFIG_FILE..."
 
 # Provide the base config to merge
 if [ ! -f "$CONFIG_FILE" ]; then
-    cat > "$CONFIG_FILE" << 'EOF'
-[features]
-multi_agent = true
-
-[agents]
-max_threads = 6
-max_depth = 1
-
-[agents.test_strategist]
-description = "Designs and injects a phase-specific TDD task into PLAN.md from XML query context."
-config_file = "agents/test_strategist.toml"
-
-[agents.review_plan]
-description = "Pre-execution risk analyzer for plan quality, architecture, and safety concerns."
-config_file = "agents/review_plan.toml"
-
-[agents.security]
-description = "Security auditor for vulnerability patterns and boundary validation in scoped code."
-config_file = "agents/security.toml"
-
-[agents.performance]
-description = "Performance auditor for bottlenecks, scaling risks, and resource pressure in scoped code."
-config_file = "agents/performance.toml"
-
-[agents.tech_debt]
-description = "Technical debt auditor for maintainability risks and refactoring priorities."
-config_file = "agents/tech_debt.toml"
-EOF
-    echo "  ✓ Generated config.toml"
+    if [ -f "$SOURCE_CONFIG" ]; then
+        cp "$SOURCE_CONFIG" "$CONFIG_FILE"
+        echo "  ✓ Copied config.toml template"
+    else
+        echo "  ✗ Source config not found at $SOURCE_CONFIG"
+        exit 1
+    fi
 else
     # Python script to safely merge TOML
     MERGE_SCRIPT="$SCRIPT_DIR/merge_codex_config.py"
     if [ -f "$MERGE_SCRIPT" ]; then
-        python3 "$MERGE_SCRIPT" "$CONFIG_FILE"
+        python3 "$MERGE_SCRIPT" "$CONFIG_FILE" "$SOURCE_CONFIG"
     else
         echo "  ⚠ merge_codex_config.py not found at $MERGE_SCRIPT. Skipping config merge."
     fi

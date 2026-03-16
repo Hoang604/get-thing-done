@@ -3,10 +3,15 @@ import re
 import os
 
 if len(sys.argv) < 2:
-    print("Usage: python merge_codex_config.py <path_to_config.toml>")
+    print("Usage: python merge_codex_config.py <path_to_config.toml> [path_to_source_config.toml]")
     sys.exit(1)
 
 config_path = sys.argv[1]
+source_config_path = sys.argv[2] if len(sys.argv) >= 3 else os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    ".codex",
+    "config.toml",
+)
 
 try:
     with open(config_path, 'r', encoding='utf-8') as f:
@@ -14,75 +19,88 @@ try:
 except FileNotFoundError:
     config_content = ''
 
+try:
+    with open(source_config_path, 'r', encoding='utf-8') as f:
+        source_content = f.read()
+except FileNotFoundError:
+    print(f"Error: source config not found at {source_config_path}")
+    sys.exit(1)
+
 print('  Merge processing for config.toml')
 
-def ensure_key_in_section(content, section, key, line_to_add):
-    # Check if section exists
-    section_pattern = re.compile(rf'^\s*\[{re.escape(section)}\]\s*$', re.MULTILINE)
-    if not section_pattern.search(content):
-        # Add section at the end
-        if content and not content.endswith('\n'):
-            content += '\n'
-        content += f'\n[{section}]\n{line_to_add}\n'
-        return content
+SECTION_PATTERN = re.compile(r'(?ms)^\[(?P<name>[^\]]+)\]\s*\n(?P<body>.*?)(?=^\[|\Z)')
+KEY_PATTERN = re.compile(r'^(\s*)([A-Za-z0-9_-]+)(\s*=\s*.*)$')
 
-    # Section exists, check if key exists
-    lines = content.split('\n')
-    in_section = False
-    section_start = -1
-    section_end = len(lines)
-    
-    for i, line in enumerate(lines):
-        if re.match(r'^\s*\[.*\]\s*$', line):
-            if in_section:
-                section_end = i
-                break
-            if line.strip() == f'[{section}]':
-                in_section = True
-                section_start = i
-                
-    # Search for key within section
-    key_pattern = re.compile(rf'^\s*{re.escape(key)}\s*=.*$')
-    key_exists = False
-    for i in range(section_start + 1, section_end):
-        if key_pattern.match(lines[i]):
-            key_exists = True
-            break
-            
-    if not key_exists:
-        # Insert line before the end of the section
-        # Move up from section_end to skip empty lines
-        insert_idx = section_end
-        while insert_idx > section_start + 1 and lines[insert_idx - 1].strip() == '':
-            insert_idx -= 1
-        lines.insert(insert_idx, line_to_add)
-        return '\n'.join(lines)
-        
-    return content
 
-new_content = config_content
-new_content = ensure_key_in_section(new_content, 'features', 'multi_agent', 'multi_agent = true')
-new_content = ensure_key_in_section(new_content, 'agents', 'max_threads', 'max_threads = 6')
-new_content = ensure_key_in_section(new_content, 'agents', 'max_depth', 'max_depth = 1')
+def parse_sections(content):
+    sections = {}
+    order = []
+    for match in SECTION_PATTERN.finditer(content):
+        name = match.group('name').strip()
+        body = match.group('body')
+        sections[name] = body
+        order.append(name)
+    return sections, order
 
-new_content = ensure_key_in_section(new_content, 'agents.test_strategist', 'description', 'description = "Designs and injects a phase-specific TDD task into PLAN.md from XML query context."')
-new_content = ensure_key_in_section(new_content, 'agents.test_strategist', 'config_file', 'config_file = "agents/test_strategist.toml"')
 
-new_content = ensure_key_in_section(new_content, 'agents.review_plan', 'description', 'description = "Pre-execution risk analyzer for plan quality, architecture, and safety concerns."')
-new_content = ensure_key_in_section(new_content, 'agents.review_plan', 'config_file', 'config_file = "agents/review_plan.toml"')
+def merge_section_body(target_body, source_body):
+    target_lines = target_body.splitlines()
+    source_lines = source_body.splitlines()
+    key_positions = {}
 
-new_content = ensure_key_in_section(new_content, 'agents.security', 'description', 'description = "Security auditor for vulnerability patterns and boundary validation in scoped code."')
-new_content = ensure_key_in_section(new_content, 'agents.security', 'config_file', 'config_file = "agents/security.toml"')
+    for idx, line in enumerate(target_lines):
+        match = KEY_PATTERN.match(line)
+        if match:
+            key_positions[match.group(2)] = idx
 
-new_content = ensure_key_in_section(new_content, 'agents.performance', 'description', 'description = "Performance auditor for bottlenecks, scaling risks, and resource pressure in scoped code."')
-new_content = ensure_key_in_section(new_content, 'agents.performance', 'config_file', 'config_file = "agents/performance.toml"')
+    for line in source_lines:
+        match = KEY_PATTERN.match(line)
+        if not match:
+            if line.strip() and line not in target_lines:
+                target_lines.append(line)
+            continue
 
-new_content = ensure_key_in_section(new_content, 'agents.tech_debt', 'description', 'description = "Technical debt auditor for maintainability risks and refactoring priorities."')
-new_content = ensure_key_in_section(new_content, 'agents.tech_debt', 'config_file', 'config_file = "agents/tech_debt.toml"')
+        key = match.group(2)
+        if key in key_positions:
+            target_lines[key_positions[key]] = line
+        else:
+            target_lines.append(line)
+
+    merged = "\n".join(target_lines).rstrip()
+    return f"{merged}\n" if merged else ""
+
+
+target_sections, target_order = parse_sections(config_content)
+source_sections, source_order = parse_sections(source_content)
+
+new_sections = dict(target_sections)
+new_order = list(target_order)
+
+for section_name in source_order:
+    source_body = source_sections[section_name]
+    if section_name in ("features", "agents"):
+        merged_body = merge_section_body(target_sections.get(section_name, ""), source_body)
+    elif section_name.startswith("agents."):
+        merged_body = source_body.rstrip() + "\n"
+    else:
+        continue
+
+    new_sections[section_name] = merged_body
+    if section_name not in new_order:
+        new_order.append(section_name)
+
+if not new_order:
+    new_content = source_content if source_content.endswith("\n") else source_content + "\n"
+else:
+    rendered_sections = []
+    for section_name in new_order:
+        body = new_sections[section_name].rstrip()
+        rendered_sections.append(f"[{section_name}]\n{body}\n")
+    new_content = "\n".join(rendered_sections).rstrip() + "\n"
 
 if new_content != config_content:
     with open(config_path, 'w', encoding='utf-8') as f:
         f.write(new_content)
-    print("  ✓ Updated config.toml with missing keys")
+    print("  ✓ Updated config.toml from template")
 else:
     print("  ✓ config.toml is already up to date")

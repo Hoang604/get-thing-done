@@ -55,6 +55,10 @@ function buildAdditionalContext(toolName, toolStatus, toolCategory) {
     write: `${labels[0]}: state exactly what the tool changed.`,
     execute: `${labels[0]}: summarize what happened and what it means.`,
   };
+  const analysisReminder =
+    toolCategory === "write"
+      ? null
+      : "Do not reply immediately, you must analyze the tool output carefully before replying to user.";
 
   return [
     "You just used a tool.",
@@ -63,7 +67,10 @@ function buildAdditionalContext(toolName, toolStatus, toolCategory) {
     guidanceByCategory[toolCategory],
     `${labels[1]}: state one concrete next step.`,
     `Do not skip ${labels[0]}.`,
-  ].join("\n");
+    analysisReminder,
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 function handleAfterTool(input) {

@@ -2,25 +2,48 @@
 multi_agent = true
 
 [agents]
-max_threads = 6
+max_threads = 12
 max_depth = 1
-
 [agents.test_strategist]
-description = "Designs and injects a phase-specific TDD task into PLAN.md from XML query context."
+description = "Test strategist for phase-scoped TDD planning, tight to the plan-phase skills, do not auto invoke this"
 config_file = "agents/test_strategist.toml"
 
 [agents.review_plan]
-description = "Pre-execution risk analyzer for plan quality, architecture, and safety concerns."
+description = "Pre-execution plan reviewer for scoped implementation plans, tight to the plan-phase skills, do not auto invoke this"
 config_file = "agents/review_plan.toml"
 
 [agents.security]
-description = "Security auditor for vulnerability patterns and boundary validation in scoped code."
+description = "Security auditor for scoped, evidence-based code reviews. Audits only the provided files, directories, or named feature scope; traces attacker-controlled input across trust boundaries to dangerous operations; and reports credible exploitable vulnerabilities with severity, confidence, file/line evidence, exploit path, impact, and smallest effective remediation. Expects XML input: <scope> required (files, dirs, or feature to audit); <objective> optional (what to assess); <context> optional (security-relevant background); <focus_areas> optional (specific vuln classes to check); <output_file> optional (path to write report instead of returning it in chat)."
 config_file = "agents/security.toml"
 
 [agents.performance]
-description = "Performance auditor for bottlenecks, scaling risks, and resource pressure in scoped code."
+description = "Performance auditor for scoped, evidence-based code reviews. Audits only the provided files, directories, or named feature scope; traces hot paths, scaling risks, and resource pressure across loops, I/O, memory, and concurrency; and reports credible production bottlenecks with severity, confidence, file/line evidence, scaling trigger, impact, and smallest effective remediation. Expects XML input: <scope> required (files, dirs, or feature to audit); <objective> optional (what to assess and why); <context> optional (traffic, constraints, runtime background); <focus_areas> optional (specific performance risks to prioritize); <output_file> optional (path to write report instead of returning it in chat)."
 config_file = "agents/performance.toml"
 
 [agents.tech_debt]
-description = "Technical debt auditor for maintainability risks and refactoring priorities."
+description = "Technical debt auditor for scoped, evidence-based maintainability reviews. Audits only the provided files, directories, or module scope; identifies credible maintenance drag such as duplication, dead code, hidden coupling, oversized units, poor boundaries, configuration debt, and test debt; and reports findings with severity, confidence, file/line evidence, maintenance impact, and smallest effective refactoring. Expects XML input: <scope> required (files, dirs, or module to audit); <objective> optional (what debt to assess); <context> optional (migration, refactor, or delivery background); <focus_areas> optional (specific debt types to prioritize); <output_file> optional (path to write report instead of returning it in chat)."
 config_file = "agents/tech_debt.toml"
+
+[agents.correctness]
+description = "Correctness auditor for scoped, evidence-based behavioral reviews. Audits only the provided files, directories, or named feature scope; identifies credible logic bugs, invariant violations, semantic mismatches, edge-case failures, and invalid state transitions; and reports findings with severity, confidence, file/line evidence, trigger scenario, impact, and smallest effective remediation. Expects XML input: <scope> required (files, dirs, or feature to audit); <objective> optional (what behavior to assess); <context> optional (domain rules, contracts, constraints); <focus_areas> optional (specific correctness risks to prioritize); <output_file> optional (path to write report instead of returning it in chat)."
+config_file = "agents/correctness.toml"
+
+[agents.reliability]
+description = "Reliability auditor for scoped, evidence-based failure-mode reviews. Audits only the provided files, directories, or named feature scope; identifies credible timeout, retry, idempotency, partial-failure, crash-recovery, durability, and backpressure risks; and reports findings with severity, confidence, file/line evidence, failure scenario, impact, and smallest effective remediation. Expects XML input: <scope> required (files, dirs, or feature to audit); <objective> optional (what workflow to assess); <context> optional (criticality, dependency behavior, SLOs); <focus_areas> optional (specific resilience risks to prioritize); <output_file> optional (path to write report instead of returning it in chat)."
+config_file = "agents/reliability.toml"
+
+[agents.architecture]
+description = "Architecture auditor for scoped, evidence-based structural reviews. Audits only the provided files, directories, or named feature scope; identifies credible boundary mistakes, ownership confusion, dependency problems, change-amplifying structures, weak seams, and unnecessary complexity; and reports findings with severity, confidence, file/line evidence, structural risk, impact, and smallest effective remediation. Expects XML input: <scope> required (files, dirs, or feature to audit); <objective> optional (what design to assess); <context> optional (constraints, migration goals, ownership); <focus_areas> optional (specific architecture concerns to prioritize); <output_file> optional (path to write report instead of returning it in chat)."
+config_file = "agents/architecture.toml"
+
+[agents.observability]
+description = "Observability auditor for scoped, evidence-based production visibility reviews. Audits only the provided files, directories, or named feature scope; identifies credible gaps in logs, metrics, traces, context propagation, and incident diagnosability; and reports findings with severity, confidence, file/line evidence, incident scenario, impact, and smallest effective improvement. Expects XML input: <scope> required (files, dirs, or feature to audit); <objective> optional (what workflow to assess); <context> optional (critical path, alerting expectations, SLOs); <focus_areas> optional (specific observability risks to prioritize); <output_file> optional (path to write report instead of returning it in chat)."
+config_file = "agents/observability.toml"
+
+[agents.test_quality]
+description = "Test quality auditor for scoped, evidence-based test-suite reviews. Audits only the provided test files, directories, or named feature scope; identifies credible false-confidence risks such as weak assertions, flakiness, over-mocking, brittle implementation coupling, and meaningful coverage gaps; and reports findings with severity, confidence, file/line evidence, impact, and smallest effective improvement. Expects XML input: <scope> required (tests, dirs, or feature to audit); <objective> optional (what test area to assess); <context> optional (critical paths, regressions, stack); <focus_areas> optional (specific test-quality risks to prioritize); <output_file> optional (path to write report instead of returning it in chat)."
+config_file = "agents/test_quality.toml"
+
+[agents.incident_debugging]
+description = "Incident debugger for scoped, evidence-first root-cause analysis. Inspects only the provided files, directories, or named feature scope plus raw failure evidence; analyzes stack traces, logs, failing test output, and repro artifacts to identify the most plausible root cause, violated invariant, rejected hypotheses, and safest fix direction. Expects XML input: <scope> required (files, dirs, or feature to inspect); <evidence> optional but strongly recommended (raw stack trace, logs, failing test output, symptoms); <objective> optional; <context> optional; <repro_steps> optional; <focus_areas> optional; <output_file> optional (path to write report instead of returning it in chat)."
+config_file = "agents/incident_debugging.toml"

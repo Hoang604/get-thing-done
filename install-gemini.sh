@@ -214,7 +214,7 @@ if ('$REPLACE_SYSTEM_MD' === 'true') {
     if (!settings.context) {
         settings.context = {};
     }
-    settings.context.fileName = ['SYSTEM_INSTRUCTIONS.md', 'CONTEXT.md', '.gtd/CODEBASE.md', '.gtd/ARCHITECTURE.md'];
+    settings.context.fileName = ['.gtd/CODEBASE.md', '.gtd/codebase/architecture.md', '.gtd/codebase/entrypoints.md', '.gtd/codebase/patterns.md', '.gtd/codebase/open-questions.md', '.gtd/codebase/domains/index.md', '.gtd/codebase/infra/index.md'];
 }
 
 fs.writeFileSync('$SETTINGS_FILE', JSON.stringify(settings, null, 2) + '\n');

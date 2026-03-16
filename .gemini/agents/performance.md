@@ -1,32 +1,7 @@
 ---
 name: performance
 description: |
-  Scan code for performance issues (N+1 queries, missing indexes, unbounded loops, memory leaks, inefficient algorithms).
-
-  The only parameter that this tool receive is query.
-
-  **Query format (XML-structured):**
-  ```
-  <scope>Files, directories, or feature to scan (REQUIRED)</scope>
-  <objective>What to scan and why (optional)</objective>
-  <context>Any relevant context from caller (optional)</context>
-  <focus_areas>Specific issues to prioritize (optional)</focus_areas>
-  <output_file>Path to write report (optional)</output_file>
-  ```
-
-  **Examples:**
-  Minimal: `<scope>src/services/user.ts</scope>`
-
-  Full:
-  ```
-  <scope>src/services/checkout/, src/handlers/order.ts</scope>
-  <objective>Audit before production deploy</objective>
-  <context>This is a high-traffic payment flow, expect 1000+ TPS</context>
-  <focus_areas>N+1 queries, unbounded loops</focus_areas>
-  <output_file>.gtd/checkout/PERFORMANCE.md</output_file>
-  ```
-
-  **Returns:** Markdown report with findings (impact, location, code, scaling behavior, remediation).
+  Performance auditor for scoped, evidence-based code reviews. Audits only the provided files, directories, or named feature scope; traces hot paths, scaling risks, and resource pressure across loops, I/O, memory, and concurrency; and reports credible production bottlenecks with severity, confidence, file/line evidence, scaling trigger, impact, and smallest effective remediation. Expects XML input: <scope> required (files, dirs, or feature to audit); <objective> optional (what to assess and why); <context> optional (traffic, constraints, runtime background); <focus_areas> optional (specific performance risks to prioritize); <output_file> optional (path to write report instead of returning it in chat).
 tools:
   - read_file
   - list_directory
@@ -35,7 +10,7 @@ tools:
   - write_file
 model: gemini-3-flash-preview
 temperature: 1
-max_turns: 20
+max_turns: 30
 ---
 
 # The Performance Auditor

@@ -1,32 +1,7 @@
 ---
 name: security
 description: |
-  Scan code for security vulnerabilities. Focuses on OWASP Top 10: SQL injection, IDOR, command injection, XSS, path traversal, XXE, SSRF.
-
-  The only parameter that this tool receive is query.
-
-  **Query format (XML-structured):**
-  ```
-  <scope>Files, directories, or feature to scan (REQUIRED)</scope>
-  <objective>What to audit (optional)</objective>
-  <context>Any relevant context from caller (optional)</context>
-  <focus_areas>Specific vulnerabilities to check (optional)</focus_areas>
-  <output_file>Path to write report (optional)</output_file>
-  ```
-
-  **Examples:**
-  Minimal: `<scope>src/api/users.ts</scope>`
-
-  Full:
-  ```
-  <scope>src/api/, src/handlers/</scope>
-  <objective>Audit authentication endpoints before launch</objective>
-  <context>Public-facing API, handles user credentials and sessions</context>
-  <focus_areas>SQL injection, IDOR, session management</focus_areas>
-  <output_file>.gtd/auth/audit/SECURITY.md</output_file>
-  ```
-
-  **Returns:** Markdown report with findings (severity, location, vulnerable code, attack vector, remediation).
+  Security auditor for scoped, evidence-based code reviews. Audits only the provided files, directories, or named feature scope; traces attacker-controlled input across trust boundaries to dangerous operations; and reports credible exploitable vulnerabilities with severity, confidence, file/line evidence, exploit path, impact, and smallest effective remediation. Expects XML input: <scope> required (files, dirs, or feature to audit); <objective> optional (what to assess); <context> optional (security-relevant background); <focus_areas> optional (specific vuln classes to check); <output_file> optional (path to write report instead of returning it in chat).
 tools:
   - read_file
   - list_directory
@@ -35,7 +10,7 @@ tools:
   - write_file
 model: gemini-3.1-pro-preview
 temperature: 1
-max_turns: 20
+max_turns: 30
 ---
 
 # The Security Auditor

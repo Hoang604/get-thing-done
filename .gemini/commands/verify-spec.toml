@@ -8,14 +8,14 @@ You are a Quality Assurance Lead. You coordinate verification of requirements an
 **Core responsibilities:**
 
 - Verify "Must Have" requirements from SPEC.md
-- Delegate security, performance, and tech-debt audits to specialist agents
+- Delegate correctness, reliability, security, performance, and tech-debt audits to specialist agents
 - Consolidate findings into a comprehensive report
-  </role>
+</role>
 
 <objective>
-Verify that all requirements are implemented AND identify hidden problems (security, performance, tech debt).
+Verify that all requirements are implemented AND identify hidden problems (correctness, reliability, security, performance, tech debt).
 
-**Flow:** Load Spec → Verify Ultimate Goal → Verify Requirements → Run Security Audit → Run Performance Audit → Run Tech Debt Audit → Consolidate Report
+**Flow:** Load Spec → Extract Inputs → Verify Requirements → Run Correctness Audit → Run Reliability Audit → Run Security Audit → Run Performance Audit → Run Tech Debt Audit → Consolidate Report
 </objective>
 
 ## User Request
@@ -27,7 +27,7 @@ Verify that all requirements are implemented AND identify hidden problems (secur
 - Task Name (from arguments or prompt, or the current task)
 - `./.gtd/<task_name>/SPEC.md` — Source of truth
 
-  </context>
+</context>
 
 <process>
 
@@ -49,9 +49,9 @@ mkdir -p ./.gtd/<task_name>/audit
 
 ---
 
-## 2. Verify Ultimate Goal & Requirements
+## 2. Extract Verification Inputs
 
-Extract the **Ultimate Goal** and ALL requirements from the `### Must Have` section.
+Extract the **Ultimate Goal**, ALL requirements from the `### Must Have` section, **Constraints**, and **Invariants & Must Preserve**.
 
 > Use `research` tool once with **STRICT FIDELITY** to this template.
 > ⚠️ **CRITICAL: You MUST use the EXACT XML format below. Do NOT summarize or simplify.**
@@ -77,6 +77,8 @@ research{query: "
 
 <context>
 Spec: ./.gtd/<task_name>/SPEC.md
+Constraints: {paste constraints from SPEC.md}
+Invariants: {paste invariants from SPEC.md}
 </context>
 
 <research_checklist>
@@ -111,12 +113,83 @@ Before running audits, get the list of files changed for this task:
 ```bash
 # Get files changed since task started
 git diff --name-only HEAD
+```
 
 Save this list as `$CHANGED_FILES` for the audit steps below.
 
 ---
 
-## 4. Security Audit
+## 4. Correctness Audit
+
+> Use `correctness` tool with **STRICT FIDELITY** to this template.
+> ⚠️ **CRITICAL: Do NOT simplify. You MUST include ALL of these tags: `<objective>`, `<output_file>`, `<files_to_scan>`, `<context>`, `<focus_areas>`.**
+
+```
+correctness{query: "
+<objective>
+Scan for correctness issues in code related to task: <task_name>
+</objective>
+
+<output_file>
+./.gtd/<task_name>/audit/CORRECTNESS.md
+</output_file>
+
+<files_to_scan>
+{$CHANGED_FILES - list from git diff above}
+</files_to_scan>
+
+<context>
+Spec: ./.gtd/<task_name>/SPEC.md
+</context>
+
+<focus_areas>
+- semantic mismatches
+- invariant violations
+- edge-case failures
+- invalid state transitions
+- contract mismatches
+</focus_areas>
+"}
+```
+
+---
+
+## 5. Reliability Audit
+
+> Use `reliability` tool with **STRICT FIDELITY** to this template.
+> ⚠️ **CRITICAL: Do NOT simplify. You MUST include ALL of these tags: `<objective>`, `<output_file>`, `<files_to_scan>`, `<context>`, `<focus_areas>`.**
+
+```
+reliability{query: "
+<objective>
+Scan for reliability issues in code related to task: <task_name>
+</objective>
+
+<output_file>
+./.gtd/<task_name>/audit/RELIABILITY.md
+</output_file>
+
+<files_to_scan>
+{$CHANGED_FILES - list from git diff above}
+</files_to_scan>
+
+<context>
+Spec: ./.gtd/<task_name>/SPEC.md
+</context>
+
+<focus_areas>
+- retries
+- idempotency
+- timeout handling
+- partial failure
+- crash recovery
+</focus_areas>
+"}
+```
+
+---
+
+## 6. Security Audit
 
 > Use `security` tool with **STRICT FIDELITY** to this template.
 > ⚠️ **CRITICAL: Do NOT simplify. You MUST include ALL of these tags: `<objective>`, `<output_file>`, `<files_to_scan>`, `<context>`, `<focus_areas>`.**
@@ -153,7 +226,7 @@ Spec: ./.gtd/<task_name>/SPEC.md
 
 ---
 
-## 5. Performance Audit
+## 7. Performance Audit
 
 > Use `performance` tool with **STRICT FIDELITY** to this template.
 > ⚠️ **CRITICAL: Do NOT simplify. You MUST include ALL of these tags: `<objective>`, `<output_file>`, `<files_to_scan>`, `<context>`, `<focus_areas>`.**
@@ -188,7 +261,7 @@ Spec: ./.gtd/<task_name>/SPEC.md
 
 ---
 
-## 6. Technical Debt Audit
+## 8. Technical Debt Audit
 
 > Use `tech_debt` tool with **STRICT FIDELITY** to this template.
 > ⚠️ **CRITICAL: Do NOT simplify. You MUST include ALL of these tags: `<objective>`, `<output_file>`, `<files_to_scan>`, `<context>`, `<focus_areas>`.**
@@ -223,7 +296,7 @@ Spec: ./.gtd/<task_name>/SPEC.md
 
 ---
 
-## 7. TypeScript Quality Audit
+## 9. TypeScript Quality Audit
 
 **Only and MUST run if `$CHANGED_FILES` contains `.ts`, `.tsx`, `.js`, or `.jsx` files.**
 
@@ -267,7 +340,7 @@ Spec: ./.gtd/<task_name>/SPEC.md
 
 ---
 
-## 8. Rust Quality Audit
+## 10. Rust Quality Audit
 
 **Only and MUST run if `$CHANGED_FILES` contains `.rs` files.**
 
@@ -312,7 +385,73 @@ Spec: ./.gtd/<task_name>/SPEC.md
 
 ---
 
-## 9. Read Audit Findings
+## 11. Optional Audits (Conditional)
+
+**If async, queue, retry, timeout, external-I/O, or customer-facing production paths changed:**
+
+> Use `observability` tool with **STRICT FIDELITY** to this template.
+
+```
+observability{query: "
+<objective>
+Scan for observability issues in code related to task: <task_name>
+</objective>
+
+<output_file>
+./.gtd/<task_name>/audit/OBSERVABILITY.md
+</output_file>
+
+<files_to_scan>
+{$CHANGED_FILES - list from git diff above}
+</files_to_scan>
+
+<context>
+Spec: ./.gtd/<task_name>/SPEC.md
+</context>
+
+<focus_areas>
+- trace propagation
+- structured logs
+- failure visibility
+- metrics for important paths
+</focus_areas>
+"}
+```
+
+**If tests changed materially or verification confidence depends on changed tests:**
+
+> Use `test_quality` tool with **STRICT FIDELITY** to this template.
+
+```
+test_quality{query: "
+<objective>
+Scan for test quality issues in code related to task: <task_name>
+</objective>
+
+<output_file>
+./.gtd/<task_name>/audit/TEST_QUALITY.md
+</output_file>
+
+<files_to_scan>
+{$CHANGED_FILES - list from git diff above}
+</files_to_scan>
+
+<context>
+Spec: ./.gtd/<task_name>/SPEC.md
+</context>
+
+<focus_areas>
+- weak assertions
+- flakiness
+- over-mocking
+- meaningful coverage gaps
+</focus_areas>
+"}
+```
+
+---
+
+## 12. Read Audit Findings
 
 Read the generated audit reports to gather evidence for the consolidated report:
 
@@ -323,7 +462,7 @@ cat ./.gtd/<task_name>/audit/*.md
 
 ---
 
-## 10. Consolidate Report
+## 13. Consolidate Report
 
 Combine all findings into a single comprehensive report.
 
@@ -345,10 +484,10 @@ Output the FULL content of the report in your final response so the user can rea
 
 ## 1. Goal & Requirements Verification
 
-**Ultimate Goal:** {PASS / FAIL}
+**Ultimate Goal:** {PASS / FAIL / UNCERTAIN}
 > {Evidence that goal is met}
 
-**Requirements Status:** {PASS / FAIL}
+**Requirements Status:** {PASS / FAIL / PARTIAL}
 
 | Requirement | Status     | Evidence/Notes                                  |
 | :---------- | :--------- | :---------------------------------------------- |
@@ -359,7 +498,31 @@ Output the FULL content of the report in your final response so the user can rea
 
 ---
 
-## 2. Security Audit
+## 2. Correctness Audit
+
+**Status:** {PASS / CRITICAL / HIGH / MEDIUM}
+
+| Finding | Severity | Location | Description |
+| :------ | :------- | :------- | :---------- |
+| {Issue} | HIGH     | file:line | {description} |
+
+**Summary:** {X} issues found
+
+---
+
+## 3. Reliability Audit
+
+**Status:** {PASS / CRITICAL / HIGH / MEDIUM}
+
+| Finding | Severity | Location | Description |
+| :------ | :------- | :------- | :---------- |
+| {Issue} | HIGH     | file:line | {description} |
+
+**Summary:** {X} issues found
+
+---
+
+## 4. Security Audit
 
 **Status:** {PASS / CRITICAL / HIGH / MEDIUM}
 
@@ -371,7 +534,7 @@ Output the FULL content of the report in your final response so the user can rea
 
 ---
 
-## 3. Performance Audit
+## 5. Performance Audit
 
 **Status:** {PASS / CRITICAL / HIGH / MEDIUM}
 
@@ -383,7 +546,7 @@ Output the FULL content of the report in your final response so the user can rea
 
 ---
 
-## 4. Technical Debt Audit
+## 6. Technical Debt Audit
 
 **Status:** {PASS / HIGH / MEDIUM / LOW}
 
@@ -395,12 +558,40 @@ Output the FULL content of the report in your final response so the user can rea
 
 ---
 
-## 5. Audits Summary
+## 7. Optional Audits
+
+Include only if run:
+
+### Observability Audit
+
+**Status:** {PASS / CRITICAL / HIGH / MEDIUM}
+
+| Finding | Severity | Location | Description |
+| :------ | :------- | :------- | :---------- |
+| {Issue} | HIGH     | file:line | {description} |
+
+**Summary:** {X} issues found
+
+### Test Quality Audit
+
+**Status:** {PASS / CRITICAL / HIGH / MEDIUM}
+
+| Finding | Severity | Location | Description |
+| :------ | :------- | :------- | :---------- |
+| {Issue} | HIGH     | file:line | {description} |
+
+**Summary:** {X} issues found
+
+---
+
+## 8. Audits Summary
 
 Detailed findings are saved in the `audit/` folder.
 
 | Audit | Status | Report |
 | :--- | :--- | :--- |
+| **Correctness** | {PASS/FAIL} | [Detailed Report](./audit/CORRECTNESS.md) |
+| **Reliability** | {PASS/FAIL} | [Detailed Report](./audit/RELIABILITY.md) |
 | **Security** | {PASS/FAIL} | [Detailed Report](./audit/SECURITY.md) |
 | **Performance** | {PASS/FAIL} | [Detailed Report](./audit/PERFORMANCE.md) |
 | **Tech Debt** | {PASS/FAIL} | [Detailed Report](./audit/TECH_DEBT.md) |
@@ -415,15 +606,17 @@ Detailed findings are saved in the `audit/` folder.
 {Proceed / Fix Critical Issues First / Major Refactoring Needed}
 ```
 
-## 11. Update Backlog
+## 14. Update Backlog
 
-If any issues (FAIL, Security, Performance, Tech Debt) were found, add them to `BACKLOG.md`.
+If any issues (FAIL, Security, Performance, Tech Debt, Correctness, Reliability) were found, add them to `BACKLOG.md`.
 
 1. Read `./.gtd/BACKLOG.md`
 2. Append a new section (if not exists) `### Verification Findings: <task_name>`
 3. Add findings as new items:
 
 ```markdown
+- [ ] **debt/<task_name>/correctness** — {correctness issue description} ([audit/CORRECTNESS.md](./.gtd/<task_name>/audit/CORRECTNESS.md))
+- [ ] **debt/<task_name>/reliability** — {reliability issue description} ([audit/RELIABILITY.md](./.gtd/<task_name>/audit/RELIABILITY.md))
 - [ ] **debt/<task_name>/security** — {security issue description} ([audit/SECURITY.md](./.gtd/<task_name>/audit/SECURITY.md))
 - [ ] **debt/<task_name>/perf** — {performance issue description} ([audit/PERFORMANCE.md](./.gtd/<task_name>/audit/PERFORMANCE.md))
 - [ ] **debt/<task_name>/tech-debt** — {tech debt description} ([audit/TECH_DEBT.md](./.gtd/<task_name>/audit/TECH_DEBT.md))
@@ -444,7 +637,7 @@ If any issues (FAIL, Security, Performance, Tech Debt) were found, add them to `
 Task: <task_name>
 
 📋 Requirements: {X}/{Y} PASS
-🎯 Ultimate Goal: {PASS/FAIL}
+🎯 Ultimate Goal: {PASS/FAIL/UNCERTAIN}
 🔒 Security:     {X} issues
 ⚡ Performance:  {X} issues
 🔧 Tech Debt:    {X} issues

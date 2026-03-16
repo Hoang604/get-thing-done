@@ -1,38 +1,15 @@
 ---
 name: review_plan
 description: |
-  Review execution plans for security, performance, and design risks BEFORE code is written. Analyzes task intent, not code.
-
-  The only parameter that this tool receive is query.
-
-  **Query format (XML-structured):**
-  ```
-  <scope>Path to PLAN.md to review (REQUIRED)</scope>
-  <objective>What to focus the review on (optional)</objective>
-  <context>Any relevant context: spec path, architecture constraints (optional)</context>
-  <focus_areas>Risk categories to prioritize: security, performance, design, maintenance (optional)</focus_areas>
-  ```
-
-  **Examples:**
-  Minimal: `<scope>.gtd/auth-refactor/phase-1/PLAN.md</scope>`
-
-  Full:
-  ```
-  <scope>.gtd/payment-v2/phase-2/PLAN.md</scope>
-  <objective>Check for IDOR and SQL injection risks</objective>
-  <context>This handles financial data, high security requirements</context>
-  <focus_areas>security, performance</focus_areas>
-  ```
-
-  **Returns:** Risk analysis with status (PROCEED/CAUTION/BLOCK), identified risks per task, severity, and mitigation recommendations.
+  Pre-execution plan reviewer for scoped implementation plans, tight to the plan-phase skills, do not auto invoke this
 tools:
   - read_file
   - list_directory
   - glob
   - search_file_content
-model: gemini-3-flash-preview
+model: gemini-3.1-pro-preview
 temperature: 1
-max_turns: 20
+max_turns: 30
 ---
 
 # The Plan Reviewer

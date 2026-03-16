@@ -17,7 +17,7 @@ Create a specification that answers:
 2. What are we building?
 3. How will we know it is done?
 
-Flow: Context -> Interview -> Optional Research -> Mirror -> Confirm -> Write
+Flow: Context -> Resolve Artifacts -> Frame Reality -> Interview -> Optional Research -> Mirror -> Confirm -> Write
 </objective>
 
 <context>
@@ -117,6 +117,31 @@ If the proposed feature does not clearly advance the user's ultimate goal, chall
 `SPEC.md` is the single source of truth for downstream workflow.
 `ROADMAP.md`, `PLAN.md`, and execution must derive from it rather than reinterpret it.
 
+## Ask Only What The Codebase Cannot Tell You
+
+When the user references an existing component, module, route, command, workflow, file, symbol, or feature in the repository:
+
+- inspect the codebase first
+- infer its current role, scope, and constraints from local evidence
+- do **not** ask the user to explain what it is unless the repository cannot resolve it
+
+Ask the user only for what cannot be learned reliably from local context, such as:
+- why they want it changed
+- what outcome they want
+- what must not break
+- which of multiple plausible interpretations is correct
+
+## Define Reality, Not Just Desire
+
+A good spec does not only say what should be built.
+It must also capture what is already true and must remain true:
+
+- current pain or failure being addressed
+- evidence of that pain when available
+- hard constraints from the existing system
+- invariants that must be preserved
+- approaches that are explicitly out of scope
+
 ## Use EARS for Requirements
 
 All Must-Have and Nice-to-Have requirements must use EARS-style phrasing.
@@ -131,12 +156,15 @@ Patterns:
 ## Mirror Before Writing
 
 Before writing, restate:
+- Current Problem
 - Ultimate Goal
 - Target Feature
 - Must-Haves
 - Nice-to-Haves
 - Won't-Haves
 - Constraints
+- Invariants / Must-Preserve truths
+- Rejected approaches / Non-goals
 - Done criteria
 
 Do not write the file until the user explicitly confirms the summary.
@@ -173,105 +201,80 @@ Check if `$ARGUMENTS` contains `--modify`:
 
 ---
 
-## 3. Interview Phase (NEW mode)
+## 3. Resolve Referenced Artifacts First
+
+If the user mentions an existing code artifact by name or path, inspect the repository before asking clarifying questions about that artifact.
+
+Examples:
+- component or module name
+- route or endpoint
+- command or job
+- file path
+- class, function, or service name
+
+Do this before the interview:
+- find the artifact in code
+- read only the minimum files needed to understand its current purpose
+- identify obvious constraints, dependencies, and must-not-break behavior
+
+Only ask the user what the codebase cannot answer:
+- desired outcome
+- business reason for the change
+- priority among ambiguous interpretations
+- hidden constraints not visible in code
+
+If the artifact cannot be found, or multiple candidates exist, say that briefly and ask the minimal disambiguating question.
+
+---
+
+## 4. Frame Current Reality (NEW mode)
+
+Before collecting requirements, determine whether this work changes an existing behavior, flow, or system constraint.
+
+If YES, capture the minimum reality context:
+- What is painful, broken, or currently missing?
+- What evidence exists? (user report, failing test, stack trace, production symptom, codebase constraint)
+- What behavior must remain unchanged?
+- What system boundary or ownership rule appears load-bearing?
+
+If this is greenfield work with no meaningful existing constraint, keep this step brief and continue.
+
+---
+
+## 5. Interview Phase (NEW mode)
 
 Gather specification using `ask_user` tool.
+
+**Required topics:**
+- Current problem or opportunity
+- Ultimate Goal
+- Target Feature
+- Must-Have requirements
+- Nice-to-Have requirements
+- Won't-Have scope boundaries
+- Constraints
+- Invariants / Must-Preserve truths
+- Done criteria
 
 **Communication Standard:**
 
 - **Batch Questions:** Ask multiple questions in one `ask_user` call.
+- **Use Choice Questions:** For any question with a limited set of reasonable answers, use choice questions instead of free-form text.
+- **For everythings you can infer from user request, use `ask_user` to confirm your understanding.
 - **Infer then Verify:** Propose solutions, use confirmation to verify.
-
-**Example interview:**
-
-```
-ask_user({
-  questions: [
-    {
-      header: "Ultimate Goal",
-      type: "text",
-      question: "What is the ultimate positive outcome you want to achieve? (The 'Why')",
-      placeholder: "e.g. System runs 2x faster, User conversion increases..."
-    },
-    {
-      header: "Target Feature",
-      type: "text",
-      question: "What specific feature/change do you think will achieve this?",
-      placeholder: "e.g., Create worker threads, Add PDF export..."
-    },
-    {
-      header: "Must Have",
-      type: "text",
-      question: "What are the absolute essentials? (Frame using EARS: When, While, Where, etc.)",
-      placeholder: "List the core requirements..."
-    },
-    {
-      header: "Nice to Have",
-      type: "text",
-      question: "What would be great but isn't essential?",
-      placeholder: "Optional features..."
-    },
-    {
-      header: "Constraints",
-      type: "text",
-      question: "Any technical or time constraints?",
-      placeholder: "e.g., Must use existing auth, deadline is Friday..."
-    }
-  ]
-})
-```
-
-**Keep asking until you have clear answers for all.**
-
+- **Read-First:** Ask only questions that remain unknown after reading the local code/context. Do not ask "what is component X?" if the repository already answers that question clearly.
+- **Reality First:** For existing-system work, prefer asking for the current pain, evidence, and must-not-break behavior before discussing the proposed solution in detail.
 ---
 
-## 3. Modify Flow (MODIFY mode)
-
-User will provide what they want to change.
-
-**Example clarification:**
-
-```
-ask_user({
-  questions: [
-    {
-      header: "Section",
-      type: "choice",
-      question: "Which section needs changes?",
-      options: [
-        { label: "Ultimate Goal", description: "Change the high-level objective" },
-        { label: "Target Feature", description: "Change the specific solution" },
-        { label: "Must Have", description: "Modify requirements" },
-        { label: "Nice to Have", description: "Adjust optional features" },
-        { label: "Won't Have", description: "Update exclusions" },
-        { label: "Constraints", description: "Change constraints" }
-      ]
-    },
-    {
-      header: "Changes",
-      type: "text",
-      question: "What specifically needs to change?",
-      placeholder: "Describe the modification..."
-    },
-    {
-      header: "Reason",
-      type: "text",
-      question: "Why this change?",
-      placeholder: "Context helps ensure completeness..."
-    }
-  ]
-})
-```
-
----
-
-## 4. Domain Research Phase (Optional, NEW mode)
+## 5. Optional Problem-Framing Research (NEW mode)
 
 **Research only if needed:** If you already have enough context from the interview and your current knowledge of the codebase to build a complete spec, you MAY skip this. Otherwise, investigate the codebase to understand the specific domain:
 > **Before calling research, extract:**
-> 1. User's specific goal (from interview)
-> 2. Must-Have requirements (from interview)
-> 3. Known constraints (from interview)
+> 1. Current pain or evidence
+> 2. User's specific goal (from interview)
+> 3. Must-Have requirements (from interview)
+> 4. Known constraints (from interview)
+> 5. Known invariants / must-preserve truths
 >
 > **Then call `research` tool:**
 >
@@ -284,10 +287,14 @@ ask_user({
 > </objective>
 >
 > <context>
+> ## Current Reality
+> Pain/Evidence: {current pain}
+>
 > ## User Requirements
 > Must-Haves: {list must-haves from interview}
 > Nice-to-Haves: {list nice-to-haves from interview}
 > Constraints: {list constraints from interview}
+> Invariants: {list invariants}
 > </context>
 >
 > <focus_areas>
@@ -295,6 +302,7 @@ ask_user({
 > - Find existing patterns for similar features
 > - Detect hidden dependencies user may not know
 > - Flag potential conflicts with existing code
+> - Validate invariants against codebase reality
 > </focus_areas>
 >
 > <output_format>
@@ -303,6 +311,7 @@ ask_user({
 > - Relevant Modules
 > - Existing Patterns to Reuse
 > - Additional Constraints/Requirements Discovered
+> - Invariants to Preserve
 > </output_format>
 > "}
 > ```
@@ -327,7 +336,7 @@ ask_user({
 
 ---
 
-## 4b. Challenge the Fit (NEW mode)
+## 6. Challenge the Fit (NEW mode)
 
 **Before mirroring, evaluate whether the Target Feature actually achieves the Ultimate Goal.**
 
@@ -336,6 +345,7 @@ The Target Feature may have been proposed by the user OR by you during the inter
 1. Does the Target Feature directly lead to the Ultimate Goal?
 2. Could a simpler approach achieve the same goal?
 3. Did domain research reveal fundamental problems with this approach?
+4. Are we solving the actual pain rather than a guessed solution?
 
 **If the fit is strong → proceed to Mirror Phase.**
 
@@ -361,7 +371,7 @@ ask_user({
 
 ---
 
-## 5. Mirror Phase
+## 7. Mirror Phase
 
 **Determine task name automatically:**
 
@@ -378,11 +388,12 @@ Display the summary first:
 
 ```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GTD ► CONFIRMING UNDERSTANDING
+  GTD ► CONFIRMING UNDERSTANDING
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 **Task:** {task-name}
 
+**Current Problem:** {The pain being addressed}
 **Ultimate Goal:** {The North Star}
 **Target Feature:** {What we are building}
 
@@ -397,6 +408,9 @@ Display the summary first:
 
 **Constraints:**
 - {constraint 1}
+
+**Invariants / Must Preserve:**
+- {invariant 1}
 ```
 
 Then confirm using `ask_user`:
@@ -423,7 +437,7 @@ Display the changes first:
 
 ```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GTD ► CONFIRMING CHANGES
+  GTD ► CONFIRMING CHANGES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 **Changes:**
@@ -453,7 +467,7 @@ ask_user({
 
 ---
 
-## 6. Write/Update SPEC.md
+## 8. Write/Update SPEC.md
 
 **For NEW mode:**
 
@@ -474,6 +488,10 @@ Write to `./.gtd/<task_name>/SPEC.md`:
 ## Synopsis
 
 {2-3 sentences explaining the "User Story" of this task. What is the value proposition?}
+
+## Current Problem
+
+{The pain, gap, or existing-system reality this spec addresses. If greenfield, state the opportunity clearly.}
 
 ## Ultimate Goal
 
@@ -504,6 +522,18 @@ Write to `./.gtd/<task_name>/SPEC.md`:
 
 - {Technical or time constraint}
 
+## Invariants & Must Preserve
+
+- {Truths that downstream planning must not violate}
+
+## Non-Goals / Rejected Approaches
+
+- {Meaningful scope or design exclusions}
+
+## Done Criteria
+
+- {Verifiable criteria}
+
 ## Open Questions
 
 - {Any unresolved questions — empty if none}
@@ -520,6 +550,20 @@ Update the status line:
 **Last Updated:** {date}
 ```
 
+## 9. Final Readiness Check
+
+Before finishing, verify:
+- The current problem is stated clearly
+- The goal and target feature are not in conflict
+- Must-Haves use EARS phrasing
+- Constraints are explicit
+- Invariants / must-preserve truths are explicit when relevant
+- Done Criteria are testable
+- The spec is specific enough for `roadmap`
+- **The user was only asked questions that local context could not answer reliably**
+
+If not, fix the spec before offering the next step.
+
 </process>
 
 <offer_next>
@@ -528,7 +572,7 @@ Update the status line:
 
 ```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GTD ► SPEC COMPLETE ✓
+  GTD ► SPEC COMPLETE ✓
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Specification written to ./.gtd/<task_name>/SPEC.md
@@ -548,7 +592,7 @@ Acceptance Criteria: {N} items defined
 
 ```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GTD ► SPEC UPDATED ✓
+  GTD ► SPEC UPDATED ✓
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Specification updated: ./.gtd/<task_name>/SPEC.md

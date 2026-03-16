@@ -35,8 +35,8 @@ tools:
   - run_shell_command
   - write_file
 model: gemini-3-flash-preview
-temperature: 0.2
-max_turns: 20
+temperature: 1
+max_turns: 30
 ---
 
 # The TypeScript Quality Auditor

@@ -20,7 +20,7 @@ Create a roadmap that answers:
 2. What does each phase deliver?
 3. Which requirements does each phase cover?
 
-Flow: Validate Spec -> Extract -> Group -> Order -> Coverage Check -> Write
+Flow: Validate Spec -> Extract -> Optional Constraint Check -> Group -> Order -> Coverage Check -> Write
 </objective>
 
 ## User Request
@@ -34,6 +34,19 @@ Input:
 Output:
 - `./.gtd/<task_name>/ROADMAP.md`
 </context>
+
+<tools>
+
+Use specialist agents only when the sequencing is genuinely constrained by existing-system reality.
+
+Rules:
+- Default to **no agent**
+- Use **at most 1** specialist
+- Prefer `architecture` when phase order depends on boundaries, ownership, or migration order
+- Prefer `reliability` when phase order depends on rollout safety, retries, idempotency, or failure semantics
+- Do not fan out to multiple audits from roadmap
+
+</tools>
 
 <philosophy>
 
@@ -52,6 +65,16 @@ Phase objectives and success criteria should align with EARS-style phrasing wher
 
 Later phases should depend on earlier phases.
 If two phases are truly independent, either merge them or justify why the split still helps execution.
+
+## Sequence Against Reality, Not Just Features
+
+Roadmap ordering should respect:
+- hard constraints from the existing system
+- invariants that must remain true during delivery
+- architectural seams and ownership boundaries
+- rollout or failure-mode safety where relevant
+
+Do not create a clean-looking phase order that is unsafe or awkward to execute against the actual system.
 
 ## Keep the Roadmap Small
 
@@ -72,35 +95,61 @@ Optional work must remain visibly separate.
 Check that `./.gtd/<task_name>/SPEC.md`:
 - Exists
 - Has status `FINALIZED` or `UPDATED`
-- Contains Ultimate Goal, Target Feature, Requirements, Constraints, and Done Criteria
+- Contains Current Problem, Ultimate Goal, Target Feature, Requirements, Constraints, Invariants & Must Preserve, and Done Criteria
 
 If any of these are missing, stop and report the gap instead of guessing.
 
 ## 2. Extract the Planning Inputs
 
 Read the spec and extract:
+- Current Problem
 - Ultimate Goal
 - Target Feature
 - Must-Have requirements
 - Nice-to-Have requirements
 - Constraints
+- Invariants & Must Preserve
+- Non-Goals / Rejected Approaches
 - Done Criteria
 
 Create an internal checklist from all Must-Haves before designing phases.
 
-## 3. Group Requirements Into Phases
+## 3. Optional Constraint Check
+
+Use a specialist only if one of these is true:
+- the work crosses multiple existing modules or ownership boundaries
+- rollout order affects safety or correctness
+- migration order matters
+- invariants or failure semantics strongly constrain sequencing
+
+If needed:
+- run `architecture` for seam, ownership, or migration-order constraints
+- run `reliability` for rollout, retry, idempotency, or failure-semantics constraints
+
+Expected output from the specialist:
+- sequencing constraints
+- must-do-early work
+- must-not-do-first work
+- boundary or rollout risks that affect phase order
+
+Distill this into short sequencing notes. Do not paste a full audit into the roadmap.
+
+## 4. Group Requirements Into Phases
 
 For each requirement, ask:
 - What prerequisites does it need?
 - What system capability does it unlock?
 - Does it belong to a foundation, core path, hardening, or optional stage?
+- Does it depend on preserving an invariant while work is in flight?
+- Does it require an enabling step because of an existing boundary or rollout constraint?
 
 Grouping rules:
 - Keep tightly coupled requirements together
 - Do not create a phase that produces no independently verifiable value
 - Do not split one user-visible capability across phases unless dependencies force it
+- Prefer grouping that minimizes risky in-between states in the existing system
 
-## 4. Order the Phases
+## 5. Order the Phases
 
 Arrange phases so each one unlocks the next or reduces delivery risk.
 
@@ -112,7 +161,12 @@ Typical shape:
 
 If the roadmap does not fit this shape, that is acceptable, but the dependency logic must still be obvious.
 
-## 5. Write ROADMAP.md
+Before finalizing order, ask:
+- Are we sequencing against the real constraints, not just the clean-room design?
+- Does any phase leave the system in a risky transitional state longer than needed?
+- Are must-preserve invariants respected throughout the sequence?
+
+## 6. Write ROADMAP.md
 
 Use this structure:
 
@@ -120,6 +174,7 @@ Use this structure:
 # Roadmap
 
 **Spec:** ./.gtd/<task_name>/SPEC.md
+**Current Problem:** {current_problem}
 **Ultimate Goal:** {ultimate_goal}
 **Target Feature:** {target_feature}
 **Created:** {date}
@@ -127,6 +182,11 @@ Use this structure:
 ## Strategy
 
 {Explain how the ordered phases reach the goal}
+
+## Constraints & Invariants
+
+- Constraint: {hard system constraint}
+- Must Preserve: {invariant}
 
 ## Must-Haves
 
@@ -159,18 +219,22 @@ Writing rules:
 - Each phase objective should be EARS-aligned where practical
 - `Covers Requirements` must map back to spec wording closely enough for traceability
 - `Exit Criteria` must be concrete enough for `plan-phase`
+- `Strategy` should reflect real sequencing constraints, not just a feature wishlist
+- Keep `Constraints & Invariants` short and only include the items that materially affect phase order
 
-## 6. Coverage Check
+## 7. Coverage Check
 
 Before finishing, verify:
 - Every Must-Have appears in at least one phase
 - Nice-to-Haves are marked as optional coverage
 - Phase order is dependency-correct
 - No phase has a vague objective such as "implement feature" without a measurable outcome
+- The sequence does not violate the important constraints or invariants from the spec
+- Non-goals are not accidentally turned into roadmap work
 
 If coverage or order is weak, revise before writing.
 
-## 7. Final Readiness Check
+## 8. Final Readiness Check
 
 Before offering the next step, confirm the roadmap is usable by `plan-phase`.
 
@@ -179,6 +243,7 @@ It must provide:
 - Clear objective per phase
 - Requirement mapping per phase
 - Measurable exit criteria
+- Enough sequencing context that `plan-phase` does not need to rediscover major boundary constraints
 
 </process>
 

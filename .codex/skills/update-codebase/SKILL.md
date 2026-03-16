@@ -11,97 +11,146 @@ You are updating the codebase map with newly discovered knowledge.
 - You've traced a flow and now understand it better
 - You discovered undocumented patterns or conventions
 - You found a module's true purpose differs from documented
-- You resolved an "Open Question" from CODEBASE.md
+- You resolved an open question
 - You discovered new entry points or dependencies
-  </role>
+- You discovered a new domain or infrastructure slice worth documenting
+</role>
 
 <objective>
-Incrementally update `./.gtd/CODEBASE.md` with verified knowledge from current session.
+Incrementally update the split codebase knowledge base with verified knowledge from the current session.
 
-**Flow:** Recall → Verify → Update
+**Flow:** Recall → Verify → Target → Update
 </objective>
+
+<context>
+**Current Codebase Map:**
+
+- `./.gtd/CODEBASE.md`
+- `./.gtd/codebase/architecture.md`
+- `./.gtd/codebase/entrypoints.md`
+- `./.gtd/codebase/patterns.md`
+- `./.gtd/codebase/open-questions.md`
+- `./.gtd/codebase/domains/*.md`
+- `./.gtd/codebase/infra/*.md`
+</context>
 
 <prohibitions>
 
 ## Same Rules as codebase-overview
 
 **No Guessing.** Only add what you verified during this session.  
-**Cite Evidence.** Every update must reference the file/line you learned it from.  
-**Admit Gaps.** If you partially understand something, add to Open Questions instead.
+**Cite Evidence Inline.** Every changed claim must include `Evidence: path:line`.  
+**Admit Gaps.** If you partially understand something, add or preserve an item in `open-questions.md`.
 
 ## Don't Rewrite Everything
 
-This is an incremental update. You modify specific sections, not the whole document.
+This is an incremental update. Modify the smallest correct set of files.
+
+## Don't Keep Monolith Habits
+
+Do not dump new knowledge into `CODEBASE.md` unless the index itself needs updating.
 
 </prohibitions>
 
 <process>
 
-## 1. Load Current State
+## 1. Identify What You Learned
 
-Verify `./.gtd/CODEBASE.md` exists and read it:
+List the knowledge gained in this session.
 
-```bash
-ls ./.gtd/CODEBASE.md >/dev/null 2>&1 && echo "EXISTS" || echo "MISSING"
-```
+Format findings like:
 
-**If MISSING:** Stop. User should run `/codebase-overview` first.
-
-**If EXISTS:** Read the entire CODEBASE.md now. You need current state to:
-
-- Know what's already documented (avoid duplicates)
-- See existing Open Questions you might have resolved
-- Understand section structure for targeted updates
-
-Use `view_file/read_file` tool on `./.gtd/CODEBASE.md` to read the full contents.
-
----
-
-## 2. Identify What You Learned
-
-List the knowledge gained in this session. Examples:
-
-- "Discovered `OrderProcessor.handlePayment()` calls `PaymentGateway.charge()` → `LedgerService.record()` flow"
-- "Found that `utils/cache.ts` is actually a write-through cache to Redis, not in-memory"
-- "Identified pattern: all handlers use `withTransaction()` wrapper"
-
-**Format your findings:**
-
-```
+```text
 LEARNED:
-- [What] — [Evidence: file:line or flow traced]
+- [What changed or was clarified] — [Evidence: file:line]
 ```
 
----
+Examples:
 
-## 3. Map to CODEBASE.md Sections
-
-| Knowledge Type             | Section to Update       |
-| -------------------------- | ----------------------- |
-| Module purpose clarified   | Modules → {Module Name} |
-| New pattern discovered     | Patterns & Conventions  |
-| Entry point found          | Entry Points            |
-| Dependency usage clarified | Dependencies (Key)      |
-| Question answered          | Open Questions (remove) |
-| New question emerged       | Open Questions (add)    |
+- `OrderProcessor.handlePayment()` calls `PaymentGateway.charge()` before `LedgerService.record()` — Evidence: `src/order/processor.ts:44`, `src/ledger/service.ts:18`
+- `utils/cache.ts` is a Redis write-through adapter, not in-memory cache — Evidence: `src/utils/cache.ts:12`
+- All HTTP handlers use `withTransaction()` wrapper — Evidence: `src/http/create-order.ts:9`, `src/http/refund-order.ts:11`
 
 ---
 
-## 4. Make Targeted Updates
+## 2. Map Findings To Target Files
 
-Goal: Make CODEBASE.md accurate and up-to-date.
+Use the smallest correct target set.
 
-For each piece of knowledge:
+| Knowledge Type | Target File |
+| -------------- | ----------- |
+| Repo-wide structure clarified | `architecture.md` |
+| Entry point or startup flow found | `entrypoints.md` |
+| Cross-cutting convention verified | `patterns.md` |
+| Question answered or newly discovered gap | `open-questions.md` |
+| Domain behavior clarified | `domains/<name>.md` |
+| Infrastructure behavior clarified | `infra/<name>.md` |
+| New domain or infra slice discovered | create new file and add link in `CODEBASE.md` |
 
-1. Locate the relevant section in CODEBASE.md
-2. Update it to reflect the truth
+Only update `CODEBASE.md` when:
 
-**Update rules:**
+- a new split doc is created
+- a doc title or location changed
+- the one-paragraph repo purpose is materially more accurate
 
-- **Adding info:** Append to existing sections
-- **Correcting info:** Replace incorrect content with correct content
-- **Removing Open Question:** Delete the question, add the answer to appropriate section
-- **Outdated content:** Remove or update — don't leave stale information
+---
+
+## 3. Update Target Files
+
+For each learned fact:
+
+1. Verify the current target file exists and is still the right home
+2. Update or correct the relevant section
+3. Add inline evidence to each changed claim
+4. Refresh `Last Updated`
+5. Refresh `Last Verified` for every file you rechecked during this update
+
+If the fact does not fit any existing file:
+
+- create a new focused doc in `domains/` or `infra/`
+- update `CODEBASE.md` to link to it
+
+If a prior claim is stale:
+
+- replace or remove it
+- do not leave contradictory text behind
+
+---
+
+## 4. File-Specific Rules
+
+### `CODEBASE.md`
+
+- Keep it short
+- Treat it as an index only
+- Do not add detailed module notes here
+
+### `architecture.md`
+
+- Keep subsystem summaries concise
+- Every subsystem entry must end with evidence
+
+### `entrypoints.md`
+
+- Add or correct startup flow steps only when they were traced in code
+- Each flow must include evidence lines
+
+### `patterns.md`
+
+- Only document patterns shown in at least 2 files
+- Every pattern must cite at least 2 evidence locations
+
+### `open-questions.md`
+
+- Remove questions that are now answered
+- Add new unresolved questions when needed
+- Keep the "next place to inspect" concrete when possible
+
+### `domains/*.md` and `infra/*.md`
+
+- Keep each file narrowly scoped
+- Prefer adding facts to an existing focused doc over broadening unrelated docs
+- Use flow sections for behavior and table sections for responsibilities
 
 </process>
 
@@ -111,12 +160,12 @@ After updating, confirm:
 
 ```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GTD ► CODEBASE.md UPDATED ✓
+ GTD ► CODEBASE DOCS UPDATED ✓
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-| Section | Change |
-|---------|--------|
-| {section} | {what changed} |
+| File | Change |
+|------|--------|
+| {path} | {what changed} |
 
 ─────────────────────────────────────────────────────
 ```

@@ -3,34 +3,35 @@ name: codebase-overview
 description: Analyze codebase architecture. Creates ./.gtd/CODEBASE.md
 argument-hint: "[--refresh]"
 ---
-
 <role>
 You are a codebase archaeologist. You map the terrain before anyone builds on it.
 
 **Core responsibilities:**
 
 - Discover project structure and tech stack
-- Identify key modules and their responsibilities
-- Document entry points and data flows
-- Catalog patterns and conventions
+- Identify major domains, infrastructure, and entry points
+- Document verified flows and conventions
+- Create a split documentation set that can scale with the repo
 - Use research skill for unclear modules
-  </role>
+</role>
 
 <objective>
-Create a living document that answers: "What does this codebase do and how is it organized?"
+Create a living codebase map that answers: "What does this codebase do, how is it organized, and where should future investigation go"
 
-**Flow:** Discover → Classify → Document
+**Flow:** Discover → Classify → Split → Document
 </objective>
 
 <context>
-**Output:**
+**Outputs:**
 
-- `./.gtd/CODEBASE.md`
-
-**Skills used:**
-
-- `research` — For deep dives on unclear modules
-  </context>
+- `./.gtd/CODEBASE.md` as the thin index
+- `./.gtd/codebase/architecture.md`
+- `./.gtd/codebase/entrypoints.md`
+- `./.gtd/codebase/patterns.md`
+- `./.gtd/codebase/open-questions.md`
+- `./.gtd/codebase/domains/*.md`
+- `./.gtd/codebase/infra/*.md`
+</context>
 
 <philosophy>
 
@@ -38,21 +39,27 @@ Create a living document that answers: "What does this codebase do and how is it
 
 Document what IS, not what SHOULD BE. Save opinions for later.
 
+## Split From The Start
+
+Do not let `CODEBASE.md` grow into a monolith. Keep it short and use targeted documents for durable knowledge.
+
 ## Breadth First, Depth on Demand
 
-Start with directory structure. Go deep only when:
+Start with structure and entry points. Go deep only when:
 
-- Module is central to most features
+- A module is central to multiple features
 - Purpose is unclear from naming
-- Multiple entry points converge here
+- Multiple flows converge there
 
-## Living Document
+## Living Documents
 
-CODEBASE.md is updated when:
+Each output file should carry:
 
-- Major refactoring happens
-- New domains are added
-- Someone runs `--refresh`
+- `Generated`
+- `Last Updated`
+- `Last Verified`
+
+`Last Verified` means the date this file's content was checked against the current codebase during this run.
 
 </philosophy>
 
@@ -70,20 +77,23 @@ CODEBASE.md is updated when:
 
 ## Evidence Required
 
-Every claim must cite evidence:
+Every claim must cite evidence inline.
 
-- Tech stack → cite `package.json`, `go.mod`, or actual imports
-- Module purpose → cite key function signatures read
-- Patterns → cite 2+ files demonstrating the pattern
+- Tech stack → cite manifest files or imports
+- Module purpose → cite key files and lines
+- Patterns → cite at least 2 files
+- Entry points → cite script definitions, exported handlers, or bootstrapping files
+
+Use compact evidence format directly in the document:
+
+- `Evidence: path/to/file:line`
+- `Evidence: path/a:line, path/b:line`
 
 **No citation = don't write it.**
 
 ## Admit Unknowns
 
-If you can't verify something, add it to Open Questions.
-
-Better: "Open Question: What does `core/` do?"
-Worse: "core/ contains core business logic" (guessed from name)
+If you cannot verify something, write it to `open-questions.md` instead of filling gaps with inference.
 
 </prohibitions>
 
@@ -91,13 +101,15 @@ Worse: "core/ contains core business logic" (guessed from name)
 
 ## 1. Check Mode
 
-Check if `$ARGUMENTS` contains `--refresh`:
+Check if `$ARGUMENTS` contains `--refresh`.
 
 **If REFRESH mode:**
 
-- Load existing `./.gtd/CODEBASE.md`
-- Compare against current codebase
-- Update changed sections only
+- Load `./.gtd/CODEBASE.md`
+- Load existing files under `./.gtd/codebase/`
+- Revalidate each section against the current codebase
+- Update stale files in place
+- Create missing split docs if the current structure needs them
 
 **If NEW mode:**
 
@@ -124,127 +136,278 @@ Identify:
 ### 2.2 Directory Structure
 
 ```bash
-find . -type d -maxdepth 3 | grep -v node_modules | grep -v .git | grep -v __pycache__ | head -50
+find . -type d -maxdepth 3 | grep -v node_modules | grep -v .git | grep -v __pycache__ | head -80
 ```
 
-Map top-level directories:
+Classify top-level and major subdirectories into:
 
-- `src/`, `lib/`, `app/` → Core code
-- `test/`, `tests/`, `__tests__/` → Test suites
-- `config/`, `.env*` → Configuration
-- `scripts/`, `bin/` → Tooling
-- `docs/` → Documentation
+- Domain
+- Infrastructure
+- API / interface
+- Shared
+- Tests
+- Tooling / automation
 
 ### 2.3 Entry Points
 
-Find entry points by convention:
+Find entry points by convention and actual wiring:
 
 - `main.*`, `index.*`, `app.*`
-- `server.*`, `cli.*`
+- `server.*`, `cli.*`, worker boot files
 - `package.json` scripts
-- Dockerfile CMD/ENTRYPOINT
+- Dockerfile `CMD` or `ENTRYPOINT`
+- framework-specific bootstraps
 
 ### 2.4 Module Classification
 
-For each major directory/module, classify:
+For each major directory or subsystem, classify:
 
-| Type           | Description      | Action                         |
-| -------------- | ---------------- | ------------------------------ |
-| Domain         | Business logic   | Document purpose, key entities |
-| Infrastructure | DB, cache, queue | Document connections, patterns |
-| API            | HTTP, gRPC, CLI  | Document routes, commands      |
-| Shared         | Utils, types     | List exports                   |
+| Type | Description | Output |
+| ---- | ----------- | ------ |
+| Domain | Business logic or core product concepts | `domains/<name>.md` |
+| Infrastructure | DB, cache, queue, external services, persistence | `infra/<name>.md` |
+| API | HTTP, CLI, RPC, workers, public integration points | `entrypoints.md` or subsystem doc |
+| Shared | Types, utilities, common libraries | `architecture.md` or a focused doc if central |
 
-**If unclear:** Apply research skill to understand.
-
-> **Skill: `research`**
->
-> Read and apply `{{SKILLS_ROOT}}/research/SKILL.md` for every module classification.
-> You MUST read at least one key file in each module before describing it.
+If classification is unclear, investigate before writing.
 
 ### 2.5 Patterns & Conventions
 
-Look for:
+Look for verified patterns such as:
 
-- File naming conventions (`*.service.ts`, `*_handler.go`)
-- Directory patterns (feature folders, layer folders)
-- Error handling patterns
-- Logging conventions
-- Test organization
+- File naming conventions
+- Layering or feature folder rules
+- Error handling style
+- Logging style
+- Testing organization
+- Cross-cutting wrappers or middleware
+
+Only include patterns demonstrated in at least two files.
 
 ---
 
-## 3. Write CODEBASE.md
+## 3. Create Split Documentation
 
 **Bash:**
 
 ```bash
-mkdir -p ./.gtd
+mkdir -p ./.gtd/codebase/domains ./.gtd/codebase/infra
 ```
 
-Write to `./.gtd/CODEBASE.md`:
+### 3.1 Write `./.gtd/CODEBASE.md`
+
+This file is the index only. Keep it short.
+
+Required structure:
 
 ```markdown
-# Codebase Overview
+# Codebase Index
 
 **Generated:** {date}
 **Last Updated:** {date}
+**Last Verified:** {date}
+
+## Purpose
+
+- One short paragraph summarizing the codebase.
+- Include `Evidence: ...`
+
+## Documentation Map
+
+- [Architecture](./codebase/architecture.md) — overall structure and major subsystems
+- [Entrypoints](./codebase/entrypoints.md) — application boot paths, commands, servers, workers
+- [Patterns](./codebase/patterns.md) — verified conventions used across files
+- [Open Questions](./codebase/open-questions.md) — unresolved items requiring later investigation
+
+## Domain Docs
+
+- [Domain: {name}](./codebase/domains/{name}.md) — one-line purpose
+
+## Infrastructure Docs
+
+- [Infra: {name}](./codebase/infra/{name}.md) — one-line purpose
+```
+
+### 3.2 Write `./.gtd/codebase/architecture.md`
+
+Required structure:
+
+```markdown
+# Architecture
+
+**Generated:** {date}
+**Last Updated:** {date}
+**Last Verified:** {date}
 
 ## Tech Stack
 
-| Layer     | Technology  |
-| --------- | ----------- |
-| Language  | {language}  |
-| Runtime   | {runtime}   |
-| Framework | {framework} |
-| Database  | {database}  |
-| ...       | ...         |
+| Layer | Technology | Evidence |
+| ----- | ---------- | -------- |
+| Language | {value} | {path:line} |
+| Runtime | {value} | {path:line} |
+| Framework | {value} | {path:line} |
 
 ## Project Structure
+
+{annotated tree or concise list}
+
+Evidence: {paths and lines used}
+
+## Major Subsystems
+
+### {Subsystem Name}
+
+- Type: {Domain | Infrastructure | API | Shared}
+- Path: `{path}`
+- Purpose: {verified sentence}
+- Depends on: {verified dependencies}
+- Used by: {verified callers or consumers}
+- Evidence: {path:line, path:line}
 ```
 
-{tree structure with annotations}
+### 3.3 Write `./.gtd/codebase/entrypoints.md`
 
+Required structure:
+
+```markdown
+# Entrypoints
+
+**Generated:** {date}
+**Last Updated:** {date}
+**Last Verified:** {date}
+
+| Entrypoint | Type | File | Purpose | Evidence |
+| ---------- | ---- | ---- | ------- | -------- |
+| {name} | HTTP/CLI/Worker/Test/Script | `{file}` | {verified purpose} | {path:line} |
+
+## Startup Flows
+
+### {Flow Name}
+
+1. {step}
+2. {step}
+
+Evidence: {path:line, path:line}
 ```
 
-## Modules
+### 3.4 Write `./.gtd/codebase/patterns.md`
 
-### {Module Name}
+Required structure:
 
-**Path:** `{path}`
-**Type:** {Domain | Infrastructure | API | Shared}
-**Purpose:** {one-line description}
+```markdown
+# Patterns And Conventions
 
-Key files:
-- `{file}` — {responsibility}
+**Generated:** {date}
+**Last Updated:** {date}
+**Last Verified:** {date}
 
-### {Next Module}
-...
+## Verified Patterns
 
-## Entry Points
+### {Pattern Name}
 
-| Entry Point | Type | File | Purpose |
-|-------------|------|------|---------|
-| {name} | HTTP/CLI/Worker | {file} | {purpose} |
-
-## Patterns & Conventions
-
-(Only include patterns you verified in 2+ files. Cite examples.)
-
-- **File naming:** {pattern}
-- **Error handling:** {pattern}
-- **Testing:** {pattern}
-
-## Dependencies (Key)
-
-| Dependency | Purpose |
-|------------|---------|
-| {name} | {why it's used} |
-
-## Open Questions
-
-- {Anything unclear that needs investigation}
+- Description: {verified description}
+- Why it appears to exist: {brief observation only if evidence supports it}
+- Examples: `{path}`, `{path}`
+- Evidence: {path:line, path:line}
 ```
+
+### 3.5 Write `./.gtd/codebase/open-questions.md`
+
+Required structure:
+
+```markdown
+# Open Questions
+
+**Generated:** {date}
+**Last Updated:** {date}
+**Last Verified:** {date}
+
+- {question}
+  - Why unresolved: {brief reason}
+  - Next place to inspect: `{path}` if known
+```
+
+### 3.6 Write domain and infrastructure docs
+
+For each meaningful domain or infrastructure area, create one focused file.
+
+Domain doc template:
+
+```markdown
+# Domain: {Name}
+
+**Generated:** {date}
+**Last Updated:** {date}
+**Last Verified:** {date}
+
+## Purpose
+
+{verified summary}
+
+Evidence: {path:line, path:line}
+
+## Key Files
+
+| File | Responsibility | Evidence |
+| ---- | -------------- | -------- |
+| `{file}` | {verified responsibility} | {path:line} |
+
+## Important Flows
+
+### {Flow Name}
+
+1. {step}
+2. {step}
+
+Evidence: {path:line, path:line}
+
+## Dependencies
+
+- `{dependency/module}` — {verified relationship}. Evidence: {path:line}
+```
+
+Infrastructure doc template:
+
+```markdown
+# Infrastructure: {Name}
+
+**Generated:** {date}
+**Last Updated:** {date}
+**Last Verified:** {date}
+
+## Purpose
+
+{verified summary}
+
+Evidence: {path:line, path:line}
+
+## Interfaces
+
+| File | Responsibility | Evidence |
+| ---- | -------------- | -------- |
+| `{file}` | {verified responsibility} | {path:line} |
+
+## Integration Points
+
+- `{caller or consumer}` — {verified connection}. Evidence: {path:line}
+
+## Operational Notes
+
+- Only include if directly supported by code or config.
+- Each note must end with `Evidence: {path:line}`
+```
+
+---
+
+## 4. Refresh Rules
+
+On refresh:
+
+- Revalidate `Last Verified` for every file you inspected
+- Update only files whose content changed or was rechecked
+- Remove stale claims that no longer match the code
+- Add new split docs when new domains or infrastructure areas appear
+- Keep `CODEBASE.md` concise even if the repo grows
 
 </process>
 
@@ -255,19 +418,20 @@ Key files:
  GTD ► CODEBASE OVERVIEW COMPLETE ✓
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Overview written to ./.gtd/CODEBASE.md
+Index written to ./.gtd/CODEBASE.md
+Split docs written to ./.gtd/codebase/
 
-| Section | Items |
-|---------|-------|
-| Modules | {N} |
-| Entry Points | {N} |
-| Key Dependencies | {N} |
+| File Group | Items |
+|------------|-------|
+| Domain Docs | {N} |
+| Infra Docs | {N} |
+| Shared Docs | {N} |
 
 ─────────────────────────────────────────────────────
 
 ▶ Next Up
 
-/spec — define what you want to build (now with codebase context)
+/spec — define what you want to build with codebase context available
 
 ─────────────────────────────────────────────────────
 ```

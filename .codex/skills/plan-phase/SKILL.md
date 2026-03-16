@@ -17,7 +17,7 @@ You are a plan creator. Break one roadmap phase into executable tasks with clear
 <objective>
 Create an executable `PLAN.md` for a roadmap phase.
 
-**Default flow:** Research (if needed) → Plan → Verify → Write
+**Default flow:** Research (if needed) → Plan → Targeted Review (if needed) → Verify → Write
 </objective>
 
 <context>
@@ -39,6 +39,24 @@ Create an executable `PLAN.md` for a roadmap phase.
 - `./.gtd/<task_name>/{phase}/RESEARCH.md` when research is performed
 
 </context>
+
+<tools>
+
+Use specialist agents selectively.
+
+Rules:
+- `review_plan` is conditional, not automatic for every phase
+- Run `review_plan` only if there is **at least one Medium or High** complexity task
+- Use **at most 1** additional specialist beyond `review_plan`
+- Choose the specialist based on the dominant risk of the phase
+- Do not fan out to many audits during planning
+
+Preferred specialists:
+- `correctness` -> state transitions, ordering, dedupe, parsing, money, semantic invariants
+- `reliability` -> retries, queues, timeouts, external I/O, idempotency, crash recovery
+- `architecture` -> cross-module changes, ownership shifts, seam changes, migration ordering
+
+</tools>
 
 <decision_logic>
 
@@ -80,6 +98,7 @@ Create an executable `PLAN.md` for a roadmap phase.
 3. **Traceability:** Every task MUST map back to a requirement in `SPEC.md`.
 4. **Single Source of Truth:** Data MUST be normalized. No duplicated state.
 5. **Centralized Resilience:** Retry logic and circuit breakers MUST stay at the edge.
+6. **Invariant Preservation:** The plan MUST make explicit what must remain true while the phase is in flight.
 </core_principles>
 
 <critical_rules>
@@ -134,7 +153,7 @@ Use the phase objective and `<discovery_levels>` to classify research needs.
 If deep research is needed, summarize first:
 
 1. From `ROADMAP.md`: phase name, objective, dependencies
-2. From `SPEC.md`: relevant Must Have and Nice To Have requirements
+2. From `SPEC.md`: relevant Must Have and Nice To Have requirements, Constraints, and Invariants & Must Preserve
 3. Scope boundaries: in-scope vs out-of-scope files/modules
 Then run:
 
@@ -172,6 +191,7 @@ Write your findings to:
 3. What constraints, edge cases, or risks could affect planning?
 4. What testing seams or dependency boundaries are available?
 5. What file-level scope should PLAN.md reference explicitly?
+6. What must remain true while this phase is being implemented?
 </research_questions>
 
 <rules>
@@ -212,16 +232,38 @@ Display:
 Read `SPEC.md`, `ROADMAP.md`, and `RESEARCH.md` (if present). Use them to define scope, constraints, and requirement coverage for
 this phase.
 
-### 6b. Decompose into Tasks
+Extract explicitly:
+- the phase objective and covered requirements
+- hard constraints
+- invariants / must-preserve truths
+- non-goals that should not become plan work
+- the smallest credible file/module scope
+
+### 6b. Define V&V Before Finalizing Tasks
+
+Before writing tasks, define:
+- what will prove the phase succeeded
+- what check type will provide that proof (test, command, manual validation, file diff, behavior check)
+- what failure would indicate the plan is wrong or incomplete
+
+Use this to shape the tasks rather than writing V&V as an afterthought.
+
+### 6c. Decompose into Tasks
 
 1. **Calibrate each task**
     - Mentally simulate the implementation before finalizing the task.
     - Assign a complexity level: Low, Medium, or High.
     - If the implementation path is unclear or risky, mark it as **High**.
+    - Identify the dominant phase risk:
+      - correctness
+      - reliability
+      - architecture
+      - none / low-risk
 
 2. **Break the phase into atomic tasks**
     - Create 2-3 tasks total.
     - Each task should represent one clear deliverable or verification step.
+    - Prefer the smallest file/module scope that can complete the task safely.
 
 3. **Add safety brakes where needed**
     - If a task is **High** complexity, insert a `checkpoint:human-verify` task immediately after it.
@@ -230,8 +272,12 @@ this phase.
 4. **Map the phase to spec requirements**
     - Identify the Must Have and Nice To Have requirements from `SPEC.md` covered by this phase.
     - List them explicitly for traceability.
+
+5. **Preserve invariants**
+    - State what must remain true while each risky task is being executed.
+    - Avoid plans that leave the system in an unsafe transitional state longer than necessary.
     
-### 6c. Write PLAN.md
+### 6d. Write PLAN.md
 
 Write to `./.gtd/<task_name>/$PHASE/PLAN.md` using this template:
 
@@ -270,6 +316,7 @@ is_tdd: { true/false }
 - **Invariants:** {What must ALWAYS be true?}
 - **Decision Rationale:** {Why this architectural choice was made}
 - **Testability:** {What needs to be injected/mocked (Design Seams)}
+- **Non-Goals:** {What this phase must not expand into}
 
 ## Tasks
 
@@ -324,6 +371,9 @@ Check:
 - [ ] Done criteria are measurable
 - [ ] 2-3 tasks max
 - [ ] All files specified
+- [ ] V&V strategy names concrete checks
+- [ ] Important invariants are explicit
+- [ ] File scope is as small as safely possible
 - [ ] Adherence to `<critical_rules>`
 
 **If issues found:** Fix before finishing.
@@ -378,7 +428,7 @@ Apply the returned strategy into `PLAN.md`.
 
 ## 9. Review Plan (Conditional)
 
-**If ANY task has complexity = Medium or High, you MUST:**
+**If there is at least one task with complexity = Medium or High, you SHOULD review the draft plan before finalizing it.**
 
 Use a review subagent:
 
@@ -419,6 +469,23 @@ Then:
 **If STATUS: PROCEED** → Continue to offer next step.
 
 **If ALL tasks are Low complexity:** Skip review, proceed directly.
+
+## 10. Specialist Review (Conditional)
+
+Use **at most one** additional specialist if the phase has a clear dominant risk:
+
+- `correctness` for semantic logic, ordering, or invariant-heavy phases
+- `reliability` for retries, queues, external I/O, timeout, or crash-recovery phases
+- `architecture` for seam, ownership, or migration-sensitive phases
+
+Run it only if the phase risk is materially sharper than the generic `review_plan` lens.
+
+Expected output:
+- specific phase risk
+- what the plan may be missing
+- what must remain true during implementation
+
+Apply only the high-signal findings back into the draft plan. Do not turn the plan into an audit dump.
 
 </process>
 
