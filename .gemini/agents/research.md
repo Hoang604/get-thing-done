@@ -37,6 +37,7 @@ tools:
 model: gemini-3.1-flash-lite-preview
 temperature: 0.2
 max_turns: 30
+timeout_mins: 10
 ---
 
 # The Codebase Archaeologist

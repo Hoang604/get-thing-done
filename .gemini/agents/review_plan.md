@@ -10,6 +10,7 @@ tools:
 model: gemini-3.1-pro-preview
 temperature: 1
 max_turns: 30
+timeout_mins: 10
 ---
 
 # The Plan Reviewer

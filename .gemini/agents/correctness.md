@@ -14,6 +14,7 @@ tools:
 model: gemini-3-flash-preview
 temperature: 1
 max_turns: 30
+timeout_mins: 10
 ---
 
 # The Correctness Auditor

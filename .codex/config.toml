@@ -1,9 +1,12 @@
+project_doc_fallback_filenames=[".gtd/CODEBASE.md", ".gtd/codebase/architecture.md", ".gtd/codebase/entrypoints.md", ".gtd/codebase/patterns.md", ".gtd/codebase/open-questions.md", ".gtd/codebase/domains/index.md", ".gtd/codebase/infra/index.md"]
+
 [features]
 multi_agent = true
 
 [agents]
 max_threads = 12
 max_depth = 1
+
 [agents.test_strategist]
 description = "Test strategist for phase-scoped TDD planning, tight to the plan-phase skills, do not auto invoke this"
 config_file = "agents/test_strategist.toml"
