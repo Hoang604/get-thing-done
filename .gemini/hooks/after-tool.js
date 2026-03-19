@@ -66,6 +66,9 @@ function buildAdditionalContext(toolName, toolStatus, toolCategory) {
     "Your next reply must include exactly these labels:",
     guidanceByCategory[toolCategory],
     `${labels[1]}: state one concrete next step.`,
+    "Execution requirement: after writing Next action, immediately perform that exact next step in this same turn.",
+    "Do not stop after the acknowledgement. Do not end your response until you have executed the declared Next action.",
+    "The first tool call after this acknowledgement must match the declared Next action exactly.",
     `Do not skip ${labels[0]}.`,
     analysisReminder,
   ]

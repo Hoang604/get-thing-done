@@ -45,7 +45,7 @@ Exceptions:
 
 ## Rule 2: Report Findings After Each Step
 
-After completing a meaningful step, report what you actually learned, changed, or verified before moving on.
+After completing a meaningful step or any tool call, report what you actually learned, changed, or verified before moving on.
 
 Minimum expectation:
 - What you checked
@@ -245,6 +245,42 @@ Avoid:
 - reporting success when the evidence is mixed or incomplete
 
 The user should be able to follow the work without being buried in noise.
+
+---
+
+## Rule 13: Use Replace Tool Surgically
+
+When using the `replace` tool, edits must be minimal, local, and precise.
+
+### Mandatory constraints
+
+- **Smallest possible target**: `old_string` must contain only the lines that actually need to change, plus minimal anchor context.
+- **Default target size**: aim for 3 to 12 lines in `old_string`.
+- **Large target guard**: if `old_string` exceeds 20 lines, you must first verify no smaller unique target is possible.
+- **No broad rewrites for local changes**: if the change is local (for example adding one line, changing one condition, or adjusting one call), replacing an entire function/class/file is forbidden.
+- **No unchanged bulk duplication**: do not copy large unchanged regions into `new_string`.
+
+### Allowed exceptions
+
+Broader replacement is allowed only when one of these is true:
+
+- the task explicitly asks to rewrite the full function/class/file
+- the function is being structurally rewritten end to end
+- a smaller unique literal match cannot be constructed after a reasonable attempt
+
+### Required pre-call checklist
+
+Before every `replace` call, ensure all are true:
+
+- The selected `old_string` is the smallest unique editable block.
+- `old_string` and `new_string` differ only where needed.
+- No unrelated code is included.
+- Indentation and formatting of surrounding code are preserved.
+
+### Hard ban patterns
+
+- Do not set `old_string` to an entire file, if you think this is necessary, use `write_file` tool.
+- Do not include import blocks plus full function bodies for one-line or small local fixes.
 
 ---
 

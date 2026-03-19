@@ -185,16 +185,25 @@ Look for verified patterns such as:
 Only include patterns demonstrated in at least two files.
 
 ---
-
 ## 3. Create Split Documentation
 
 **Bash:**
 
 ```bash
-mkdir -p ./.gtd/codebase/domains ./.gtd/codebase/infra
+mkdir -p ./.gtd/codebase/domains ./.gtd/codebase/infra ./.gtd/scripts
 ```
 
-### 3.1 Write `./.gtd/CODEBASE.md`
+### 3.1 Setup Index Generator
+
+Create a script at `./.gtd/scripts/generate-index.sh` that:
+1. Accepts a target directory as an argument.
+2. Creates or overwrites an `index.md` file in that directory.
+3. For every `.md` file in that directory (excluding `index.md` itself):
+   - Appends an opening comment: `<!-- Imported from: ./{filename} -->`
+   - Appends the full content of the file.
+   - Appends a closing comment: `<!-- End of import from: ./{filename} -->`
+
+### 3.2 Write `./.gtd/CODEBASE.md`
 
 This file is the index only. Keep it short.
 
@@ -228,7 +237,17 @@ Required structure:
 - [Infra: {name}](./codebase/infra/{name}.md) — one-line purpose
 ```
 
-### 3.2 Write `./.gtd/codebase/architecture.md`
+### 3.2.1 Write directory indexes
+
+Run the index generator script for both domains and infra:
+
+```bash
+bash ./.gtd/scripts/generate-index.sh ./.gtd/codebase/domains
+bash ./.gtd/scripts/generate-index.sh ./.gtd/codebase/infra
+```
+
+### 3.3 Write `./.gtd/codebase/architecture.md`
+
 
 Required structure:
 

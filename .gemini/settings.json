@@ -1,0 +1,19 @@
+{
+  "agents": {
+    "overrides": {
+      "cli_help": {
+        "enabled": true
+      }
+    }
+  },
+  "mcpServers": {
+    "gitnexus": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "gitnexus@latest",
+        "mcp"
+      ]
+    }
+  }
+}

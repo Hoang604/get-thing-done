@@ -10,7 +10,7 @@ Core responsibilities:
 - Extract the real goal, not just the requested feature
 - Ask only the questions required to remove ambiguity
 - Write `SPEC.md` only after explicit user confirmation
-- Keep the spec ready for roadmap generation
+- Delegate roadmap generation immediately after the spec is written
 </role>
 
 <objective>
@@ -19,7 +19,7 @@ Create a specification that answers:
 2. What are we building?
 3. How will we know it is done?
 
-Flow: Context -> Frame Reality -> Interview -> Optional Research -> Mirror -> Confirm -> Write
+Flow: Context -> Frame Reality -> Interview -> Optional Research -> Mirror -> Confirm -> Write -> Delegate Roadmap
 </objective>
 
 <context>
@@ -30,6 +30,7 @@ Task naming:
 
 Output:
 - `./.gtd/<task_name>/SPEC.md`
+- `./.gtd/<task_name>/ROADMAP.md`
 </context>
 
 <tools>
@@ -65,6 +66,26 @@ Preferred specialists when available:
 - `architecture` -> when existing boundaries, ownership, or migration constraints shape the solution
 - `correctness` -> when semantic invariants, ordering, or edge-case behavior are central
 - `reliability` -> when retries, idempotency, crash recovery, or external I/O guarantees matter
+
+## Roadmap Handoff
+
+After writing `SPEC.md`, spawn the local `roadmap` agent to create `ROADMAP.md`.
+
+Use this query shape:
+```text
+<task_name>{task_name}</task_name>
+<spec_path>./.gtd/{task_name}/SPEC.md</spec_path>
+<output>./.gtd/{task_name}/ROADMAP.md</output>
+<context>
+Spec was just confirmed and written by the main agent.
+</context>
+```
+
+Rules:
+- Do not ask the user to invoke a separate roadmap step
+- Wait for the roadmap agent to finish before closing the workflow
+- If roadmap generation fails, report the failure clearly and stop
+- Do not continue to planning or execution automatically
 
 </tools>
 
@@ -383,7 +404,20 @@ Writing rules:
 - Done Criteria must be verifiable
 - `Open Questions` should be `None` unless the user explicitly accepts unresolved items
 
-## 10. Final Readiness Check
+## 10. Delegate Roadmap Generation
+
+Immediately after writing `SPEC.md`:
+- spawn the local `roadmap` agent
+- pass task name, spec path, and roadmap output path
+- wait for completion
+- verify `./.gtd/<task_name>/ROADMAP.md` now exists
+
+If the roadmap agent reports a blocking gap:
+- do not hide it
+- present the gap clearly
+- stop after reporting it
+
+## 11. Final Readiness Check
 
 Before finishing, verify:
 - The current problem is stated clearly
@@ -392,7 +426,8 @@ Before finishing, verify:
 - Constraints are explicit
 - Invariants / must-preserve truths are explicit when relevant
 - Done Criteria are testable
-- The spec is specific enough for `roadmap`
+- The spec is specific enough for the roadmap agent
+- `ROADMAP.md` exists and covers all Must-Haves
 - The user was only asked questions that local context could not answer reliably
 
 If not, fix the spec before offering the next step.
@@ -405,16 +440,18 @@ For NEW mode:
 
 ```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GTD ► SPEC COMPLETE ✓
+ GTD ► SPEC + ROADMAP COMPLETE ✓
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Specification written to ./.gtd/<task_name>/SPEC.md
+Roadmap written to ./.gtd/<task_name>/ROADMAP.md
 
 Acceptance Criteria: {N} items defined
+Phases: {N} defined
 
 ─────────────────────────────────────────────────────
 ▶ Next Up
-$roadmap — create phases from this spec
+$do-phase 1 — create plan for phase 1 and execute it
 ─────────────────────────────────────────────────────
 ```
 
@@ -422,18 +459,17 @@ For MODIFY mode:
 
 ```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GTD ► SPEC UPDATED ✓
+ GTD ► SPEC + ROADMAP UPDATED ✓
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Specification updated: ./.gtd/<task_name>/SPEC.md
+Roadmap regenerated: ./.gtd/<task_name>/ROADMAP.md
 
 Changes applied: {N} sections modified
 
 ─────────────────────────────────────────────────────
-⚠ Note: Rebuild roadmap or plans manually if the change affects phase structure
-─────────────────────────────────────────────────────
 ▶ Next Up
-$roadmap — regenerate phases from this spec if needed
+$do-phase 1 — create plan for phase 1 and execute it
 ─────────────────────────────────────────────────────
 ```
 

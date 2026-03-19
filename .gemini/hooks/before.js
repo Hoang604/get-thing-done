@@ -5,7 +5,7 @@ const { prompt } = input;
 
 const PREDICTABLE_INTENT_RULE = `## RULE 1: PREDICTABLE INTENT
 
-Before any tool call or code change, state your next single concrete action in the first sentence.
+Before any tool call or code change, you must report what you have done and declare your next single concrete action.
 
 Rules:
 - No vague declarations like "I will explore the codebase"

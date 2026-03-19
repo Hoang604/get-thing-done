@@ -4,8 +4,8 @@ project_doc_fallback_filenames=[".gtd/CODEBASE.md", ".gtd/codebase/architecture.
 multi_agent = true
 
 [agents]
-max_threads = 12
-max_depth = 1
+max_threads = 36
+max_depth = 2
 
 [agents.test_strategist]
 description = "Test strategist for phase-scoped TDD planning, tight to the plan-phase skills, do not auto invoke this"
@@ -14,6 +14,22 @@ config_file = "agents/test_strategist.toml"
 [agents.review_plan]
 description = "Pre-execution plan reviewer for scoped implementation plans, tight to the plan-phase skills, do not auto invoke this"
 config_file = "agents/review_plan.toml"
+
+[agents.roadmap]
+description = "Roadmap sequencer for generating `ROADMAP.md` from a finalized spec with full phase-quality guardrails. Manual workflow agent only; do not auto invoke this. Use only when the user requests spec/roadmap generation or a skill explicitly delegates to it."
+config_file = "agents/roadmap.toml"
+
+[agents.phase_planner]
+description = "Phase planning agent for generating `PLAN.md` and optional `RESEARCH.md` for one roadmap phase, with TDD/review integration preserved. Manual workflow agent only; do not auto invoke this. Use only when the user requests phase planning or a skill explicitly delegates to it."
+config_file = "agents/phase_planner.toml"
+
+[agents.verify_spec]
+description = "Spec verification orchestrator for running completion verification plus quality audits and writing `VERIFICATION.md` and audit reports. Manual workflow agent only; do not auto invoke this. Use only when the user requests verification or a skill explicitly delegates to it."
+config_file = "agents/verify_spec.toml"
+
+[agents.commit_spec]
+description = "Spec commit orchestrator for synthesizing the final conventional commit message from completed phase summaries and creating the git commit. Manual workflow agent only; do not auto invoke this. Use only when the user requests commit creation or a skill explicitly delegates to it."
+config_file = "agents/commit_spec.toml"
 
 [agents.security]
 description = "Security auditor for scoped, evidence-based code reviews. Audits only the provided files, directories, or named feature scope; traces attacker-controlled input across trust boundaries to dangerous operations; and reports credible exploitable vulnerabilities with severity, confidence, file/line evidence, exploit path, impact, and smallest effective remediation. Expects XML input: <scope> required (files, dirs, or feature to audit); <objective> optional (what to assess); <context> optional (security-relevant background); <focus_areas> optional (specific vuln classes to check); <output_file> optional (path to write report instead of returning it in chat)."

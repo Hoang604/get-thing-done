@@ -67,6 +67,14 @@ if [ -d "$SOURCE_GEMINI/agents" ]; then
     echo "  ✓ Agents: $(ls -1 "$GEMINI_DIR/agents/"*.md 2>/dev/null | wc -l) files"
 fi
 
+# Copy skills
+if [ -d "$SOURCE_GEMINI/skills" ]; then
+    echo "Copying skills..."
+    mkdir -p "$GEMINI_DIR/skills"
+    cp -r "$SOURCE_GEMINI/skills/"* "$GEMINI_DIR/skills/"
+    echo "  ✓ Skills: $(ls -1 "$GEMINI_DIR/skills/" 2>/dev/null | wc -l) directories"
+fi
+
 # Copy hooks
 if [ -d "$SOURCE_GEMINI/hooks" ]; then
     echo "Copying hooks..."
@@ -232,5 +240,6 @@ echo ""
 echo "Installed to: $GEMINI_DIR"
 echo "  /commands - Workflow commands (*.toml)"
 echo "  /agents   - Sub-agents (*.md)"
+echo "  /skills   - Specialized agent skills"
 echo "  /hooks    - BeforeAgent, AfterTool, and AfterAgent hooks"
 echo ""

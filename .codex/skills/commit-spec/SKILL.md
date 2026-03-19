@@ -8,17 +8,20 @@ You are a commit message composer. You gather information from all phase summari
 
 **Core responsibilities:**
 
-- Read all SUMMARY.md files from completed phases
-- Synthesize information into a cohesive commit message
-- Commit all changes created by the spec
-- Use conventional commit format
+- Resolve the target task/spec
+- Delegate commit synthesis and git commit creation to the local `commit_spec` agent
+- Wait for the commit result
+- Report the commit outcome to the user without reducing synthesis quality
   </role>
 
 <objective>
-Create a comprehensive commit message that captures all work done across phases and commit the changes.
+Create a comprehensive commit message that captures all work done across phases and commit the changes by delegating the full synthesis and commit workflow to the local committer agent.
 
-**Flow:** Gather Summaries → Synthesize → Commit
+**Flow:** Resolve Task → Delegate Commit Workflow → Confirm Commit Result → Report Summary
 </objective>
+
+## User Request
+{{args}}
 
 <context>
 **Required files:**
@@ -33,114 +36,51 @@ Create a comprehensive commit message that captures all work done across phases 
 
 <philosophy>
 
-## Synthesize, Don't Concatenate
-
-The commit message should tell a coherent story, not just list what each phase did.
-
-## Conventional Commit Format
-
-Use conventional commit types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, etc.
-
-## Comprehensive But Concise
-
-Include all important changes, but keep the message readable.
+The delegated agent must preserve the previous commit-message quality bar.
 
 </philosophy>
 
 <process>
 
-## 1. Load Roadmap
+## 1. Resolve Task And Inputs
 
-Read `./.gtd/<task_name>/ROADMAP.md` to identify completed phases.
+- Use task name from `$ARGUMENTS` when present
+- Otherwise infer it from the current task context
 
-```bash
-# Verify at least one phase is complete
-if ! grep -q "✅ Complete" "./.gtd/<task_name>/ROADMAP.md"; then
-    echo "Error: No completed phases found"
-    exit 1
-fi
+Verify:
+- `./.gtd/<task_name>/ROADMAP.md` exists
+
+## 2. Delegate Commit Workflow
+
+Spawn the local `commit_spec` agent using this query shape:
+
+```text
+<task_name>{task_name}</task_name>
+<roadmap_path>./.gtd/{task_name}/ROADMAP.md</roadmap_path>
+<context>
+Read all completed phase summaries, synthesize a comprehensive commit message, create the commit, and report the result.
+</context>
 ```
 
----
+Wait for completion.
 
-## 2. Gather Phase Summaries
+## 3. Confirm Commit Result
 
-For each completed phase, read `./.gtd/<task_name>/{phase}/SUMMARY.md`.
+Verify:
+- the agent reported success
+- `git rev-parse HEAD` succeeds
 
-Extract:
+## 4. Display Summary
 
-- What was done
-- Behaviour changes (before/after)
-- Files changed
-- Key deviations
+Read the committer summary and report:
+- phases committed
+- files changed
+- commit message preview
+- that `git show HEAD` can be used to inspect the full commit
 
----
+</process>
 
-## 3. Synthesize Commit Message
-
-Create a comprehensive commit message:
-
-**Format:**
-
-```
-{type}({scope}): {short description}
-
-{Body: narrative of what was accomplished and why}
-
-## Behaviour Changes
-
-**Before:** {consolidated before state}
-
-**After:** {consolidated after state}
-
-## Implementation Details
-
-{High-level summary of how it was implemented across phases}
-
-Phase 1: {brief summary}
-Phase 2: {brief summary}
-...
-
-## Breaking Changes
-
-{If any, list them here, otherwise omit this section}
-```
-
-**Guidelines:**
-
-- **Type:** Choose the most appropriate conventional commit type
-- **Scope:** The spec/feature name
-- **Short description:** One-line summary (50 chars or less)
-- **Body:** Tell the story of the change
-- **Behaviour Changes:** Consolidate all before/after states
-- **Implementation Details:** Brief phase summaries
-- **Files Modified:** Deduplicated list of all files
-
----
-
-## 4. Stage All Changes
-
-```bash
-git add .
-```
-
----
-
-## 5. Create Commit
-
-Write the commit message to a temp file, then commit:
-
-```bash
-# 1. Write message to file (use write_to_file tool)
-# 2. Commit
-git commit -F .gtd/COMMIT_MSG.txt
-# 3. Clean up
-rm .gtd/COMMIT_MSG.txt
-```
-
----
-
-## 6. Display Summary
+<offer_next>
 
 ```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -165,13 +105,11 @@ $update-codebase update .gtd/CODEBASE.md to reflect the new change
 
 ```
 
----
-
-</process>
+</offer_next>
 
 <examples>
 
-## Example Commit Message
+## Example Commit Message Preserved By The Agent
 
 ```
 feat(user-auth): implement JWT-based authentication system

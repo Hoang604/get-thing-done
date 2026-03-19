@@ -114,6 +114,9 @@ Before execution:
 - Identify what must remain true while this phase is in flight
 - Identify what validation evidence the plan expects before the phase can be called complete
 
+**GitNexus Integration:**
+- Run `gitnexus_impact` before the first edit to lock in your understanding of the blast radius.
+
 If the plan requires major guesswork at this stage, stop instead of improvising.
 
 ## 3. Execute Tasks Sequentially
@@ -147,6 +150,10 @@ After each task:
 - Check the task's `done` criteria directly
 - Run tests, checks, or manual validation steps specified by the plan
 - Re-check the relevant invariants after risky changes
+
+**GitNexus Integration:**
+- Run `gitnexus_detect_changes()` after every task. This is your "architectural unit test"—it confirms you only changed what you intended and didn't break a distant execution flow.
+
 - If verification fails because of an obvious local issue, fix it if the fix stays within the plan
 - If verification fails in a nontrivial way, use `incident_debugging` before applying more speculative fixes
 - If the failure suggests the plan is wrong, stop and ask the user
@@ -160,6 +167,9 @@ Trigger `incident_debugging` when one or more of these is true:
 - runtime errors, stack traces, or logs contradict the expected behavior
 - repeated fixes are not collapsing the failure
 - the failure appears related to state, ordering, invariants, retries, or boundaries
+
+**GitNexus Integration:**
+- If a test fails, use `gitnexus_query` on the error message and `gitnexus_context` to trace the failure path through the call graph.
 
 Use the raw failure evidence as input:
 - failing test output

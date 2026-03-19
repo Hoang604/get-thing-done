@@ -191,10 +191,20 @@ Only include patterns demonstrated in at least two files.
 **Bash:**
 
 ```bash
-mkdir -p ./.gtd/codebase/domains ./.gtd/codebase/infra
+mkdir -p ./.gtd/codebase/domains ./.gtd/codebase/infra ./.gtd/scripts
 ```
 
-### 3.1 Write `./.gtd/CODEBASE.md`
+### 3.1 Setup Index Generator
+
+Create a script at `./.gtd/scripts/generate-index.sh` that:
+1. Accepts a target directory as an argument.
+2. Creates or overwrites an `index.md` file in that directory.
+3. For every `.md` file in that directory (excluding `index.md` itself):
+   - Appends an opening comment: `<!-- Imported from: ./{filename} -->`
+   - Appends the full content of the file.
+   - Appends a closing comment: `<!-- End of import from: ./{filename} -->`
+
+### 3.2 Write `./.gtd/CODEBASE.md`
 
 This file is the index only. Keep it short.
 
@@ -228,7 +238,16 @@ Required structure:
 - [Infra: {name}](./codebase/infra/{name}.md) — one-line purpose
 ```
 
-### 3.2 Write `./.gtd/codebase/architecture.md`
+### 3.2.1 Write directory indexes
+
+Run the index generator script for both domains and infra:
+
+```bash
+bash ./.gtd/scripts/generate-index.sh ./.gtd/codebase/domains
+bash ./.gtd/scripts/generate-index.sh ./.gtd/codebase/infra
+```
+
+### 3.3 Write `./.gtd/codebase/architecture.md`
 
 Required structure:
 
@@ -265,7 +284,7 @@ Evidence: {paths and lines used}
 - Evidence: {path:line, path:line}
 ```
 
-### 3.3 Write `./.gtd/codebase/entrypoints.md`
+### 3.4 Write `./.gtd/codebase/entrypoints.md`
 
 Required structure:
 
@@ -290,7 +309,7 @@ Required structure:
 Evidence: {path:line, path:line}
 ```
 
-### 3.4 Write `./.gtd/codebase/patterns.md`
+### 3.5 Write `./.gtd/codebase/patterns.md`
 
 Required structure:
 
@@ -311,7 +330,7 @@ Required structure:
 - Evidence: {path:line, path:line}
 ```
 
-### 3.5 Write `./.gtd/codebase/open-questions.md`
+### 3.6 Write `./.gtd/codebase/open-questions.md`
 
 Required structure:
 
@@ -327,7 +346,7 @@ Required structure:
   - Next place to inspect: `{path}` if known
 ```
 
-### 3.6 Write domain and infrastructure docs
+### 3.7 Write domain and infrastructure docs
 
 For each meaningful domain or infrastructure area, create one focused file.
 

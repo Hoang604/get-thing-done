@@ -79,6 +79,23 @@ You **MUST** check if `<output_file>` is present in the query.
 - If the correct behavior depends on domain rules or adjacent code you cannot verify, say so.
 - Do not report a bug purely because a pattern is sometimes risky in theory.
 
+## ASSUMPTION DISCIPLINE
+
+- You must make your assumptions explicit before judging the code as correct or incorrect.
+- At the beginning of the report, list **all material assumptions** you relied on.
+- For each assumption, state:
+  - the assumption itself
+  - the basis for that assumption
+  - whether the basis is **Observed** or **Inferred**
+- Valid bases include:
+  - explicit behavior visible in the scanned code
+  - naming or API contract implied by the scanned code
+  - user-provided objective, context, or focus areas
+  - domain invariants that are necessary for the workflow to be considered correct
+- Do not present an assumption as established truth if it is only inferred.
+- Do not call behavior "wrong" until you have compared the code's actual behavior against the stated assumptions.
+- If a finding depends on a weak or unverified assumption, say so directly in the finding and in residual uncertainty.
+
 ## WHAT COUNTS AS A CORRECTNESS FINDING
 
 Report issues such as:
@@ -253,6 +270,17 @@ Locate the relevant public or semi-public behavior in scope:
 
 Determine what observable result the code appears to promise.
 
+## 1.5. State Assumptions Before Conclusions
+
+Before declaring any path correct or incorrect:
+
+1. List the assumptions you need in order to evaluate behavior
+2. State where each assumption comes from
+3. Mark each assumption basis as **Observed** or **Inferred**
+4. Carry those assumptions forward into each finding
+
+If you cannot state the assumption clearly, do not overclaim the conclusion.
+
 ## 2. Trace Inputs To Outcomes
 
 For each behavior path:
@@ -289,16 +317,19 @@ Do not pad the report with speculative nits.
 
 For each finding:
 
-1. State whether it is **Observed** or **Inferred**
-2. Explain the triggering scenario
-3. Explain the incorrect behavior
-4. Explain the likely impact
-5. Suggest the smallest effective remediation that preserves invariants
+1. Identify which listed assumptions the finding depends on
+2. State whether the finding is **Observed** or **Inferred**
+3. Explain the triggering scenario
+4. Describe what the code actually does
+5. Explain why that behavior conflicts with the stated assumptions
+6. Explain the likely impact
+7. Suggest the smallest effective remediation that preserves invariants
 
 ## 6. If No Findings
 
 Return a short report stating:
 
+- assumptions used
 - scope reviewed
 - behavior paths checked
 - no material correctness bugs found in the scanned scope
@@ -315,15 +346,27 @@ Return a short report stating:
 **Scope:** {files or feature}
 **Summary:** {one-sentence result}
 
+### Assumptions
+
+- **A1:** {assumption}
+- **Basis:** {where this assumption comes from}
+- **Confidence:** {Observed / Inferred}
+
+- **A2:** {assumption}
+- **Basis:** {where this assumption comes from}
+- **Confidence:** {Observed / Inferred}
+...
+
 ### Finding 1: {short title}
 
 **Severity:** {CRITICAL / HIGH / MEDIUM / LOW}
 **Confidence:** {Observed / Inferred}
 
+- **Assumptions Used:** {A1, A2}
 - **Location:** {file:line}
 - **Trigger:** {specific input, state, or ordering scenario}
-- **Incorrect Behavior:** {what the code does wrong}
-- **Why It Happens:** {precise code path or assumption failure}
+- **What The Code Does:** {what the code actually does}
+- **Why This Conflicts With The Assumptions:** {precise mismatch between the code path and the stated assumptions}
 - **Impact:** {wrong result, invalid state, data loss, duplicate effect, etc.}
 - **Remediation:** {smallest effective fix that preserves invariants}
 
@@ -341,6 +384,13 @@ Return a short report stating:
 ## Correctness Audit
 
 **Status:** CLEAR
+
+### Assumptions
+
+- **A1:** {assumption}
+- **Basis:** {where this assumption comes from}
+- **Confidence:** {Observed / Inferred}
+...
 
 No material correctness issues found in the scanned scope.
 ```
