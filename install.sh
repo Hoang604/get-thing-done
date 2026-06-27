@@ -1,68 +1,31 @@
 #!/bin/bash
 set -e
 
-# GTD Framework Install Script
-# Usage:
-#   ./install.sh <target_dir>           # Local install
-#   ./install.sh <target_dir> --global  # Global install
-
-if [ "$1" = "--global" ]; then
-    TARGET_DIR="$HOME/.gemini/antigravity"
-    GLOBAL_FLAG="--global"
-else
-    TARGET_DIR="${1:-$HOME/.gemini/antigravity}"
-    GLOBAL_FLAG="${2:-}"
-fi
-
-# Expand tilde if present
-if [[ "$TARGET_DIR" == "~"* ]]; then
-    TARGET_DIR="${TARGET_DIR/#\~/$HOME}"
-fi
-
-if [ "$TARGET_DIR" = "$HOME/.gemini/antigravity" ]; then
-    GLOBAL_FLAG="--global"
-fi
+# GTD Framework Install Script (Always Global)
+# Copies everything in .gemini/ to ~/.gemini/
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SRC_DIR="$SCRIPT_DIR/.gemini"
+TARGET_DIR="$HOME/.gemini"
 
-if [ "$GLOBAL_FLAG" = "--global" ]; then
-    # Global install: skills → skills, workflows → global_workflows
-    SKILLS_DIR="$TARGET_DIR/skills"
-    WORKFLOWS_DIR="$TARGET_DIR/global_workflows"
-else
-    # Local install: skills → skills, workflows → workflows
-    SKILLS_DIR="$TARGET_DIR/skills"
-    WORKFLOWS_DIR="$TARGET_DIR/workflows"
+if [ ! -d "$SRC_DIR" ]; then
+    echo "Error: Source directory $SRC_DIR not found." >&2
+    exit 1
 fi
 
-echo "Installing GTD Framework..."
-echo "  Skills:    $SKILLS_DIR"
-echo "  Workflows: $WORKFLOWS_DIR"
+echo "Installing GTD Framework (Global)..."
+echo "  Source: $SRC_DIR"
+echo "  Target: $TARGET_DIR"
 
-# Create directories
-mkdir -p "$SKILLS_DIR"
-mkdir -p "$WORKFLOWS_DIR"
+# Count source files and directories
+file_count=$(find "$SRC_DIR" -type f | wc -l)
+dir_count=$(find "$SRC_DIR" -mindepth 1 -type d | wc -l)
 
-# Copy skills
-cp -r "$SCRIPT_DIR/skills/"* "$SKILLS_DIR/"
-skills_count=$(( $(find "$SCRIPT_DIR/skills" -type f 2>/dev/null | wc -l) ))
+# Create target directory
+mkdir -p "$TARGET_DIR"
 
-# Copy workflows
-cp -r "$SCRIPT_DIR/workflows/"* "$WORKFLOWS_DIR/"
-workflows_count=$(( $(find "$SCRIPT_DIR/workflows" -type f 2>/dev/null | wc -l) ))
-
-# Copy GEMINI.md
-if [ "$GLOBAL_FLAG" = "--global" ]; then
-    mkdir -p "$HOME/.gemini"
-    cp "$SCRIPT_DIR/GEMINI.md" "$HOME/.gemini/GEMINI.md"
-    echo "  GEMINI.md: $HOME/.gemini/GEMINI.md"
-else
-    cp "$SCRIPT_DIR/GEMINI.md" "$TARGET_DIR/GEMINI.md"
-    echo "  GEMINI.md: $TARGET_DIR/GEMINI.md"
-fi
-agents_count=1
-
-total_copied=$((skills_count + workflows_count + agents_count))
+# Copy all contents including hidden files, maintaining structure
+cp -r "$SRC_DIR/." "$TARGET_DIR/"
 
 echo ""
-echo "✓ Installation complete! (Copied: $skills_count skills, $workflows_count workflows, $agents_count GEMINI.md, Total: $total_copied)"
+echo "✓ Installation complete! (Copied: $file_count files, $dir_count directories)"
