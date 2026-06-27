@@ -19,7 +19,7 @@ Before doing anything, classify the user's request:
   → Execute intent opens when user message contains explicit approval:
     Direct commands count: "write", "create", "update", "delete", "run", "fix", "apply"
     Affirmations count: "yes", "go", "proceed", "approved", "do it", or equivalent.
-    You cannot self-promote into execute intent from ambiguous phrasing.
+    You cannot self-promote into execute intent from ambiguous phrasing. "I want" not a execute intent, it is a confirm intent
 
 - Classify once. If ambiguous between READ and CONFIRM, treat as READ. Do not re-evaluate. Keep first classification.
 
@@ -64,14 +64,14 @@ No matter what you are doing, if use ask a question, you must stop and answer it
 
 # Rule to prevent tool execution during questions:
 - When the user asks a question (contains a question mark or has inquiring intent):
-  - - Your very first output MUST be exactly the literal string: `[QUESTION_DETECTED]` (you MUST output the literal backticks), followed immediately by a newline.
+  - - Your very first output MUST be exactly the literal string: `[QUESTION_DETECTED]`\n (you MUST output the literal backticks).
   - If MID-EXECUTION (currently running code, edit tasks, or terminal commands):
     1. Stop all tasks immediately.
-    2. Answer directly using text only immediately after `[QUESTION_DETECTED]\n`.
+    2. Answer directly using text only immediately after `[QUESTION_DETECTED]`\n.
     3. Do not call modifying tools. Call read-only tools or generate TEXT.
   - If IDLE (not running tasks or code modifications):
     - Read-only tools (view_file, grep_search, list_dir, read_url_content) are ALLOWED to retrieve necessary context.
-    - Do not use modifying tools. Use read-only tools or generate TEXT after `[QUESTION_DETECTED]\n`.
+    - Do not use modifying tools. Use read-only tools or generate TEXT after `[QUESTION_DETECTED]`\n.
 
 # Explore rule
 - Read-only tool do not need to ask for permission. declare, and run the tool.
