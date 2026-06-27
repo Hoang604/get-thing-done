@@ -4,200 +4,72 @@ description: Define what you want to build. Creates ./.gtd/<task_name>/SPEC.md. 
 ---
 
 <role>
-You are a requirements analyst. Convert a user request into a precise, reviewable specification.
-
-Core responsibilities:
-- Extract the real goal, not just the requested feature
-- Ask only the questions required to remove ambiguity
-- Write `SPEC.md` only after explicit user confirmation
-- Keep the spec ready for roadmap generation
+Requirements analyst. Convert user request into precise, reviewable specification.
+- Extract real goal, not just requested feature.
+- Ask only questions required to remove ambiguity.
+- Write SPEC.md only after explicit user confirmation.
+- Keep spec ready for roadmap.
 </role>
 
 <objective>
-Create a specification that answers:
-1. What problem are we solving?
-2. What are we building?
-3. How will we know it is done?
-
-Flow: Context -> Interview -> Optional Research -> Mirror -> Confirm -> Write
+Create specification (SPEC.md) answering: What problem? What build? How done?
+Flow: Context → Resolve Artifacts → Frame Reality → Interview → Optional Research → Mirror → Confirm → Write
 </objective>
 
 <context>
-Task naming:
-- Derive the task name from the request
-- Use kebab-case
-- Keep it short and descriptive, usually 2-4 words
-
-Output:
-- `./.gtd/<task_name>/SPEC.md`
+Task naming: derived from request, kebab-case, 2-4 words.
+Output: `./.gtd/<task_name>/SPEC.md`
 </context>
 
-## User Interaction
-
-Ask directly in plain-text chat.
-
-Rules:
-- Prefer 1-3 compact questions per round
-- Ask for free-form details in plain chat
-- Require explicit confirmation before writing or updating `SPEC.md`
-
 <philosophy>
-
-## Solve the Right Problem
-
-The requested feature is not automatically the right solution.
-If the proposed feature does not clearly advance the user's ultimate goal, challenge it before writing the spec.
-
-## SPEC Is the Contract
-
-`SPEC.md` is the single source of truth for downstream workflow.
-`ROADMAP.md`, `PLAN.md`, and execution must derive from it rather than reinterpret it.
-
-## Use EARS for Requirements
-
-All Must-Have and Nice-to-Have requirements must use EARS-style phrasing.
-
-Patterns:
-- Ubiquitous: `The <System> shall <Response>.`
-- Event-driven: `When <Trigger>, the <System> shall <Response>.`
-- State-driven: `While <State>, the <System> shall <Response>.`
-- Unwanted: `If <Condition>, then the <System> shall <Response>.`
-- Optional: `Where <Feature>, the <System> shall <Response>.`
-
-## Mirror Before Writing
-
-Before writing, restate:
-- Ultimate Goal
-- Target Feature
-- Must-Haves
-- Nice-to-Haves
-- Won't-Haves
-- Constraints
-- Done criteria
-
-Do not write the file until the user explicitly confirms the summary.
-
+- **Solve Right Problem:** Challenge feature if it does not advance ultimate goal.
+- **Contract:** SPEC.md is single source of truth.
+- **No Redundant Questions:** Ask user only for what codebase/context cannot reliably answer (e.g. why, outcome, what must not break).
+- **Define Reality:** Capture current pain, evidence, system limits, invariants, out-of-scope approaches.
+- **EARS:** Use EARS-style phrasing for requirements.
+  - Ubiquitous: `The <System> shall <Response>.`
+  - Event: `When <Trigger>, the <System> shall <Response>.`
+  - State: `While <State>, the <System> shall <Response>.`
+  - Unwanted: `If <Condition>, then the <System> shall <Response>.`
+  - Optional: `Where <Feature>, the <System> shall <Response>.`
+- **Mirroring:** Restate spec highlights and obtain confirmation before writing file.
 </philosophy>
 
 <process>
 
 ## 1. Determine Mode
-
-Use MODIFY mode if runtime arguments include `--modify` or the user clearly asked to update an existing spec.
-Otherwise use NEW mode.
-
-### MODIFY mode
-
-- Ask which task is being modified if not already clear
-- Verify `./.gtd/<task_name>/SPEC.md` exists
-- If missing, stop with a clear error
-- Load the existing spec before discussing changes
-
-### NEW mode
-
-- Continue to context gathering
+- **MODIFY mode** (via `--modify` or clear request): verify `SPEC.md` exists, load it before discussion.
+- **NEW mode**: continue.
 
 ## 2. Gather Existing Context
+Read `./.gtd/PRODUCT.md` and `./.gtd/CODEBASE.md`.
 
-Read these files if they exist:
-- `./.gtd/PRODUCT.md`
-- `./.gtd/CODEBASE.md`
+## 3. Resolve Referenced Artifacts First
+If user names existing code components/files/endpoints, inspect them first. Identify constraints and dependencies before asking questions.
 
-Use them to reduce unnecessary questions, not to skip user confirmation.
+## 4. Frame Current Reality (NEW mode)
+If updating existing behavior, capture: pain/gap, evidence (logs, traces), must-not-break behavior, boundary rules.
 
-## 3. Interview the User
+## 5. Interview User (NEW mode)
+Collect: problem, goal, feature, requirements, won't-have, constraints, invariants, done criteria. Ask concise, grouped questions.
 
-Collect the minimum information needed to produce a planning-grade spec.
+## 6. Optional Problem-Framing Research (NEW mode)
+Research codebase if needed: modules, files, similar patterns, dependencies, feasibility.
 
-Required topics:
-- Ultimate Goal
-- Target Feature
-- Must-Have requirements
-- Nice-to-Have requirements
-- Won't-Have scope boundaries
-- Constraints
-- Done criteria
+## 7. Challenge the Fit (NEW mode)
+Verify target feature directly achieves ultimate goal. Discuss simpler approaches if applicable.
 
-Interview rules:
-- Ask concise grouped questions
-- Infer sensible wording, then ask the user to confirm or correct it
-- Keep going until every required topic is clear enough to write
-- If a requirement remains ambiguous, keep the ambiguity visible and resolve it before writing
+## 8. Mirror Understanding
+kebab-case name (2-4 words).
+- **NEW mode**: restate Name, Problem, Goal, Feature, Requirements (EARS), Constraints, Invariants, Done criteria.
+- **MODIFY mode**: summarize Task, changes, old vs. new, roadmap impact.
+Wait for confirmation.
 
-## 4. Optional Domain Research
+## 9. Write or Update SPEC.md
+- **NEW mode**: create folder, write `SPEC.md` (FINALIZED).
+- **MODIFY mode**: update confirmed sections, status UPDATED, add updated date.
 
-Do research only if one of these is true:
-- Feasibility is unclear from the interview
-- Existing architecture may constrain the solution
-- There may be reusable patterns in the codebase
-- Hidden dependencies could affect scope
-
-Before researching, summarize:
-- The user's goal
-- Current must-haves
-- Known constraints
-- Candidate scope paths
-
-Research output should answer:
-- What existing modules or patterns are relevant
-- What constraints or hidden dependencies exist
-- Whether the proposed feature still fits the goal
-
-If research changes the framing, bring that change back into the mirror step.
-
-## 5. Challenge the Fit
-
-Before mirroring, verify that the Target Feature is still the best route to the Ultimate Goal.
-
-Check:
-- Does it directly advance the goal?
-- Is there a simpler path?
-- Did research reveal a conflict with the current approach?
-
-If the fit is weak, stop and discuss alternatives with the user before writing.
-
-## 6. Mirror Understanding
-
-Determine the task name automatically.
-Do not ask the user to approve the task name unless it affects meaning.
-
-For NEW mode, present:
-- Task
-- Ultimate Goal
-- Target Feature
-- Must Have
-- Nice to Have
-- Won't Have
-- Constraints
-- Done criteria
-
-All must have and nice to have must write in EARS-style phrasing.
-
-For MODIFY mode, summarize:
-- Existing task
-- Sections being changed
-- Exact content being changed
-- Reason for the change
-- Whether roadmap or plans may need regeneration
-
-
-Then require explicit confirmation.
-
-## 7. Write or Update SPEC.md
-
-For NEW mode:
-- Create `./.gtd/<task_name>/`
-- Write `SPEC.md`
-- Set status to `FINALIZED`
-
-For MODIFY mode:
-- Update only the confirmed sections
-- Set status to `UPDATED`
-- Add `Last Updated`
-- Preserve untouched sections unless the user explicitly changes them
-
-Use this structure:
-
+### SPEC.md Structure
 ```markdown
 # Specification
 
@@ -206,99 +78,96 @@ Use this structure:
 
 ## Synopsis
 
-{2-3 sentence summary of the user-facing value}
+{2-3 sentences user story / value proposition}
+
+## Current Problem
+
+{Pain, gap, or system reality}
 
 ## Ultimate Goal
 
-{North-star outcome}
+{High-level outcome / North Star}
 
 ## Target Feature
 
-{What will be built}
+{What specifically we are building}
 
 ## Requirements
 
 ### Must Have
 
-- [ ] **When** ...
+- [ ] **When** {Trigger}, the {System} shall {Action}.
 
 ### Nice to Have
 
-- [ ] **Where** ...
+- [ ] **Where** {Feature}, the {System} shall {Action}.
 
 ### Won't Have
 
-- ...
+- {Exclusion}
 
 ## Constraints
 
-- ...
+- {Technical/time constraint}
+
+## Invariants & Must Preserve
+
+- {Truths planning must not violate}
+
+## Non-Goals / Rejected Approaches
+
+- {Scope/design exclusions}
 
 ## Done Criteria
 
-- ...
+- {Verifiable criteria}
 
 ## Open Questions
 
-- None
+- {Unresolved questions}
 ```
 
-Writing rules:
-- Every Must-Have must be concrete enough to plan against
-- Keep Nice-to-Haves separate from Must-Haves
-- Won't-Haves must define real scope boundaries
-- Done Criteria must be verifiable
-- `Open Questions` should be `None` unless the user explicitly accepts unresolved items
-
-## 8. Final Readiness Check
-
-Before finishing, verify:
-- The goal and target feature are not in conflict
-- Must-Haves use EARS phrasing
-- Constraints are explicit
-- Done Criteria are testable
-- The spec is specific enough for `roadmap`
-
-If not, fix the spec before offering the next step.
+## 10. Final Readiness Check
+Ensure problem clear, no goal conflict, EARS requirements, testable criteria, specific enough for roadmap.
 
 </process>
 
 <offer_next>
 
 For NEW mode:
-
 ```text
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GTD ► SPEC COMPLETE ✓
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
+  GTD ► SPEC COMPLETE ✓
+---
 
 Specification written to ./.gtd/<task_name>/SPEC.md
 
 Acceptance Criteria: {N} items defined
 
-─────────────────────────────────────────────────────
+---
+
 ▶ Next Up
+
 /roadmap — create phases from this spec
-─────────────────────────────────────────────────────
+
+---
 ```
 
 For MODIFY mode:
-
 ```text
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GTD ► SPEC UPDATED ✓
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
+  GTD ► SPEC UPDATED ✓
+---
 
 Specification updated: ./.gtd/<task_name>/SPEC.md
 
 Changes applied: {N} sections modified
 
-─────────────────────────────────────────────────────
-⚠ Note: Rebuild roadmap or plans manually if the change affects phase structure
-─────────────────────────────────────────────────────
-▶ Next Up
-/roadmap — regenerate phases from this spec if needed
-─────────────────────────────────────────────────────
+---
+
+⚠ Note: Update roadmap/plans manually if needed
+
+---
 ```
 
 </offer_next>

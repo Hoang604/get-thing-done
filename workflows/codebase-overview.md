@@ -1,119 +1,62 @@
 ---
 name: codebase-overview
-description: Analyze codebase architecture. Creates ./.gtd/CODEBASE.md
+description: Analyze codebase architecture. Creates ./.gtd/CODEBASE.md and split docs under ./.gtd/codebase/
 argument-hint: "[--refresh]"
 ---
+
 <role>
-You are a codebase archaeologist. You map the terrain before anyone builds on it.
-
-**Core responsibilities:**
-
-- Discover project structure and tech stack
-- Identify major domains, infrastructure, and entry points
-- Document verified flows and conventions
-- Create a split documentation set that can scale with the repo
-- Use research skill for unclear modules
+Codebase archaeologist. Maps terrain before building.
+- Discover structure, tech stack.
+- Identify domains, infra, entry points.
+- Document flows, conventions.
+- Create split docs.
+- Use research skill.
 </role>
 
 <objective>
-Create a living codebase map that answers: "What does this codebase do, how is it organized, and where should future investigation go"
-
-**Flow:** Discover → Classify → Split → Document
+Create living codebase map: what it does, organization, where to inspect.
+Flow: Discover → Classify → Split → Document
 </objective>
 
 <context>
-**Outputs:**
-
-- `./.gtd/CODEBASE.md` as the thin index
+Outputs:
+- `./.gtd/CODEBASE.md` (thin index)
 - `./.gtd/codebase/architecture.md`
 - `./.gtd/codebase/entrypoints.md`
 - `./.gtd/codebase/patterns.md`
 - `./.gtd/codebase/open-questions.md`
+- `./.gtd/codebase/domains/index.md`
 - `./.gtd/codebase/domains/*.md`
+- `./.gtd/codebase/infra/index.md`
 - `./.gtd/codebase/infra/*.md`
 </context>
 
 <philosophy>
-
-## Map, Don't Judge
-
-Document what IS, not what SHOULD BE. Save opinions for later.
-
-## Split From The Start
-
-Do not let `CODEBASE.md` grow into a monolith. Keep it short and use targeted documents for durable knowledge.
-
-## Breadth First, Depth on Demand
-
-Start with structure and entry points. Go deep only when:
-
-- A module is central to multiple features
-- Purpose is unclear from naming
-- Multiple flows converge there
-
-## Living Documents
-
-Each output file should carry:
-
-- `Generated`
-- `Last Updated`
-- `Last Verified`
-
-`Last Verified` means the date this file's content was checked against the current codebase during this run.
-
+- **Map, Don't Judge:** Document what IS. No opinions.
+- **Split early:** CODEBASE.md thin. Use targeted docs.
+- **Breadth first:** Core details, deep dive on demand.
+- **Living:** Each file needs `Generated`, `Last Updated`, `Last Verified`.
 </philosophy>
 
 <prohibitions>
-
-## No Guessing From Names
-
-**NEVER describe a module based on its name alone.**
-
-- `UserService` might delete users, not serve them
-- `utils/` might contain critical business logic
-- `cache.ts` might write to database
-
-**Every description requires reading actual code.**
-
-## Evidence Required
-
-Every claim must cite evidence inline.
-
-- Tech stack → cite manifest files or imports
-- Module purpose → cite key files and lines
-- Patterns → cite at least 2 files
-- Entry points → cite script definitions, exported handlers, or bootstrapping files
-
-Use compact evidence format directly in the document:
-
-- `Evidence: path/to/file:line`
-- `Evidence: path/a:line, path/b:line`
-
-**No citation = don't write it.**
-
-## Admit Unknowns
-
-If you cannot verify something, write it to `open-questions.md` instead of filling gaps with inference.
-
+- **No Name Guessing:** Do not describe module by name alone. Read code.
+- **Evidence Required:** Cite paths/lines inline (`Evidence: path/to/file:line`). No citation = no write.
+- **Admit Unknowns:** Log to `open-questions.md`.
 </prohibitions>
 
 <process>
 
 ## 1. Check Mode
 
-Check if `$ARGUMENTS` contains `--refresh`.
+Check `$ARGUMENTS` for `--refresh`.
 
 **If REFRESH mode:**
-
-- Load `./.gtd/CODEBASE.md`
-- Load existing files under `./.gtd/codebase/`
-- Revalidate each section against the current codebase
-- Update stale files in place
-- Create missing split docs if the current structure needs them
+- Load `./.gtd/CODEBASE.md` and `./.gtd/codebase/` files.
+- Revalidate sections against codebase.
+- Update stale files. Create missing split docs.
 
 **If NEW mode:**
-
-- Proceed to Discovery Phase
+- Go to Discovery.
 
 ---
 
@@ -126,12 +69,7 @@ ls -la
 cat package.json 2>/dev/null || cat Cargo.toml 2>/dev/null || cat go.mod 2>/dev/null || cat requirements.txt 2>/dev/null || echo "No manifest found"
 ```
 
-Identify:
-
-- Language/runtime
-- Package manager
-- Build system
-- Key dependencies
+Identify: Language/runtime, package manager, build system, dependencies.
 
 ### 2.2 Directory Structure
 
@@ -139,28 +77,17 @@ Identify:
 find . -type d -maxdepth 3 | grep -v node_modules | grep -v .git | grep -v __pycache__ | head -80
 ```
 
-Classify top-level and major subdirectories into:
-
-- Domain
-- Infrastructure
-- API / interface
-- Shared
-- Tests
-- Tooling / automation
+Classify directories: Domain, Infra, API/interface, Shared, Tests, Tooling.
 
 ### 2.3 Entry Points
 
-Find entry points by convention and actual wiring:
-
+Find entry points by convention and wiring:
 - `main.*`, `index.*`, `app.*`
-- `server.*`, `cli.*`, worker boot files
-- `package.json` scripts
-- Dockerfile `CMD` or `ENTRYPOINT`
-- framework-specific bootstraps
+- `server.*`, `cli.*`, workers, package scripts, Dockerfile, framework configs.
 
 ### 2.4 Module Classification
 
-For each major directory or subsystem, classify:
+Classify each directory:
 
 | Type | Description | Output |
 | ---- | ----------- | ------ |
@@ -169,25 +96,13 @@ For each major directory or subsystem, classify:
 | API | HTTP, CLI, RPC, workers, public integration points | `entrypoints.md` or subsystem doc |
 | Shared | Types, utilities, common libraries | `architecture.md` or a focused doc if central |
 
-If classification is unclear, investigate before writing.
-
 ### 2.5 Patterns & Conventions
 
-Look for verified patterns such as:
-
-- File naming conventions
-- Layering or feature folder rules
-- Error handling style
-- Logging style
-- Testing organization
-- Cross-cutting wrappers or middleware
-
-Only include patterns demonstrated in at least two files.
+Look for patterns: Naming, layering, error handling, logging, testing, wrappers. Evidence in at least two files.
 
 ---
-## 3. Create Split Documentation
 
-**Bash:**
+## 3. Create Split Documentation
 
 ```bash
 mkdir -p ./.gtd/codebase/domains ./.gtd/codebase/infra ./.gtd/scripts
@@ -195,19 +110,17 @@ mkdir -p ./.gtd/codebase/domains ./.gtd/codebase/infra ./.gtd/scripts
 
 ### 3.1 Setup Index Generator
 
-Create a script at `./.gtd/scripts/generate-index.sh` that:
-1. Accepts a target directory as an argument.
-2. Creates or overwrites an `index.md` file in that directory.
-3. For every `.md` file in that directory (excluding `index.md` itself):
-   - Appends an opening comment: `<!-- Imported from: ./{filename} -->`
-   - Appends the full content of the file.
-   - Appends a closing comment: `<!-- End of import from: ./{filename} -->`
+Create `./.gtd/scripts/generate-index.sh`:
+1. Accepts target directory.
+2. Creates/overwrites `index.md`.
+3. For every `.md` file (except `index.md` itself), appends:
+   - `<!-- Imported from: ./{filename} -->`
+   - File content
+   - `<!-- End of import from: ./{filename} -->`
 
 ### 3.2 Write `./.gtd/CODEBASE.md`
 
-This file is the index only. Keep it short.
-
-Required structure:
+Thin index only. Required structure:
 
 ```markdown
 # Codebase Index
@@ -237,17 +150,16 @@ Required structure:
 - [Infra: {name}](./codebase/infra/{name}.md) — one-line purpose
 ```
 
-### 3.2.1 Write directory indexes
+### 3.1.1 Write directory indexes
 
-Run the index generator script for both domains and infra:
+Run script:
 
 ```bash
 bash ./.gtd/scripts/generate-index.sh ./.gtd/codebase/domains
 bash ./.gtd/scripts/generate-index.sh ./.gtd/codebase/infra
 ```
 
-### 3.3 Write `./.gtd/codebase/architecture.md`
-
+### 3.2 Write `./.gtd/codebase/architecture.md`
 
 Required structure:
 
@@ -348,7 +260,7 @@ Required structure:
 
 ### 3.6 Write domain and infrastructure docs
 
-For each meaningful domain or infrastructure area, create one focused file.
+Create focused file per area.
 
 Domain doc template:
 
@@ -421,21 +333,19 @@ Evidence: {path:line, path:line}
 ## 4. Refresh Rules
 
 On refresh:
-
-- Revalidate `Last Verified` for every file you inspected
-- Update only files whose content changed or was rechecked
-- Remove stale claims that no longer match the code
-- Add new split docs when new domains or infrastructure areas appear
-- Keep `CODEBASE.md` concise even if the repo grows
+- Revalidate `Last Verified` for files inspected.
+- Update only changed/rechecked files.
+- Remove stale claims.
+- Add new split docs. Keep `CODEBASE.md` concise.
 
 </process>
 
 <offer_next>
 
 ```text
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GTD ► CODEBASE OVERVIEW COMPLETE ✓
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
+  GTD ► CODEBASE OVERVIEW COMPLETE ✓
+---
 
 Index written to ./.gtd/CODEBASE.md
 Split docs written to ./.gtd/codebase/
@@ -446,13 +356,13 @@ Split docs written to ./.gtd/codebase/
 | Infra Docs | {N} |
 | Shared Docs | {N} |
 
-─────────────────────────────────────────────────────
+---
 
 ▶ Next Up
 
 /spec — define what you want to build with codebase context available
 
-─────────────────────────────────────────────────────
+---
 ```
 
 </offer_next>

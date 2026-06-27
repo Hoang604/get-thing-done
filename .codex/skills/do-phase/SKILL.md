@@ -14,6 +14,10 @@ Core responsibilities:
 - Verify each task before moving on
 - Stop on plan ambiguity or architecture drift
 - Write `SUMMARY.md`
+
+You must never spawn subagent with folk_context=true, or the subagent will think that it is the main agent and break the workflow.
+
+Do not use any skill, you do the work with the following instructions.
 </role>
 
 <objective>
@@ -32,7 +36,7 @@ Phase number:
 
 Flags:
 - `--research` — Force new research during planning
-- `--test` — Make Task 1 a TDD "Create Failing Test" task in the delegated plan
+- `--test` — Make Task 1 a TDD "Create Failing Test" task in the delegated plan. If this flag not enable, DO NOT CREATE ANY TEST
 
 Required files:
 - `./.gtd/<task_name>/SPEC.md`
@@ -53,9 +57,14 @@ Use the local `phase_planner` agent to create `PLAN.md`.
 
 Rules:
 - planning quality must match the previous `plan-phase` workflow
+- after spawning the planner, call `wait_agent` exactly once with `timeout_ms=3600000`
+- do nothing else until that wait returns
 - wait for the planner to finish before executing
 - if the planner reports a blocking gap, surface it and stop
+- if the 1-hour wait does not return a final completed status, stop and report that planning did not complete
+- do not treat `PLAN.md` existence or any intermediate artifact as proof that planning is complete
 - do not rewrite the plan casually after delegation; only adjust it if you find a concrete execution blocker
+- when spawning the planner, never use `fork_context=true`; use `fork_context=false` or omit the flag entirely so the subagent does not inherit the main agent identity
 
 Use this query shape:
 ```text
@@ -77,6 +86,7 @@ Rules:
 - Default to no specialist
 - Use `incident_debugging` when execution fails in a nontrivial way
 - Use at most 1 additional specialist verification before closing a risky phase
+- when spawning any execution specialist, never use `fork_context=true`; use `fork_context=false` or omit the flag entirely
 - Prefer:
   - `correctness` for semantic/invariant-heavy behavior
   - `reliability` for retries, queues, external I/O, timeout, or crash-recovery behavior
@@ -121,6 +131,7 @@ Rules:
 - Never batch large unannounced logic changes
 - Never mark incomplete work as complete
 - Never update roadmap requirement checkboxes unless the phase actually implemented and verified them
+- Never delegate any subagent with `fork_context=true`; that can cause the subagent to behave like the main agent and break the workflow
 </standards_and_constraints>
 
 <process>
@@ -142,7 +153,18 @@ If the target phase is ambiguous or missing, stop and report the issue clearly.
 
 Spawn the local `phase_planner` agent with task name, phase, flags, spec path, and roadmap path.
 
-Wait for completion.
+Set `fork_context=false` explicitly, or omit it if the tool defaults to false. Do not set `fork_context=true`.
+
+Call `wait_agent` exactly once with `timeout_ms=3600000`.
+
+While that wait is pending:
+- do not read `PLAN.md`
+- do not inspect intermediate planner files
+- do not start preflight
+- do not execute any task
+
+Continue only if that wait returns the planner in a final completed state.
+If the wait times out or returns without final completion, stop and report that planning did not complete.
 
 After the planner finishes:
 - verify `./.gtd/<task_name>/{phase}/PLAN.md` exists

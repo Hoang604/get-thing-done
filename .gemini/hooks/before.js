@@ -5,31 +5,13 @@ const { prompt } = input;
 
 const PREDICTABLE_INTENT_RULE = `## RULE 1: PREDICTABLE INTENT
 
-Before any tool call or code change, you must report what you have done and declare your next single concrete action.
-
-Rules:
-- No vague declarations like "I will explore the codebase"
-- No silent tool calls
-- No scope expansion without re-declaring it
-- Do not treat tool output as self-explanatory; summarize the important findings
-- If a previous assumption was wrong, say so before continuing
-- Before a write tool, briefly explain why this change is the right edit before executing it
-- If the previous step used a tool, your next reply must include:
-  For read tools:
-    Findings: what the tool output revealed
-    Next action: one concrete next step
-  For write tools:
-    Change made: what the tool changed
-    Next action: one concrete next step
-  For execute tools:
-    Result: what happened and what it means
-    Next action: one concrete next step
+Report your intent before tool call.
 `;
 
-const WORKFLOW_BOUNDARY_RULE = `**Workflow Boundary**: When a workflow contains <forced_stop>, you MUST stop after complete that workflow. Never auto-chain workflow. Offering next steps ≠ executing them.`;
-const WORKFLOW_PROCESS_RULE = `**Workflow Process**: Workflows contain step-by-step instructions inside <process> tags. You MUST follow these steps strictly in order. Do not skip, reorder, or improvise.`;
-const ONE_COMMAND_RULE = `**One Command Per Turn**: Execute only the invoked workflow, step by step. Do not chain /plan → /execute in one turn.`;
-const NO_ACTION_RULE = `**No Action**: In this turn, you MUST NOT make any change to the codebase, just answer the question, or give your opinion, then stop. write_file and replace tool is banned in this turn.`;
+const WORKFLOW_BOUNDARY_RULE = `**Workflow Boundary**: Stop at <forced_stop>. No auto-chain. Suggest next steps, do not execute.`;
+const WORKFLOW_PROCESS_RULE = `**Workflow Process**: Follow <process> steps strictly. No skip. No improvise.`;
+const ONE_COMMAND_RULE = `**One Command Per Turn**: Execute invoked workflow only. No chain /plan → /execute.`;
+const NO_ACTION_RULE = `**No Action**: No code change, no fix, answer user question`;
 
 function emitRules(rules, separator = "\n\n") {
   console.log(
@@ -37,7 +19,7 @@ function emitRules(rules, separator = "\n\n") {
       decision: "allow",
       hookSpecificOutput: {
         hookEventName: "BeforeAgent",
-        additionalContext: rules.join(separator),
+        additionalContext: `Hook: BeforeAgent\n\n${rules.join(separator)}`,
       },
     }),
   );
@@ -51,14 +33,14 @@ let activeRules = [];
 const promptWithoutCodeSymbols = prompt.replace(/[a-zA-Z0-9_]\?[\w\.]/g, "");
 if (promptWithoutCodeSymbols.includes("?")) {
   activeRules = [
-    "# MANDATORY RULES - APPLY NO MATTER WHAT YOU ARE DOING, NO MATTER WHAT PERSONA YOU ARE IN",
+    "# MANDATORY RULES",
     PREDICTABLE_INTENT_RULE,
     NO_ACTION_RULE,
   ];
   emitRules(activeRules);
 } else if (prompt.includes("<process>")) {
   activeRules = [
-    "# MANDATORY RULES - APPLY NO MATTER WHAT YOU ARE DOING, NO MATTER WHAT PERSONA YOU ARE IN",
+    "# MANDATORY RULES",
     WORKFLOW_BOUNDARY_RULE,
     PREDICTABLE_INTENT_RULE,
     ONE_COMMAND_RULE,
@@ -67,7 +49,7 @@ if (promptWithoutCodeSymbols.includes("?")) {
   emitRules(activeRules);
 } else {
   activeRules = [
-    "# MANDATORY RULES - APPLY NO MATTER WHAT YOU ARE DOING, NO MATTER WHAT PERSONA YOU ARE IN",
+    "# MANDATORY RULES",
     PREDICTABLE_INTENT_RULE,
   ];
   emitRules(activeRules, "\n");

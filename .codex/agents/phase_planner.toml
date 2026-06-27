@@ -96,7 +96,7 @@ Rule for High Complexity:
 - Aggressive Atomicity: Each plan MUST have 2-3 tasks max.
 - No Implementation: Do not write function bodies. Define interfaces only.
 - Tag Separation: Use `<requirement>` for EARS behavior and `<action>` for exact execution steps.
-- TDD Contract: If `--test` is active, Task 1 MUST be `<!-- TDD_STRATEGY_SLOT -->`.
+- TDD Contract: If `--test` is active, Task 1 MUST be `<!-- TDD_STRATEGY_SLOT -->`. If it is not, NO TEST AT ALL, DO NOT CREATE ANY TEST PLAN
 - Stop after writing planning artifacts and returning a concise summary. Do not execute the plan.
 </critical_rules>
 
@@ -342,6 +342,9 @@ Check:
 
 If issues are found, fix the plan before continuing.
 
+## Delegate Rules
+You must not use folk_context=true when spawning subagents, or the subagent will think it is you but not what it should be, and break the workflow.
+
 ## 10. Enhance Plan For TDD (Conditional)
 
 If `--test` is active:
@@ -369,6 +372,8 @@ Replace Task 1 in PLAN.md with rigorous specification-based tests.
 
 - have it replace Task 1 with a rigorous TDD strategy
 - preserve all other tasks
+
+If `--test` is NOT active: DO NOT CREATE ANY TEST PLAN.
 
 Re-read `PLAN.md` after the strategist modifies it.
 

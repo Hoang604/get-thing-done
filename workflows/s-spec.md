@@ -5,261 +5,123 @@ argument-hint: "[backlog_item]"
 ---
 
 <role>
-You are a backlog executor. You take the next item from BACKLOG.md and create a detailed specification for it.
-
-**Core responsibilities:**
-
-- Read BACKLOG.md to determine what to build next
-- Extract requirements from the backlog item definition
-- Interview user only for implementation details (HOW, not WHAT)
-- Write SPEC.md that is traceable to the backlog item
-- Never deviate from the backlog
-  </role>
+Backlog executor. Select next BACKLOG.md item and create detailed specification.
+- Read BACKLOG.md to find next build target.
+- Extract requirements from backlog item.
+- Interview user for implementation (HOW, not WHAT).
+- Write SPEC.md traceable to backlog item.
+- Do not deviate from backlog.
+</role>
 
 <objective>
-Create a specification for a backlog item that answers: "How do we implement this item and how do we know it's done?"
-
-**Flow:** Read Backlog → Select Item → Research → Interview (HOW + Ultimate Goal) → Mirror → Confirm → Write
+Create specification for a backlog item detailing implementation and exit criteria.
+Flow: Read Backlog → Select Item → Research → Interview → Mirror → Confirm → Write
 </objective>
 
 <context>
-**Task naming:**
-- Task name comes directly from BACKLOG.md item name
-- Use kebab-case (e.g., `audio-gateway`, `serialize-audio-s3`)
-
-**Required:**
-
-- `./.gtd/BACKLOG.md` — Must exist. Run `/bootstrap` first if missing.
-
-**Output:**
-
-- `./.gtd/<task_name>/SPEC.md`
-
-**Skills used:**
-
-- `research` — For understanding implementation constraints
-  </context>
+Task naming: directly from BACKLOG.md item name, kebab-case (e.g. `audio-gateway`).
+Required: `./.gtd/BACKLOG.md`
+Output: `./.gtd/<task_name>/SPEC.md`
+Skills: `research`
+</context>
 
 <philosophy>
-
-## Backlog is the Authority
-
-The BACKLOG.md defines **WHAT** to build. The Spec defines **HOW** to build it.
-You do not ask the user what they want. You tell them what's next.
-
-## No Deviation
-
-If it's not in the Backlog, it doesn't get built.
-If the user wants something new, they must update the Backlog first.
-
-## Sub-Items First
-
-If a parent item has sub-items, execute sub-items in order.
-If no sub-items exist, prompt user to run `/expand-backlog` first.
-
-## Interview for Implementation Only
-
-The user has already decided WHAT via the architecture docs.
-Propose HOW, only ask about genuinely unclear items.
-
-## Mirror Before Writing
-
-Summarize the implementation plan, not the requirements (those come from Backlog).
-
+- **Backlog Authority:** BACKLOG.md defines WHAT, Spec defines HOW. Do not ask what to build, tell user what is next.
+- **No Deviation:** If not in backlog, do not build.
+- **Sub-Items First:** Complete sub-items in order. Expand parent first if sub-items missing.
+- **Interview for HOW:** Propose HOW, only ask about unclear items.
+- **Mirroring:** Summarize implementation plan before writing.
 </philosophy>
 
 <process>
 
 ## 1. Backlog Selection Phase
-
-**Check for BACKLOG.md:**
-
 ```bash
 if [ ! -f "./.gtd/BACKLOG.md" ]; then
     echo "Error: No BACKLOG.md found. Run /bootstrap first."
     exit 1
 fi
 ```
+Get item from argument or auto-detect first incomplete `[ ]` sub-item under active `[~]` parents in `BACKLOG.md`.
 
-**Check argument:**
-
-**If `backlog_item` argument provided:**
-
-- Validate the item exists in `./.gtd/BACKLOG.md`
-- Validate the item is incomplete (`[ ]` or `[~]`)
-- If valid, use that item
-- If invalid, error with available items
-
-**If no argument (auto-detect):**
-
-Parse `./.gtd/BACKLOG.md`:
-
-1. Find all items marked `[~]` (in progress / expanded)
-2. Under each, find sub-items marked `[ ]` (not started)
-3. Select the **first** incomplete sub-item
-
-**Priority:**
-
-- Parents with `[~]` status first (already being expanded)
-- Within a parent, sub-items in numbered order
-- If no sub-items exist, check if parent needs expansion
-
-**If no sub-items found but parent items exist:**
-
+If expansion needed:
 ```text
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GTD ► NO EXECUTABLE SUB-ITEMS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-No sub-items found. The next parent item needs expansion:
-
-**{next-parent-item}** — {description}
-
-─────────────────────────────────────────────────────
-▶ Run: /expand-backlog {next-parent-item}
-─────────────────────────────────────────────────────
-```
-
-**If sub-item found, display selection:**
-
-```text
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GTD ► NEXT BACKLOG ITEM
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Based on BACKLOG.md, the next item to implement is:
-
-**{parent}/{sub-item}** — {description}
-
-Parent: {parent-name}
-Tech: {tech stack from parent}
-
-─────────────────────────────────────────────────────
-Proceeding with this item. Let me research the implementation...
-```
-
-**Do NOT ask user to choose.** The backlog order is the authority.
-
 ---
+ GTD ► NO EXECUTABLE SUB-ITEMS
+---
+No sub-items found. Next parent needs expansion:
+**{next-parent-item}** — {description}
+---
+▶ Run: /expand-backlog {next-parent-item}
+---
+```
+
+If sub-item found:
+```text
+---
+ GTD ► NEXT BACKLOG ITEM
+---
+Based on BACKLOG.md, next item is:
+**{parent}/{sub-item}** — {description}
+Parent: {parent-name}
+Tech: {tech stack}
+---
+Proceeding with research...
+```
 
 ## 3. Domain Research Phase
-
-> **Skill: `research`**
->
-> Read and apply `{{SKILLS_ROOT}}/research/SKILL.md` before proceeding.
-
-**Based on the backlog item:**
-
-1. Load relevant context files if they exist:
-   - `./.gtd/CODEBASE.md` (current state)
-   - `./.gtd/ARCHITECTURE.md` (architectural decisions)
-   - `./.gtd/STACK_DECISION.md` (tech stack constraints)
-2. Identify relevant existing code
-3. Note dependencies and integration points
-4. Identify technical constraints
-
-**Purpose:**
-
-- Understand what exists
-- Plan what needs to be created
-- Identify risks and blockers
-
----
+Read `.gtd/CODEBASE.md`, `.gtd/ARCHITECTURE.md`, and `.gtd/STACK_DECISION.md`. Understand codebase state, dependencies, integration, constraints.
 
 ## 4. Interview Phase (Propose + Ask Unclear)
-
-Propose your implementation plan, only ask about unclear items:
-
+Propose implementation plan, ask unclear items:
 ```text
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
  GTD ► PROPOSED SPECIFICATION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
+---
 For: **{parent}/{sub-item}**
-
-**Ultimate Goal:**
-{The ultimate positive outcome (The 'Why'). Auto-fill from parent backlog item context or ask user if unclear.}
-
-**Target Feature:**
-{The specific backlog item being built (The 'What')}
-
+**Ultimate Goal:** {outcome / why}
+**Target Feature:** {backlog item}
 **Must Have:**
-- {requirement 1}
-- {requirement 2}
-
-**Nice To Have:**
-- {nice requirement 1}
-- {nice requirement 2}
-
-**Assumptions:**
-- {assumption 1}
-- {assumption 2}
-
+- {requirement}
 **Approach:**
 - {implementation approach}
-
 **Tech:**
-- {from parent backlog item}
-
-**Unclear items (need your input):**
-- {unclear item, if any — or "None"}
-
-─────────────────────────────────────────────────────
+- {tech stack}
+**Unclear items:**
+- {unclear items}
+---
 Please review. (ok / adjust: ...)
 ```
-
-**Wait for confirmation before writing SPEC.md.**
+Wait for confirmation.
 
 ## 4. Write SPEC.md
-
-**Task name comes from backlog item name.**
-
-**Summarize implementation plan:**
-
+Summarize implementation plan:
 ```text
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
  GTD ► CONFIRMING SPECIFICATION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
+---
 **Backlog Item:** {item_name}
 **Task Name:** {task-name}
-
-**Ultimate Goal:** {The 'Why'}
-**Target Feature:** {The 'What'}
-
-**Must Have:** (from Backlog responsibilities)
-- {responsibility 1}
-- {responsibility 2}
-
+**Ultimate Goal:** {outcome / why}
+**Target Feature:** {backlog item}
+**Must Have:** (from Backlog)
+- {responsibility}
 **Implementation Approach:**
-- {approach based on interview}
-
-**Tech Stack:** (from Backlog)
-- {tech from backlog}
-
-**Won't Have:** (this version)
-- {exclusions based on MVP discussion}
-
-**Constraints:**
-- {from research}
-
-─────────────────────────────────────────────────────
-
+- {approach}
+**Tech Stack:** {tech}
+**Won't Have:** {exclusions}
+**Constraints:** {constraints}
+---
 Is this correct? (yes/no/clarify)
 ```
-
-**Wait for explicit confirmation.**
+Wait for explicit confirmation.
 
 ## 5. Write SPEC.md
-
-**Bash:**
-
 ```bash
 mkdir -p ./.gtd/<task_name>
 ```
 
 Write to `./.gtd/<task_name>/SPEC.md`:
-
 ```markdown
 # Specification
 
@@ -269,68 +131,64 @@ Write to `./.gtd/<task_name>/SPEC.md`:
 
 ## Ultimate Goal
 
-{The high-level outcome (The 'Why'). Derived from parent backlog context.}
+{High-level outcome / why}
 
 ## Target Feature
 
-{What we're building — copied from Backlog description}
+{What we're building — from Backlog}
 
 ## Requirements
 
 ### Must Have
 
-(Copied from Backlog responsibilities)
-
 - [ ] {Responsibility 1}
-- [ ] {Responsibility 2}
 
 ### Nice to Have
 
-- [ ] {Optional feature from interview}
+- [ ] {Optional feature}
 
 ### Won't Have (This Version)
 
-- {Exclusion from MVP discussion}
+- {Exclusions}
 
 ## Tech Stack
 
-(Copied from Backlog)
-
-- {Technology 1}
-- {Technology 2}
+- {Technology}
 
 ## Constraints
 
-- {From research/interview}
+- {Constraints}
 
 ## Implementation Notes
 
-{Any specific approach decisions from interview}
+{Approach decisions}
 
 ## Open Questions
 
-- {Any unresolved questions — empty if none}
+- {Unresolved questions}
 ```
 
 </process>
 
+<offer_next>
+
 ```text
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
  GTD ► SPEC COMPLETE ✓
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 
 Specification written to ./.gtd/<task_name>/SPEC.md
 
 Backlog Item: {item_name}
 Acceptance Criteria: {N} items defined
 
-─────────────────────────────────────────────────────
+---
 
 ▶ Next Up
 
 /roadmap — create phases from this spec
 
-─────────────────────────────────────────────────────
+---
 ```
 
 </offer_next>

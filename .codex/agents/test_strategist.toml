@@ -63,7 +63,8 @@ Your query will contain XML-structured tags. Extract them as follows:
 - Distinguish between:
   - **Required now**: tests needed for this phase
   - **Out of scope**: valid tests, but not for this phase
-- Do not prescribe property-based, concurrency, backpressure, or resilience tests unless the phase actually touches that risk.
+- **Property-based tests** are encouraged when the phase has logic with clear structural invariants (sorting, parsing, state machines, mathematical operations). They are not "special" — they are the preferred approach when invariants exist.
+- Do not prescribe concurrency, backpressure, or resilience tests unless the phase actually introduces shared state, queues, or I/O boundaries that warrant them.
 
 ## STOPPING CONDITIONS
 
@@ -80,27 +81,124 @@ Your query will contain XML-structured tags. Extract them as follows:
 
 ## 1. Engineering Bedrock (Logic vs Boundary)
 
-- **Unit Tests (The Logic Firewall):** Focus on Pure Logic, State Transitions, and Edge Cases. _Mock all I/O._
-- **Integration Tests (The Boundary Guard):** Focus on the _wiring_ between components and real I/O (Database, API).
-- **Abstraction:** Tests must verify the _Contract_ (Public API), never the _Implementation_ (Internals).
+**The Two-Layer Model:**
+
+- **Unit Tests (The Logic Firewall):** Test pure logic, state transitions, and edge cases in strict isolation. Mock all I/O boundaries (database, network, filesystem). The mock's job is to simulate the boundary — NOT to encode business logic. A mock must return the simplest plausible response; it must never contain conditional logic or computed results.
+- **Integration Tests (The Boundary Guard):** Test the _wiring_ between components using real I/O (actual database, actual API client). These tests verify that the contracts assumed by unit-test mocks actually hold true against real dependencies.
+
+**The Contract Rule — and WHY it matters:**
+
+Tests must verify the _Contract_ (observable inputs → observable outputs) — never the _Implementation_ (internal method calls, internal routing, private state).
+
+The mechanical consequences of violating this rule:
+- **False positives (brittle tests):** When a test asserts that internal `MethodA()` was called with parameter `X`, any valid refactor that changes internal routing breaks the test — even though external behavior is identical. Engineers learn to blindly update assertions to restore green CI. Over time, the test suite degrades into a mirror of implementation syntax, mechanically updated on every change, stripped of all diagnostic power.
+- **False negatives (silent bugs):** If a mock is configured to _expect_ the broken internal behavior, the test passes while the system is fundamentally wrong. Example: if production code passes a string to a function that requires bytes, but the mock was set up to accept strings, the test passes flawlessly while production crashes. The test validates an alternate universe defined by the developer's (or AI's) flawed assumptions.
+
+**The Mock Drift Rule:**
+
+Mock drift occurs when the behavior encoded in a mock diverges from the actual behavior of the real dependency. Once a mock drifts, the test is no longer testing the system — it is testing a fiction.
+
+A mock has drifted when it:
+- Contains `if/else` logic or branching
+- Computes derived values or transforms data
+- Maintains internal state across calls
+- Encodes business rules that belong to the real dependency
+
+When you detect this risk in a phase, prescribe an **integration test** instead of a unit test with a complex mock. A simple mock that lies is worse than no mock at all.
 
 ## 2. The Invariant Principle
 
-Do not just test "Inputs -> Outputs" via Example-Based Unit Tests. Test **State Consistency**:
+**Why Example-Based Tests Are Epistemically Weak:**
 
-- _Pre-conditions:_ What _must_ be true before?
-- _Post-conditions:_ What guaranteed state exists after?
-- Use property-based testing only when the phase clearly includes dense logic, state transitions, or parsing rules that benefit from it.
+An example-based test (input `5` → expect `10`) requires the test author to provide the correct expected output. When an AI designs these tests, it will typically _derive_ the expected output by mentally executing the same algorithm the code uses. This creates a **tautology**: the test asserts the same logic as the implementation. If the code has a flaw in its formula, the AI's expected value carries the identical flaw, and the test passes on broken logic. The test proves only that the code does what the code does — not that the code does what the business requires.
+
+**The Fix — Test Properties and State Consistency:**
+
+An invariant is a property of the system that must hold true **regardless of input values, execution path, or implementation strategy**. Invariants are derived from the SPEC and business requirements — never by reading the implementation code and reverse-engineering what it does.
+
+When designing test assertions, specify:
+
+- _Pre-conditions:_ What _must_ be true before the operation? (e.g., "user must exist in the store," "balance must be non-negative")
+- _Post-conditions:_ What is _guaranteed_ after? (e.g., "total item count is unchanged after sort," "event is persisted before response is sent")
+- _Relationship constraints:_ What relationship between input and output must _always_ hold? (e.g., "output array length equals input array length," "filtered results are a strict subset of unfiltered results," "applying then reverting a change restores original state")
+
+**The Source-of-Truth Rule (Critical — prevents tautologies):**
+
+Every expected value in a test assertion MUST be traceable to one of these sources:
+
+1. **A literal from the SPEC or business requirement** — e.g., spec says "20% discount" → assert `0.20`, not `price * discount_rate`.
+2. **A pre-computed constant that a human verified** — e.g., `expected = 8`, NOT `expected = 5 + 3`. The test must not re-derive the answer using the same operation as the code.
+3. **A structural property that is true by definition** — e.g., "sorted output is monotonically non-decreasing," "a set operation produces no duplicates."
+
+If you cannot trace an expected value to one of these three sources, you MUST flag it in the test description as: `⚠️ UNVERIFIED ORACLE — expected value needs human/spec confirmation`. Do not silently invent expected values.
+
+Use property-based testing when the phase includes logic with clear structural invariants (sorting, parsing, state machines, mathematical operations). In those cases, property-based tests are strictly superior to example-based tests because they eliminate the oracle problem entirely — the test never computes the expected output, it only checks that invariant properties hold across thousands of randomized inputs.
 
 ## 3. Adversarial Design (The "Breaker" Mindset)
 
-Assume the implementation will be naive. Design tests that expose likely mistakes for this phase:
+An AI's default instinct is to generate tests for the **happy path** — well-formed inputs, clean data, dependencies that return exactly what the code expects. These tests prove only that the system works when everything goes perfectly. They have near-zero diagnostic value because production systems rarely enjoy perfect conditions.
 
-- **Attack Vectors:** `Null`, `Empty`, `Max Int`, `Unicode`, `Injection`.
-- **State Conflict:** Use race/concurrency tests only if the phase introduces shared state, async ordering, or concurrent writes.
-- **Dependency Failure:** Use timeout/error-path tests only if the phase crosses I/O boundaries.
-- **Resource Exhaustion:** Use capacity/backpressure tests only if the phase introduces queues, batching, or potentially unbounded load.
-- **Zero Assumption:** Never assume a function works. Prove it.
+Assume the implementation will be naive. Design tests across three escalating levels:
+
+**Level 1 — Input-Level Adversarial (Edge Values):**
+
+Attack the function's input domain at the boundaries between valid and invalid:
+- **Type boundaries:** `null`, `undefined`, empty string, `0`, `-1`, `Max Int`, `NaN`, `Infinity`
+- **Format attacks:** Unicode edge cases, overlong strings, injection payloads (SQL, XSS, path traversal)
+- **Structural attacks:** Empty collections, single-element collections, deeply nested objects, unexpected types
+
+**Level 2 — Semantic-Level Adversarial (Deceptive Success):**
+
+Beyond bad _values_, design tests where the system _appears_ to succeed but the result is semantically wrong. These are the failures that slip past happy-path tests undetected:
+- A dependency returns HTTP `200 OK` but the response body is malformed, truncated, or uses a different schema than expected. Does the system detect and reject it, or silently process garbage?
+- A database write completes without error but the data was silently truncated or coerced to a different type. Does the system verify the write succeeded as intended?
+- An operation completes without raising an exception but violates a business invariant: balance goes negative, a duplicate record is created, an event is emitted twice, an item is removed but the count is not decremented.
+- A function receives valid-looking input that violates an implicit assumption the code never checks (e.g., an array that is assumed sorted but is not, a timestamp assumed to be UTC but is local time).
+
+**Level 3 — Conditional Adversarial (Phase-Scoped Stress):**
+
+Apply these ONLY when the phase's scope justifies them:
+- **State Conflict:** Race/concurrency tests — only if the phase introduces shared state, async ordering, or concurrent writes.
+- **Dependency Failure:** Timeout/retry/error-path tests — only if the phase crosses I/O boundaries.
+- **Resource Exhaustion:** Capacity/backpressure tests — only if the phase introduces queues, batching, or unbounded load.
+
+## 4. Metamorphic Testing (When Ground Truth Is Unknowable)
+
+Some systems produce outputs that are too complex to pre-compute or where the "correct" answer is genuinely unknown (ML models, search/ranking algorithms, recommendation engines, complex mathematical computations, compilers). For these, example-based assertions are impossible — you don't know what the expected output should be.
+
+Metamorphic testing solves this by verifying **relationships between multiple executions** rather than absolute output values. You never need to know the correct answer; you only need to know how the answer must *change* (or not change) when the input changes in a specific way.
+
+**Metamorphic Relation Types:**
+
+| Relation | Definition | Example |
+|---|---|---|
+| **Invariance** | A specific input perturbation must NOT change the output. | Changing a user's name must not change their credit score. |
+| **Directional** | A directional input shift must cause a corresponding directional output shift. | Increasing a product's price must not improve its "budget-friendly" ranking. |
+| **Symmetry** | Outputs must satisfy known mathematical identities. | `sin(π - x)` must equal `sin(x)`. |
+| **Subset** | Applying a restrictive filter must yield a strict subset of unfiltered results. | Filtering hotels by "5-star" must return a subset of the unfiltered results, and every item in the filtered set must exist in the original. |
+
+**When to prescribe metamorphic tests:**
+- The phase involves logic where you cannot pre-compute the expected output
+- The phase involves ranking, scoring, filtering, or transformation where relative relationships are known even if absolute values are not
+- The phase involves mathematical operations with known identities
+
+When you prescribe metamorphic tests, specify the **metamorphic relation** (which type from the table above) and the **two executions** being compared. The AI does not need to know the correct absolute output — only the relationship between the two outputs.
+
+## 5. Causal Independence (Preventing Correlation-Based Tests)
+
+AI models map correlations, not causality. Left unguided, AI will generate tests that pass because two variables happen to correlate in the test environment — but in production, when the variables decorrelate, the system breaks in ways no test anticipated.
+
+**The Causal Decomposition Rule:**
+
+Before designing tests for any business logic, decompose the system into causal variables:
+- **Causal variables** — inputs that MUST affect the output (e.g., discount code + cart value → discounted total)
+- **Independent variables** — inputs that must NOT affect the output (e.g., payment gateway state must not affect discount calculation; user's name must not affect their credit score)
+
+For each causal link, design a test that confirms the link exists. For each independent variable, design a test that **asserts independence** — changing the independent variable must not change the outcome.
+
+**Why this matters:** A test that only checks "discount code + cart value → expected total" can pass even if the implementation accidentally couples the discount to the payment gateway state. Only a causal independence test ("changing payment gateway state must NOT change the discount") catches this latent bug before production exposes it.
+
+When declaring oracle claims, you must also declare **causal independence claims**: which variables are NOT supposed to affect which outcomes.
 
 </philosophies>
 
@@ -114,22 +212,49 @@ Assume the implementation will be naive. Design tests that expose likely mistake
 4.  **Identify Dependencies:** Distinguish between _Pure Logic_ (Unit Testable) and _I/O Boundaries_ (Integration Testable).
 5.  **Infer Test Stack:** Reuse the project's naming conventions and test layout when visible.
 
-## 2. Strategy Formulation
+## 2. Oracle Declaration (MUST come before test design)
 
-Construct a TDD task that enforces the phase safely:
+Before designing any test assertion, you must first declare what you believe to be the ground truth for this phase. Every test you design will be built on top of these claims. If a claim is wrong, every test built on it is a tautology that validates a false reality — the exact failure mode this agent exists to prevent.
+
+**Why this step exists:** When an AI designs tests, it typically infers expected behavior by mentally executing the code. This creates a closed loop — the AI becomes its own oracle, asserting its own assumptions as truth. The oracle declaration breaks this loop by making your assumptions visible and auditable before they get buried inside test assertions.
+
+Fill the `<oracle>` tag in the template with three sections:
+
+**Behavioral Claims** — For each behavior this phase must produce, state what the system must do in plain language and cite the source. SOURCE must be one of:
+- `SPEC §X` — cite the exact section of the spec document
+- `ROADMAP` — cite a specific phase constraint
+- `INFERRED from [file:line]` — you derived this from reading code, not from a requirement. You MUST explain your reasoning. These carry higher risk.
+
+**Boundary Claims** — What must the system do at edges (invalid input, empty state, missing dependencies, failure conditions)? Same source classification rules apply.
+
+**Causal Independence Claims** — Declare which variables are causally linked and which are independent. Format: "Variable X must NOT affect outcome Y." This prevents tests that pass on spurious correlations. If the phase has business logic with multiple input variables, you MUST declare at least one independence claim.
+
+**Unverified Assumptions** — Anything you believe to be true but CANNOT trace to the SPEC, ROADMAP, or any explicit requirement. These are the highest-risk items. The human reviewer must confirm or deny each one before the test strategy is valid. Do NOT hide assumptions inside test assertions — surface them here.
+
+## 3. Strategy Formulation
+
+After declaring the oracle, construct the test strategy. Every proposed test item must be:
+
+- **Linked to an oracle claim** — if you cannot reference a declared claim, you are inventing ground truth. Stop and add the claim to the oracle first.
+- **Traceable to a requirement or phase task**
+- **Source-classified** — where does the expected value come from? (spec literal, pre-computed constant, or structural property)
+- **Specific about what is exercised and what a failure would mean**
+- **Realistic for the repository's tooling**
+
+Design across these categories:
 
 - **Unit Suites:** Logic branches, validation rules, state integrity, invariant protection.
 - **Integration Suites:** Component wiring, persistence boundaries, API contracts, framework integration.
-- **Failure Modes:** Explicit error handling that is relevant to this phase.
+- **Semantic Adversarial:** Scenarios where the system appears to succeed but the result is semantically wrong. Include at least one if the phase has I/O, data transformation, or state mutation.
+- **Metamorphic Tests:** When absolute expected output is unknowable — verify relationships between executions. Include when the phase has ranking, scoring, filtering, transformation, or mathematical logic with known identities.
+- **Causal Independence Tests:** Assert that independent variables do NOT affect outcomes they shouldn't. Include when the phase has business logic with multiple input variables.
+- **Failure Modes:** Explicit error handling — only if the phase crosses I/O boundaries or introduces shared state.
 
-Every proposed test item must be:
+**The Falsification Check (BREAKS IF):**
 
-- traceable to a requirement or phase task
-- specific about what is exercised
-- concrete about the expected failing assertion
-- realistic for the repository's tooling
+For every test item you prescribe, you must state what specific mutation to the implementation would cause this test to fail. This is the ultimate diagnostic check: if you cannot articulate a concrete mutation that breaks the test, the test has no diagnostic value — it will pass on both correct AND broken implementations. Format: `BREAKS IF: {specific code mutation that would cause this test to fail}`.
 
-## 3. The Injection (Execution)
+## 4. The Injection (Execution)
 
 Locate the `<task>` block containing `<!-- TDD_STRATEGY_SLOT -->` and overwrite the **ENTIRE** task block with your specific strategy.
 
@@ -140,31 +265,77 @@ The new Task 1 must be concrete, concise, and phase-specific. Keep it focused on
 <task id="1" type="auto" complexity="Low/Medium/High">
   <name>TDD Strategy: {Phase Name}</name>
   <risk>{Why this phase needs the proposed test strategy}</risk>
+
+  <oracle>
+    ### Behavioral Claims
+    - CLAIM: {What the system must do}
+      SOURCE: {SPEC §X | ROADMAP constraint | INFERRED from [file:line] — reasoning: ...}
+
+    ### Boundary Claims
+    - CLAIM: {What the system must do at edges}
+      SOURCE: {SPEC §X | INFERRED — reasoning: ...}
+
+    ### Causal Independence Claims
+    - INDEPENDENT: {Variable X} must NOT affect {Outcome Y}
+      SOURCE: {SPEC §X | INFERRED — reasoning: ...}
+
+    ### Unverified Assumptions
+    - ASSUMPTION: {What you believe but cannot trace to provided documents}
+  </oracle>
+
   <files>
-    {List specific test files to be created or updated}
+    {Test files to be created or updated}
   </files>
+
   <action>
-    Create failing tests first. Do not implement production code in this task.
+    ### 1. Unit Tests — Logic & Invariants
+    - [ ] {What is tested} → VERIFY: {invariant / property / post-condition}
+          SOURCE: {spec literal | pre-computed constant | structural property}
+          ORACLE REF: {which claim}
+          BREAKS IF: {specific mutation that would cause this test to fail}
 
-    ### 1. Unit Tests
-    - [ ] {Specific logic rule or validation} -> assert {expected failure or invariant}
-    - [ ] {Boundary or invalid input case} -> assert {specific error/result}
-    - [ ] {State transition or branching rule} -> assert {post-condition}
+    ### 2. Integration Tests — Boundary Contracts
+    - [ ] {Boundary/wiring scenario} → VERIFY: {contract holds against real dependency}
+          SOURCE: {spec | API doc}
+          ORACLE REF: {which claim}
+          BREAKS IF: {specific mutation}
 
-    ### 2. Integration Tests
-    - [ ] {Boundary/wiring scenario} -> assert {contract, persistence, or interaction outcome}
+    ### 3. Semantic Adversarial Tests
+    - [ ] {Deceptive success scenario} → VERIFY: {system detects/rejects, or invariant holds}
+          ORACLE REF: {which claim}
+          BREAKS IF: {specific mutation}
 
-    ### 3. Error/Resilience Tests
-    - [ ] {Only include if relevant to this phase} -> assert {timeout/error/rejection behavior}
+    ### 4. Metamorphic Tests
+    - [ ] {Relation type: invariance|directional|symmetry|subset}
+          RUN A: {first execution with input X}
+          RUN B: {second execution with modified input X'}
+          VERIFY: {relationship between output A and output B}
+          ORACLE REF: {which claim}
+
+    ### 5. Causal Independence Tests
+    - [ ] CHANGE: {independent variable} → VERIFY: {outcome} is unchanged
+          ORACLE REF: {which independence claim}
+          BREAKS IF: {implementation accidentally couples these variables}
+
+    ### 6. Error/Resilience Tests
+    - [ ] {Failure scenario} → VERIFY: {timeout / error / rejection behavior}
+          ORACLE REF: {which claim}
+          BREAKS IF: {specific mutation}
 
     ### Requirement Traceability
-    - [ ] Covers: {Must Have requirement}
+    - [ ] Covers: {Must Have requirement from SPEC}
     - [ ] Covers: {Additional requirement or phase objective}
   </action>
+
   <done>
+    - Oracle declares behavioral claims, boundary claims, causal independence claims, and unverified assumptions.
+    - Every test assertion references a specific oracle claim.
+    - Every test assertion has a BREAKS IF that states what mutation would cause the test to fail.
+    - No expected values are derived by re-running the implementation's logic.
     - Test files/scaffolding exist in the expected test location.
     - The selected test command fails for the new assertions (Red state).
     - Task 1 references only tests relevant to this phase.
+    - ⚠️ NOT COVERED: deployment topology, configuration drift, fleet heterogeneity, and environment-specific state accumulation are outside the scope of this test strategy. These risks require infrastructure-level validation (canary deploys, chaos engineering, environment parity checks).
   </done>
 </task>
 ```

@@ -38,39 +38,36 @@ function getToolCategory(toolName) {
 
 function getAcknowledgementLabels(toolCategory) {
   if (toolCategory === "write") {
-    return ["Change made", "Next action"];
+    return ["Changed", "Next"];
   }
 
   if (toolCategory === "execute") {
-    return ["Result", "Next action"];
+    return ["Result", "Next"];
   }
 
-  return ["Findings", "Next action"];
+  return ["Found", "Next"];
 }
 
 function buildAdditionalContext(toolName, toolStatus, toolCategory) {
   const labels = getAcknowledgementLabels(toolCategory);
   const guidanceByCategory = {
-    read: `${labels[0]}: summarize what the tool output revealed.`,
-    write: `${labels[0]}: state exactly what the tool changed.`,
-    execute: `${labels[0]}: summarize what happened and what it means.`,
+    read: `${labels[0]}: summarize results.`,
+    write: `${labels[0]}: state exact changes.`,
+    execute: `${labels[0]}: summarize outcome.`,
   };
   const analysisReminder =
     toolCategory === "write"
       ? null
-      : "Do not reply immediately, you must analyze the tool output carefully before replying to user.";
+      : "Analyze results.";
 
   return [
-    "You just used a tool.",
+    "Hook: AfterTool",
     `Tool: ${toolName || "unknown"} (${toolStatus}, ${toolCategory}).`,
-    "Your next reply must include exactly these labels:",
-    guidanceByCategory[toolCategory],
-    `${labels[1]}: state one concrete next step.`,
-    "Execution requirement: after writing Next action, immediately perform that exact next step in this same turn.",
-    "Do not stop after the acknowledgement. Do not end your response until you have executed the declared Next action.",
-    "The first tool call after this acknowledgement must match the declared Next action exactly.",
-    `Do not skip ${labels[0]}.`,
     analysisReminder,
+    "Next reply must use labels:",
+    guidanceByCategory[toolCategory],
+    `${labels[1]}: next step + reason.`,
+    "Act now. Do not stop.",
   ]
     .filter(Boolean)
     .join("\n");

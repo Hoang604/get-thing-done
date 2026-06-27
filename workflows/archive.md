@@ -5,62 +5,36 @@ argument-hint: "[task_name]"
 ---
 
 <role>
-You are an archiver. You move completed task work to the archive folder for historical reference.
-
-**Core responsibilities:**
-
-- Verify task work exists
-- Create archive with task name and timestamp
-- Move all task files to archive
-- Clean up task folder
-  </role>
+Archiver. Move completed task work to archive folder.
+- Verify task work exists.
+- Create archive with task name and timestamp.
+- Move task files to archive.
+- Clean up task folder.
+</role>
 
 <objective>
-Archive completed task to keep workspace clean while preserving history.
-
-**Flow:** Verify Exists → Create Archive → Move Files → Clean Up
+Archive completed task to keep workspace clean.
+Flow: Verify Exists → Create Archive → Move Files → Clean Up
 </objective>
 
 <context>
-**Task name:** $ARGUMENTS (if not provided, ask user which task to archive)
-
-**Source:**
-
-- `./.gtd/<task_name>/` — Task work to archive
-
-**Destination:**
-
-- `./.gtd/archive/<task_name>-{timestamp}/` — Archived task work
-
-**Files to archive:**
-
-- SPEC.md
-- ROADMAP.md (if exists)
-- All phase folders with PLAN.md and SUMMARY.md
-- Any other task-related files
-  </context>
+Task name: $ARGUMENTS (if none, ask user)
+Source: `./.gtd/<task_name>/`
+Destination: `./.gtd/archive/<task_name>-{timestamp}/`
+Files: SPEC.md, ROADMAP.md, phase folders, other task files.
+</context>
 
 <philosophy>
-
-## Archive When Done
-
-Only archive when task is complete or abandoned.
-
-## Preserve History
-
-Keep all files for future reference and learning.
-
-## Clean Workspace
-
-After archiving, task folder is removed to keep .gtd/ clean.
-
+- **Archive When Done:** Only when task complete/abandoned.
+- **Preserve History:** Keep all files.
+- **Clean Workspace:** Remove task folder.
 </philosophy>
 
 <process>
 
 ## 1. Determine Task Name
 
-If no argument provided, ask user:
+If no argument:
 
 ```text
 Which task would you like to archive?
@@ -87,7 +61,7 @@ fi
 
 ## 3. Create Archive Directory
 
-Generate archive name with timestamp:
+Generate name with timestamp:
 
 ```bash
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
@@ -99,7 +73,7 @@ mkdir -p "./.gtd/archive"
 
 ## 4. Move Task Folder
 
-Move entire task folder to archive:
+Move to archive:
 
 ```bash
 mv "./.gtd/<task_name>" "${ARCHIVE_DIR}"
@@ -108,8 +82,6 @@ mv "./.gtd/<task_name>" "${ARCHIVE_DIR}"
 ---
 
 ## 5. Commit Archive
-
-Commit the archive:
 
 ```bash
 git add ./.gtd/archive/
@@ -121,9 +93,9 @@ git commit -m "chore: archive task <task_name> to {task_name}-${TIMESTAMP}"
 ## 6. Display Summary
 
 ```text
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
  GTD ► TASK ARCHIVED ✓
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 
 Task: {task_name}
 Archived to: ./.gtd/archive/{task_name}-{timestamp}/
@@ -133,10 +105,8 @@ Files archived: {count}
 
 Task folder removed from ./.gtd/
 
-─────────────────────────────────────────────────────
-```
-
 ---
+```
 
 </process>
 

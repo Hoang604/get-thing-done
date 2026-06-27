@@ -38,6 +38,9 @@ Use the local `verify_spec` agent for the full verification workflow.
 Rules:
 - verification quality must match the previous standalone workflow
 - do not re-implement the audit orchestration in the skill
+- every spawned subagent must set `fork_context=false` explicitly
+- never omit `fork_context`
+- never use `fork_context=true`
 - wait for the agent to finish before responding
 - if the agent reports a blocking gap, surface it clearly and stop
 - verify that `VERIFICATION.md` exists before closing successfully
@@ -65,6 +68,11 @@ Spawn the local `verify_spec` agent using this query shape:
 Run the full verification workflow and write all audit artifacts plus VERIFICATION.md.
 </context>
 ```
+
+When spawning the agent:
+- set `fork_context=false` explicitly
+- do not omit `fork_context`
+- do not use `fork_context=true`
 
 Wait for completion.
 

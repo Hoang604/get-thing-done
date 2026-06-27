@@ -119,10 +119,6 @@ Use a specialist only if one of these is true:
 - migration order matters
 - invariants or failure semantics strongly constrain sequencing
 
-**GitNexus Integration:**
-- Use `gitnexus_impact` to determine the natural order of implementation. If Phase B depends on a symbol created in Phase A, the graph will show it.
-- Use `gitnexus_context` to identify architectural seams and ownership boundaries.
-
 If needed:
 - run `architecture` for seam, ownership, or migration-order constraints
 - run `reliability` for rollout, retry, idempotency, or failure-semantics constraints
@@ -143,9 +139,6 @@ For each requirement, ask:
 - Does it belong to a foundation, core path, hardening, or optional stage
 - Does it depend on preserving an invariant while work is in flight
 - Does it require an enabling step because of an existing boundary or rollout constraint
-
-**GitNexus Integration:**
-- Use `gitnexus_impact` to map requirements to their structural dependencies, ensuring phases are split along clean architectural lines.
 
 Grouping rules:
 - Keep tightly coupled requirements together

@@ -107,7 +107,9 @@ Do NOT report these unless they materially reduce trust in the test suite:
 
 1. You have scanned all files mentioned in the query
 2. You have assessed the main behavior the tests claim to protect
-3. You have documented all material test-quality findings
+3. You have documented up to **5** material test-quality findings
+
+**FINDING CAP:** Report a maximum of **5 findings** per audit, regardless of scope size. Prioritize by severity (CRITICAL > HIGH > MEDIUM > LOW). If you identify more than 5 issues, report only the top 5 and note at the end: "Additional issues were observed but deferred to keep this audit focused. Re-run with a narrower scope to surface them."
 
 **TIME BOX:**
 
@@ -136,6 +138,25 @@ If a test depends on uncontrolled time, ordering, global state, randomness, netw
 ## Mocking Is A Tradeoff, Not A Free Win
 
 Mocks are useful when they isolate a boundary, but harmful when they replace the very contract the test is supposed to validate. Over-mocked tests often prove the mock setup, not the system behavior.
+
+## Tautological Tests Are Epistemically Empty
+
+A tautological test asserts the same logic as the code it tests. It passes by definition, not by verification. The most common forms:
+- The test re-derives the expected value using the same formula as the implementation (e.g., `assert sum(5,3) == 5+3` instead of the literal `8`)
+- The test calls the production function to compute the expected result, then asserts the result equals itself
+- Expected values are mechanically copied from the implementation's output without independent verification from a spec or business rule
+- Expected values are blindly updated whenever the implementation changes, to restore green CI (the blind correction loop)
+
+A tautological test will pass on both correct AND broken implementations. It provides mathematical proof of nothing.
+
+## Expected Values Must Have An Independent Source
+
+When auditing a test's expected values, ask: **where did this expected value come from?** Valid sources are:
+1. A literal from a spec or business requirement
+2. A pre-computed constant verified by a human
+3. A structural property true by definition (e.g., "sorted output is monotonically non-decreasing")
+
+If the expected value appears to be derived from the implementation itself, the test is a tautology regardless of how complex its assertions look.
 
 ## Good Tests Improve Diagnosis
 
@@ -174,6 +195,14 @@ Do not use CRITICAL or HIGH without a concrete failure or false-confidence scena
 - [ ] Snapshot is too broad to explain the intended behavior or too narrow to catch meaningful regression
 - [ ] Test would still pass if key fields, ordering, or semantics were wrong
 
+## Tautology & Oracle Source
+
+- [ ] Test's expected value is derived by re-running the same logic/formula as the implementation (tautology)
+- [ ] Test calls the production function internally to compute its own expected result
+- [ ] Expected value appears copied from implementation output without independent verification from a spec or business rule
+- [ ] Expected values change in lockstep with implementation changes, suggesting blind assertion updates (blind correction loop)
+- [ ] Test computes a derived value (e.g., `expected = price * rate`) rather than asserting a spec literal (e.g., `expected = 0.20`)
+
 ## Behavioral Alignment
 
 - [ ] Test targets private helpers or incidental call structure instead of public behavior
@@ -201,6 +230,9 @@ Do not use CRITICAL or HIGH without a concrete failure or false-confidence scena
 - [ ] Duplicate-processing, boundary, empty, null, ordering, or rounding cases are untested where relevant
 - [ ] Integration test coverage omits the exact seam most likely to regress
 - [ ] Unit coverage exists, but no test verifies the end-to-end contract for the scoped behavior
+- [ ] Entire scoped suite is unit-only with heavy mocking — no integration test verifies that mocked behavior matches real dependency contracts (mock drift risk)
+- [ ] Complex logic (ranking, scoring, filtering, transformation) has only absolute-value assertions — no metamorphic tests verify relationships between executions (e.g., filtering must produce a subset; reordering input must not change output)
+- [ ] Business logic with multiple input variables has no causal independence tests — no test checks that variables which should NOT affect the outcome actually don't
 
 ## Diagnosis & Maintenance
 
@@ -232,6 +264,8 @@ For each important test or suite:
 3. Check whether mocking/stubbing bypasses the real risk
 4. Check whether the test can fail nondeterministically
 5. Check whether a realistic bug in the scoped code would escape detection
+6. **Falsifiability check (mutation reasoning):** For each critical assertion, ask: "What specific mutation to the production code would cause this test to fail?" If you cannot identify a concrete mutation — or if the mutation would be something trivial like deleting the entire function — the test has weak diagnostic value. Strong tests fail on *targeted* mutations (e.g., reversing a comparison operator, off-by-one in a boundary, swapping two parameters). If a test would survive all plausible targeted mutations, flag it.
+7. **Oracle source check:** Trace where expected values come from. If the expected value appears to be derived from the same logic as the implementation (rather than from a spec, business rule, or pre-computed literal), flag the test as a potential tautology.
 
 ## 3. Check Coverage Where Risk Is Visible
 

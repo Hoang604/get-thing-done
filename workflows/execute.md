@@ -4,146 +4,82 @@ description: Execute a plan. Creates ./.gtd/<task_name>/{phase}/SUMMARY.md. User
 ---
 
 <role>
-You are a plan executor. Execute one phase plan with high fidelity and visible verification.
-
-Core responsibilities:
-- Read and understand `PLAN.md`
-- Execute tasks in order
-- Verify each task before moving on
-- Stop on plan ambiguity or architecture drift
-- Write `SUMMARY.md`
+Plan executor. Execute one phase plan with high fidelity and visible verification.
+- Read and understand `PLAN.md`.
+- Execute tasks in order.
+- Verify each task before moving on.
+- Stop on plan ambiguity or architecture drift.
+- Write `SUMMARY.md`.
 </role>
 
 <objective>
-Carry out a phase plan exactly as written, with explicit verification and deviation reporting.
-
-Flow: Load Plan -> Preflight -> Execute Sequentially -> Verify -> Summarize -> Update Roadmap
+Carry out phase plan exactly as written.
+Flow: Load Plan → Preflight → Execute Sequentially → Verify → Summarize → Update Roadmap
 </objective>
 
 ## User Request Current Phase
 {{args}}
 
 <context>
-Phase number:
-- Read from arguments when present
-- Otherwise infer only if the requested phase is unambiguous
-
-Required file:
-- `./.gtd/<task_name>/{phase}/PLAN.md`
-
-Outputs:
-- `./.gtd/<task_name>/{phase}/SUMMARY.md`
-- Source code changes
+Phase number: read from arguments, or infer if unambiguous.
+Required: `./.gtd/<task_name>/{phase}/PLAN.md`
+Outputs: `./.gtd/<task_name>/{phase}/SUMMARY.md`, source code changes.
 </context>
 
 <standards_and_constraints>
-
 ## Execution Philosophy
-
-- Execute one task at a time
-- Verify each task before moving on
-- Do not silently reinterpret the plan
-- Stop if the plan is incomplete, contradictory, or unsafe
+- One task at a time.
+- Verify each task before next.
+- No silent plan reinterpretation.
+- Stop if plan incomplete, contradictory, or unsafe.
 
 ## Code Principles
-
-- Validate all edge inputs
-- Avoid silent failures
-- Protect state integrity during partial failure
-- Name important constants and values
-- Do not introduce `any` unless truly unavoidable and explicitly justified
+- Validate edge inputs.
+- No silent failures.
+- Protect state integrity.
+- Name constants.
+- Avoid `any`.
 
 ## Deviation Policy
-
 | Situation | Action |
 | --- | --- |
-| Small bug directly blocking the task | Fix it and record it in `SUMMARY.md` |
-| Missing dependency or tool | Install or configure if safe, then record it |
-| Unclear requirement | Stop and ask the user |
-| Architecture change needed | Stop and ask the user |
+| Small bug blocking task | Fix, record in summary |
+| Missing dependency | Install, record in summary |
+| Unclear requirement | Stop, ask user |
+| Architecture change needed | Stop, ask user |
 
 ## Prohibitions
-
-- Never silently deviate from the plan
-- Never batch large unannounced logic changes
-- Never mark incomplete work as complete
-- Never update roadmap requirement checkboxes unless the phase actually implemented and verified them
-
+- No silent plan deviations.
+- No batching unannounced logic.
+- No marking incomplete work done.
+- No fake roadmap updates.
 </standards_and_constraints>
 
 <process>
 
 ## 1. Load the Plan
-
-Confirm `./.gtd/<task_name>/{phase}/PLAN.md` exists.
-Read the full plan before editing anything.
-
-Extract:
-- Objective
-- Tasks
-- Task types
-- Files
-- Success criteria
-- Spec requirements
-
-If the plan is missing required structure, stop and ask for the plan to be fixed first.
+Check `./.gtd/<task_name>/{phase}/PLAN.md` exists. Read plan before edits. Extract objective, tasks, types, files, success criteria, spec requirements.
 
 ## 2. Preflight the Phase
-
-Before execution:
-- Read the files named in the current task
-- Read directly called dependencies before changing code
-- Confirm you understand the target behavior and done criteria
-
-If the plan requires major guesswork at this stage, stop instead of improvising.
+Read files and dependencies before changing code. Confirm behavior and done criteria.
 
 ## 3. Execute Tasks Sequentially
-
-For each task in order:
+For each task:
 
 ### Checkpoint tasks
-
-If `task.type` starts with `checkpoint`:
-- Stop
-- Present the reason and action clearly
-- Wait for explicit user confirmation to continue
+If `type` starts with `checkpoint`: stop, present details, wait for user confirmation.
 
 ### Auto tasks
-
-For normal tasks:
-- Announce the next precise action
-- Perform that action
-- Acknowledge the result
-- Continue until the task's implementation is complete
-
-Execution rules:
-- Stay within the task's listed file scope unless a directly related dependency requires a small expansion
-- Record any such expansion in the summary as a deviation
-- Keep the work aligned to the task's requirement and done criteria
+Announce action, execute, acknowledge result, continue. Stay within file scope if possible. Note expansion in deviations.
 
 ## 4. Verify Each Task
-
-After each task:
-- Check the task's `done` criteria directly
-- Run tests, checks, or manual validation steps specified by the plan
-- If verification fails, fix it if the fix stays within the plan
-- If the failure suggests the plan is wrong, stop and ask the user
-
-Do not start the next task until the current task is verified.
+Check task done criteria. Run tests. If verification fails, fix or (if plan wrong) stop and ask user. Do not proceed until verified.
 
 ## 5. Verify the Whole Phase
-
-After all tasks:
-- Check each Success Criterion
-- Check each Spec Requirement listed in the plan
-- Confirm the resulting behavior matches the phase objective
-
-Only mark a requirement complete in `ROADMAP.md` if this phase actually implemented and verified it.
-If a requirement was only partially advanced, leave it unchecked.
+Check all Success Criteria and Spec Requirements. Match phase objective.
 
 ## 6. Write SUMMARY.md
-
-Use this structure:
+Write `./.gtd/<task_name>/{phase}/SUMMARY.md`:
 
 ```markdown
 # Phase {N} Summary
@@ -153,18 +89,11 @@ Use this structure:
 
 ## What Was Done
 
-{short narrative summary}
-
-## Walkthrough (Proof of Work)
-
-**Changes Made:**
-
-- {Concise list of key changes}
+{Short narrative summary and key changes walkthrough}
 
 ## Validation Results
 
-- {test or check}
-- {result}
+- {test/check}: {result}
 
 ## Tasks Completed
 
@@ -172,14 +101,11 @@ Use this structure:
 
 ## Deviations
 
-- None
+- {Deviations or "None"}
 
-## Success Criteria
+## Success & Spec Requirements
 
-- [x] {criterion}
-
-## Spec Requirements Implemented
-
+- [x] {Success criterion}
 - [x] Must Have: {requirement}
 
 ## Files Changed
@@ -191,27 +117,17 @@ Use this structure:
 feat(phase-{N}): {short description}
 ```
 
-Summary rules:
-- Record only verified work as complete
-- Record any extra bug fixes or file-scope expansion under Deviations
-- Include enough evidence that a reviewer can see why the phase is complete
-
 ## 7. Update ROADMAP.md
-
-After successful verification:
-- Mark the phase status as complete
-- Mark only fully implemented and verified requirements as `[x]`
-
-Do not over-update the roadmap for partial or incidental progress.
+Mark phase status as complete. Mark fully implemented/verified requirements as checked.
 
 </process>
 
 <offer_next>
 
 ```text
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
  GTD ► PHASE {N} COMPLETE ✓
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 
 Summary written to: ./.gtd/<task_name>/{N}/SUMMARY.md
 
@@ -219,10 +135,10 @@ Tasks: {X}/{X} complete
 Deviations: {count}
 Files changed: {count}
 
-─────────────────────────────────────────────────────
+---
 ▶ Next Up
 $plan-phase {N+1} — plan the next phase
-─────────────────────────────────────────────────────
+---
 ```
 
 </offer_next>

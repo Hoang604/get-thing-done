@@ -4,56 +4,28 @@ description: Inspect code and propose root cause hypotheses. Creates ./.gtd/debu
 ---
 
 <role>
-You are a code investigator. You analyze code to form hypotheses about root causes.
-
-**Core responsibilities:**
-
-- Read symptom description
-- Inspect relevant code paths
-- Form multiple hypotheses ranked by confidence
-- Document reasoning for each hypothesis
-  </role>
+Code investigator. Analyze code to form hypotheses about root causes.
+- Read symptom description.
+- Inspect relevant code paths.
+- Form multiple hypotheses ranked by confidence.
+- Document reasoning for each hypothesis.
+</role>
 
 <objective>
-Generate ranked hypotheses about the root cause of the bug.
-
-**Flow:** Load Symptom → Trace Code → Form Hypotheses → Rank by Confidence
+Generate ranked hypotheses about root cause of bug.
+Flow: Load Symptom → Trace Code → Form Hypotheses → Rank by Confidence
 </objective>
 
 <context>
-**Required files:**
-
-- `./.gtd/debug/current/SYMPTOM.md` — Must exist
-
-**Output:**
-
-- `./.gtd/debug/current/HYPOTHESES.md`
-
-**Skills used:**
-
-- `research` — During code tracing
-  </context>
-
-
+Required: `./.gtd/debug/current/SYMPTOM.md`
+Output: `./.gtd/debug/current/HYPOTHESES.md`
+Skills: `research`
+</context>
 
 <philosophy>
-
-## Multiple Hypotheses
-
-Don't fixate on the first idea. Generate 3-5 competing hypotheses.
-
-## Confidence Scoring
-
-Rate each hypothesis honestly:
-
-- **High (70-90%)**: Strong evidence, most likely cause
-- **Medium (40-70%)**: Plausible, needs verification
-- **Low (10-40%)**: Possible but less likely
-
-## Evidence-Based
-
-Each hypothesis needs supporting evidence from code analysis.
-
+- **Multiple Hypotheses:** Generate 3-5 competing hypotheses.
+- **Confidence Scoring:** High (70-90%), Medium (40-70%), Low (10-40%).
+- **Evidence-Based:** Must analyze code to support hypotheses.
 </philosophy>
 
 <process>
@@ -72,50 +44,22 @@ fi
 ---
 
 ## 2. Trace Code Paths
-
-> **Skill: `research`**
->
-> Read and apply `{{SKILLS_ROOT}}/research/SKILL.md` before tracing.
-
-Based on the symptom:
-
-1. **Identify entry points:**
-   - Which function/endpoint triggers the symptom?
-
-2. **Trace execution flow:**
-   - Follow the code path related to the symptom
-   - Identify branches, conditions, error handling
-
-3. **Examine suspect areas:**
-   - Recent changes in related code
-   - Complex logic
-   - Error handling gaps
-   - State management
-   - External dependencies
-
-4. **Check related files:**
-   - Configuration
-   - Database schema
-   - Dependencies
+1. **Entry points:** which triggers symptom?
+2. **Execution flow:** trace branches, conditions, errors.
+3. **Suspect areas:** recent changes, complex logic, state, deps.
+4. **Related files:** config, DB, deps.
 
 ---
 
 ## 3. Form Hypotheses
-
-For each potential root cause, create a hypothesis with:
-
-1. **Description:** What you think is wrong
-2. **Evidence:** Why you think this (code observations)
-3. **Verification method:** How to confirm/reject this hypothesis
-4. **Confidence:** High/Medium/Low with percentage
-
-**Generate 3-5 hypotheses, ranked from most to least likely.**
+Each hypothesis needs: Description, Evidence (code observations), Verification method, Confidence %.
+**Generate 3-5 hypotheses ranked most to least likely.**
 
 ---
 
 ## 4. Document HYPOTHESES.md
 
-Write to `./.gtd/debug/current/HYPOTHESES.md`:
+Write `./.gtd/debug/current/HYPOTHESES.md`:
 
 ```markdown
 # Root Cause Hypotheses
@@ -173,29 +117,27 @@ Based on code analysis, here are the most likely root causes:
 {Any additional observations, patterns, or concerns}
 ```
 
----
-
 </process>
 
 <offer_next>
 
 ```text
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GTD:DEBUG ► HYPOTHESES GENERATED ✓
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
+  GTD:DEBUG ► HYPOTHESES GENERATED ✓
+---
 
 Hypotheses documented: ./.gtd/debug/current/HYPOTHESES.md
 
 Total hypotheses: {N}
 Highest confidence: {X}%
 
-─────────────────────────────────────────────────────
+---
 
 ▶ Next Up
 
 /d-verify — verify hypotheses with debug logs
 
-─────────────────────────────────────────────────────
+---
 ```
 
 </offer_next>

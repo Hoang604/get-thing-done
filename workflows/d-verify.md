@@ -4,66 +4,37 @@ description: Verify hypotheses with debug logging. Updates ./.gtd/debug/current/
 ---
 
 <role>
-You are a hypothesis tester. You systematically verify hypotheses until the root cause is found.
-
-**Core responsibilities:**
-
-- Load hypotheses in confidence order
-- Add strategic debug logs to test each hypothesis
-- Run reproduction steps
-- Analyze debug output
-- Move to next hypothesis if rejected
-- Document root cause when found
-  </role>
+Hypothesis tester. Systematically verify hypotheses until root cause is found.
+- Load hypotheses in confidence order.
+- Add strategic debug logs to test each hypothesis.
+- Run reproduction steps.
+- Analyze debug output.
+- Move to next hypothesis if rejected.
+- Document root cause when found.
+</role>
 
 <objective>
-Find the actual root cause through systematic verification.
-
-**Flow:** Load Hypotheses → Test Highest Confidence → Analyze → Found or Next
+Find actual root cause through systematic verification.
+Flow: Load Hypotheses → Test Highest Confidence → Analyze → Found or Next
 </objective>
 
 <context>
-**Required files:**
-
-- `./.gtd/debug/current/SYMPTOM.md` — Reproduction steps
-- `./.gtd/debug/current/HYPOTHESES.md` — Hypotheses to test
-
-**Output:**
-
-- `./.gtd/debug/current/ROOT_CAUSE.md` — When found
-- Debug logs in code (temporary)
-  </context>
-
-
+Required: `./.gtd/debug/current/SYMPTOM.md`, `./.gtd/debug/current/HYPOTHESES.md`
+Output: `./.gtd/debug/current/ROOT_CAUSE.md` (when found), debug logs in code.
+</context>
 
 <philosophy>
-
-## One Hypothesis at a Time
-
-Test systematically. Don't add logs for all hypotheses at once.
-
-## Strategic Logging
-
-Add logs that can definitively confirm or reject the hypothesis.
-
-## Evidence-Based Conclusion
-
-Root cause must be backed by debug output, not assumption.
-
-## Know When to Stop
-
-If all hypotheses are rejected, stop and ask user to inspect again.
-
+- **One at a Time:** Test systematically.
+- **Strategic Logging:** Definitive confirm/reject logs.
+- **Evidence-Based:** conclusions backed by output.
+- **Know When to Stop:** If all rejected, stop and discuss.
 </philosophy>
 
 <process>
 
 ## 1. Load Context
 
-Read both files:
-
-- `./.gtd/debug/current/SYMPTOM.md` — For reproduction steps
-- `./.gtd/debug/current/HYPOTHESES.md` — For hypotheses list
+Read `SYMPTOM.md` and `HYPOTHESES.md`.
 
 ```bash
 if ! ls "./.gtd/debug/current/SYMPTOM.md" >/dev/null 2>&1 || ! ls "./.gtd/debug/current/HYPOTHESES.md" >/dev/null 2>&1; then
@@ -75,15 +46,13 @@ fi
 ---
 
 ## 2. Test Hypothesis Loop
-
 For each hypothesis, starting with highest confidence:
 
 ### 2a. Announce Testing
-
 ```text
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
  GTD:DEBUG ► TESTING HYPOTHESIS {N}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 
 Hypothesis: {short description}
 Confidence: {percentage}
@@ -92,63 +61,39 @@ Adding debug logs...
 ```
 
 ### 2b. Add Debug Logs
-
-Add strategic debug/logging statements to:
-
-- Verify assumptions in the hypothesis
-- Check variable values
-- Trace execution flow
-- Confirm/reject the hypothesis
-
-**Make logs clear and identifiable** (e.g., prefix with `[DEBUG]` or `[VERIFY]`).
+Add strategic debug statements (`[DEBUG]` or `[VERIFY]`) to trace flow, check values, verify assumptions.
 
 ### 2c. Run Reproduction
-
-Follow the reproduction steps from SYMPTOM.md.
-
-Capture all output, especially debug logs.
+Follow reproduction steps from `SYMPTOM.md`. Capture output.
 
 ### 2d. Analyze Results
-
-Examine debug output. Does it:
-
-- **Confirm hypothesis?** → Root cause found, proceed to step 3
-- **Reject hypothesis?** → Clean up logs, try next hypothesis
-- **Inconclusive?** → Add more strategic logs and repeat
+Examine debug output:
+- **Confirm?** → Root cause found, go to step 3.
+- **Reject?** → Clean up logs, try next hypothesis.
+- **Inconclusive?** → Add more logs, repeat.
 
 ### 2e. Repeat
-
-If hypothesis rejected, move to next hypothesis and repeat from 2a.
-
-**If all hypotheses rejected:**
-
+If rejected, try next. If all rejected:
 ```text
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
  GTD:DEBUG ► ALL HYPOTHESES REJECTED
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 
-All {N} hypotheses have been tested and rejected.
+All {N} hypotheses tested and rejected. Need fresh perspective.
 
-Need to re-inspect code with fresh perspective.
-
-─────────────────────────────────────────────────────
-
+---
 ▶ Suggested Actions
-
-1. /d-inspect — re-analyze with new insights
-2. Review debug output for new clues
-3. Discuss findings with user
-
-─────────────────────────────────────────────────────
+1. /d-inspect — re-analyze
+2. Review debug output
+3. Discuss with user
+---
 ```
-
-**STOP and ask user to re-inspect.**
+**STOP and ask user.**
 
 ---
 
 ## 3. Document Root Cause
-
-When hypothesis confirmed, write to `./.gtd/debug/current/ROOT_CAUSE.md`:
+When hypothesis confirmed, write `./.gtd/debug/current/ROOT_CAUSE.md`:
 
 ```markdown
 # Root Cause
@@ -190,32 +135,29 @@ When hypothesis confirmed, write to `./.gtd/debug/current/ROOT_CAUSE.md`:
 ```
 
 ### 3a. Clean Up Debug Logs
-
-Remove or comment out temporary debug logs added during verification.
-
----
+Remove temporary debug logs from code.
 
 </process>
 
 <offer_next>
 
 ```text
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
  GTD:DEBUG ► ROOT CAUSE FOUND ✓
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 
 Root cause documented: ./.gtd/debug/current/ROOT_CAUSE.md
 
 Verified hypothesis: {N}
 Location: {files}
 
-─────────────────────────────────────────────────────
+---
 
 ▶ Next Up
 
 /d-plan-fix — create fix plan
 
-─────────────────────────────────────────────────────
+---
 ```
 
 </offer_next>

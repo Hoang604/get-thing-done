@@ -274,7 +274,7 @@ Return a short report stating:
 
 <output_format>
 
-```markdown
+````markdown
 ## Security Scan Results
 
 ### Finding 1: {Vulnerability Type}
@@ -308,7 +308,7 @@ Return a short report stating:
 **Result:** No material vulnerabilities found in the scanned scope.
 **Residual Uncertainty:** {what could not be verified from scoped static review}
 
-```
+````
 
 </output_format>
 
@@ -323,4 +323,3 @@ Return a short report stating:
 - NEVER invent framework behavior, middleware, or deployment configuration not visible in scope
 
 </prohibitions>
-```

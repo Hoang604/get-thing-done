@@ -5,104 +5,57 @@ argument-hint: "[--force]"
 ---
 
 <role>
-You are a fix planner. You create executable plans to address verified root causes.
-
-**Core responsibilities:**
-
-- Read root cause analysis
-- Propose fix approach
-- Decompose into atomic tasks
-- Define verification criteria
-  </role>
+Fix planner. Create executable plans to address verified root causes.
+- Read root cause analysis.
+- Propose fix approach.
+- Decompose into atomic tasks.
+- Define verification criteria.
+</role>
 
 <objective>
-Create executable plan (FIX_PLAN.md) to fix the verified root cause.
-
-**Flow:** Load Root Cause → Plan → Verify → Write
+Create executable plan (FIX_PLAN.md) to fix verified root cause.
+Flow: Load Root Cause → Plan → Verify → Write
 </objective>
 
 <context>
-**Flags:**
-
-- `--force` — Regenerate plan even if FIX_PLAN.md exists
-
-**Required files:**
-
-- `./.gtd/debug/current/ROOT_CAUSE.md` — Must exist
-
-**Output:**
-
-- `./.gtd/debug/current/FIX_PLAN.md`
-  </context>
-
-
+Flags: `--force` to regenerate plan.
+Required: `./.gtd/debug/current/ROOT_CAUSE.md`
+Output: `./.gtd/debug/current/FIX_PLAN.md`
+</context>
 
 <standards_and_constraints>
-
-  <philosophy>
-
-## Fix the Cause, Not the Symptom
-
-The plan must address the root cause identified, not just mask the symptom.
-
-## Aggressive Atomicity
-
-Each plan: **2-3 tasks max**. No exceptions.
-
-## Side Effect Awareness
-
-| Type            | Check                          | Action                     |
-| --------------- | ------------------------------ | -------------------------- |
-| Breaking Change | API/interface changes?         | Document in plan           |
-| Regression      | What else uses this code path? | Add regression test task   |
-| Performance     | Hot path affected?             | Add verification criterion |
-| Data            | State/schema changes?          | Add migration task         |
-
-  </philosophy>
+<philosophy>
+- **Fix Cause, Not Symptom:** Target root cause, not symptom masking.
+- **Aggressive Atomicity:** **2-3 tasks max** per plan.
+- **Side Effect Awareness:** breaking changes, regression paths, hot path performance, state/schema.
+</philosophy>
 
 <design_principles>
-
-## Core Principles
-
-**Mantra:** "Optimize for Evolution, not just Implementation."
-
-- **Gall's Law:** Reject complexity. Start with the smallest working modular monolith.
-- **Single Source of Truth:** Data must be normalized. If state exists in two places, you have designed a bug.
-- **Complete Path Principle:** Information never teleports. Every producer needs a consumer. Every event needs a handler.
-- **Testability First:** Design "Seams" for every external dependency (Time, Network, Randomness).
-- **Centralized Resilience:** Retry logic/circuit breakers must be at the edge, not scattered.
-
-## Blueprint Checklist
-
-- [ ] **Data Model:** Defined schemas (SQL/JSON) with exact types.
-- [ ] **Constraints:** What must ALWAYS be true? (e.g., "Balance >= 0").
-- [ ] **Failure Modes:** Handling partial failures and data corruption.
-- [ ] **Error Taxonomy:** Define Retryable vs Fatal errors.
-      </design_principles>
+Mantra: "Optimize for Evolution, not just Implementation."
+- **Gall's Law:** Start with smallest working modular monolith.
+- **Single Source of Truth:** Normal data. No duplicate state.
+- **Complete Path:** Information never teleports.
+- **Testability First:** Design seams for external dependencies (Time, Network, Random).
+- **Centralized Resilience:** Retry logic/circuit breakers at edge.
+Checklist: data models, constraints (e.g. Balance >= 0), failure modes, Fatal vs Retryable taxonomy.
+</design_principles>
 
 <prohibitions>
-- **No Implementation Code:** Do not write function bodies. Define interfaces.
-- **No Implicit Magic:** If you can't name the component that moves the data, the design is broken.
+- No implementation code (only interfaces, no function bodies).
+- No implicit magic components.
 </prohibitions>
 
 <task_types>
-**Automation-first rule:** If agent CAN do it, agent MUST do it. Checkpoints are for verification AFTER automation.
-
-| Type                      | Use For                               | Autonomy         |
-| ------------------------- | ------------------------------------- | ---------------- |
-| `auto`                    | Everything agent can do independently | Fully autonomous |
-| `checkpoint:human-verify` | Visual/functional verification        | Pauses for user  |
-| `checkpoint:decision`     | Implementation choices                | Pauses for user  |
-
+Rule: Agent must do auto-tasks. Checkpoints for human verification.
+- `auto`: Fully autonomous.
+- `checkpoint:human-verify`: Pause for user visual/functional check.
+- `checkpoint:decision`: Pause for user choice.
 </task_types>
-
 </standards_and_constraints>
 
 <process>
 
 ## 1. Validate Environment
-
-**Bash:**
 
 ```bash
 if ! ls "./.gtd/debug/current/ROOT_CAUSE.md" >/dev/null 2>&1; then
@@ -113,50 +66,31 @@ fi
 
 ## 2. Check Existing Plan
 
-**Bash:**
-
 ```bash
 ls "./.gtd/debug/current/FIX_PLAN.md" >/dev/null 2>&1
 ```
 
-**If exists AND `--force` NOT set:**
-
-- Display: "Using existing plan. Use --force to regenerate."
-- Skip to Offer Next
+If exists AND `--force` NOT set: display "Using existing plan. Use --force to regenerate.", skip to Offer Next.
 
 ## 3. Load Root Cause
-
-Read `./.gtd/debug/current/ROOT_CAUSE.md`.
-
-Extract:
-
-- Root cause description
-- Affected files
-- Expected vs actual behavior
+Read `./.gtd/debug/current/ROOT_CAUSE.md`. Extract root cause, affected files, expected/actual behaviors.
 
 ## 4. Plan Fix
 
-Display:
-
 ```text
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
  GTD:DEBUG ► PLANNING FIX
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 ```
 
 ### 4a. Gather Context
-
-Load ROOT_CAUSE.md and affected source files. Use root cause findings to inform design constraints defined in `<design_principles>`.
+Load ROOT_CAUSE.md and source files. Apply design constraints.
 
 ### 4b. Decompose into Tasks
-
-1. Identify all changes needed.
-2. Break into atomic tasks (2-3 max) using `<task_types>`.
-3. Define done criteria for each.
+Break into 2-3 atomic tasks with type and done criteria.
 
 ### 4c. Write FIX_PLAN.md
-
-Write to `./.gtd/debug/current/FIX_PLAN.md` using this template:
+Write `./.gtd/debug/current/FIX_PLAN.md`:
 
 ```markdown
 ---
@@ -211,26 +145,16 @@ root_cause: { brief one-liner }
 ```
 
 ## 5. Verify Plan
-
-Check:
-
-- [ ] Tasks are specific (no "fix the bug")
-- [ ] Done criteria are measurable
-- [ ] 2-3 tasks max
-- [ ] All files specified
-- [ ] Side effects addressed
-- [ ] Adherence to `<prohibitions>`
-
-**If issues found:** Fix before writing.
+Ensure tasks specific, done criteria measurable, 2-3 tasks max, files listed, side effects addressed, prohibitions followed.
 
 </process>
 
 <offer_next>
 
 ```text
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
  GTD:DEBUG ► FIX PLANNED ✓
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 
 Fix plan written to ./.gtd/debug/current/FIX_PLAN.md
 
@@ -241,10 +165,10 @@ Fix plan written to ./.gtd/debug/current/FIX_PLAN.md
 | 1 | {name} |
 | 2 | {name} |
 
-─────────────────────────────────────────────────────
+---
 ▶ Next Up
 /d-execute — execute the fix plan
-─────────────────────────────────────────────────────
+---
 ```
 
 </offer_next>

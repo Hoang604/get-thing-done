@@ -1,51 +1,35 @@
 ---
 name: commit-spec
-description: Create comprehensive commit message from spec phases and commit all changes
+description: Create commit from spec phases and commit all changes.
 argument-hint: ""
 ---
 
 <role>
-You are a commit message composer. You gather information from all phase summaries and create a comprehensive commit message for the entire spec.
-
-**Core responsibilities:**
-
-- Read all SUMMARY.md files from completed phases
-- Synthesize information into a cohesive commit message
-- Commit all changes created by the spec
-- Use conventional commit format
-  </role>
+Commit message composer. Read phase summaries, make conventional commit, commit all.
+- Read SUMMARY.md from completed phases.
+- Synthesize into commit message.
+- Commit all changes.
+- Use conventional commits.
+</role>
 
 <objective>
-Create a comprehensive commit message that captures all work done across phases and commit the changes.
-
-**Flow:** Gather Summaries → Synthesize → Commit
+Compose short conventional commit and execute.
+Flow: Summaries → Compose → Commit
 </objective>
 
 <context>
-**Required files:**
-
-- `./.gtd/<task_name>/ROADMAP.md` — To identify completed phases
-- `./.gtd/<task_name>/{phase}/SUMMARY.md` — For each completed phase
-
-**Output:**
-
-- Git commit with comprehensive message
-  </context>
+Inputs:
+- `./.gtd/<task_name>/ROADMAP.md` (roadmap)
+- `./.gtd/<task_name>/{phase}/SUMMARY.md` (completed phase summaries)
+Output:
+- Git commit
+</context>
 
 <philosophy>
-
-## Synthesize, Don't Concatenate
-
-The commit message should tell a coherent story, not just list what each phase did.
-
-## Conventional Commit Format
-
-Use conventional commit types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, etc.
-
-## Comprehensive But Concise
-
-Include all important changes, but keep the message readable.
-
+- **Terse:** Keep message short.
+- **Why over What:** Explain reasoning, not diff.
+- **Skip Body:** No body if subject is clear. Only use body for breaking changes, migration, revert, or non-obvious why.
+- **Conventional:** Use exact types (`feat`, `fix`, `refactor`, etc.).
 </philosophy>
 
 <process>
@@ -55,7 +39,6 @@ Include all important changes, but keep the message readable.
 Read `./.gtd/<task_name>/ROADMAP.md` to identify completed phases.
 
 ```bash
-# Verify at least one phase is complete
 if ! grep -q "✅ Complete" "./.gtd/<task_name>/ROADMAP.md"; then
     echo "Error: No completed phases found"
     exit 1
@@ -66,10 +49,9 @@ fi
 
 ## 2. Gather Phase Summaries
 
-For each completed phase, read `./.gtd/<task_name>/{phase}/SUMMARY.md`.
+Read `./.gtd/<task_name>/{phase}/SUMMARY.md` for completed phases.
 
 Extract:
-
 - What was done
 - Behaviour changes (before/after)
 - Files changed
@@ -79,43 +61,24 @@ Extract:
 
 ## 3. Synthesize Commit Message
 
-Create a comprehensive commit message:
+Create conventional commit message.
 
 **Format:**
 
 ```
 {type}({scope}): {short description}
 
-{Body: narrative of what was accomplished and why}
+{Body: Explain WHY. Skip body if subject is clear.
+Use only for breaking change, migration, revert, or non-obvious context.}
 
-## Behaviour Changes
-
-**Before:** {consolidated before state}
-
-**After:** {consolidated after state}
-
-## Implementation Details
-
-{High-level summary of how it was implemented across phases}
-
-Phase 1: {brief summary}
-Phase 2: {brief summary}
-...
-
-## Breaking Changes
-
-{If any, list them here, otherwise omit this section}
+{BREAKING CHANGE: describe if any}
 ```
 
 **Guidelines:**
-
-- **Type:** Choose the most appropriate conventional commit type
-- **Scope:** The spec/feature name
-- **Short description:** One-line summary (50 chars or less)
-- **Body:** Tell the story of the change
-- **Behaviour Changes:** Consolidate all before/after states
-- **Implementation Details:** Brief phase summaries
-- **Files Modified:** Deduplicated list of all files
+- **Type:** conventional type.
+- **Scope:** spec/feature name.
+- **Short description:** Imperative mood, max 50 chars, no trailing period.
+- **Body:** Focus on WHY, not what. Skip if obvious.
 
 ---
 
@@ -129,7 +92,7 @@ git add .
 
 ## 5. Create Commit
 
-Write the commit message to a temp file, then commit:
+Write message to file, then commit:
 
 ```bash
 # 1. Write message to file (use write_to_file tool)
@@ -144,9 +107,9 @@ rm .gtd/COMMIT_MSG.txt
 ## 6. Display Summary
 
 ```text
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
  GTD ► SPEC COMMITTED ✓
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 
 Phases committed: {count}
 Files changed: {count}
@@ -155,18 +118,15 @@ Commit message preview:
 {first 3 lines of commit message}
 ...
 
-─────────────────────────────────────────────────────
+---
 ▶ View Full Commit
 
 git show HEAD
-─────────────────────────────────────────────────────
+---
 ▶ Next Up
 /update-codebase update .gtd/CODEBASE.md to reflect the new change
-─────────────────────────────────────────────────────
-
-```
-
 ---
+```
 
 </process>
 
@@ -175,31 +135,9 @@ git show HEAD
 ## Example Commit Message
 
 ```
-feat(user-auth): implement JWT-based authentication system
+feat(user-auth): transition to JWT to support horizontal scaling
 
-Added complete JWT authentication with refresh tokens, role-based
-access control, and secure session management. This replaces the
-legacy session-based authentication system.
-
-## Behaviour Changes
-
-**Before:** Users authenticated via server-side sessions stored in
-memory. Sessions expired after 30 minutes of inactivity. No role-based
-permissions.
-
-**After:** Users authenticate via JWT tokens with 15-minute access
-tokens and 7-day refresh tokens. Role-based middleware enforces
-permissions at route level. Tokens stored securely in httpOnly cookies.
-
-## Implementation Details
-
-Authentication flow now uses industry-standard JWT practices with proper
-token rotation and secure storage.
-
-Phase 1: Created JWT service with token generation and validation
-Phase 2: Implemented auth middleware and route protection
-Phase 3: Added refresh token rotation and revocation
-Phase 4: Integrated role-based access control
+- Replaces stateful session cookies to allow stateless backend clustering.
 ```
 
 </examples>

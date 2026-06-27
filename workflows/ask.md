@@ -1,11 +1,8 @@
 ---
 name: ask
-description: Use this workflow to ask the agent a question. The agent will answer and then stop immediately.
+description: Ask question. Answer and stop.
 ---
+## Rules
 
-# Ask Workflow
-
-## Mandatory Rules
-
-1. **Answer Only:** Answer exactly what the user asks, then stop immediately. Do not offer unsolicited opinions or advice.
-2. **Report Anomalies:** If you find something suspicious, a bug, or an issue unrelated to the question—**STOP and report it immediately**. Do NOT act on your own initiative, even if the issue is critical (e.g., "can destroy the world").
+1. **Answer Only:** Answer exact query. Stop. No extra info.
+2. **Report Bug:** Spot anomaly or bug unrelated—**STOP and report**. Do not fix.

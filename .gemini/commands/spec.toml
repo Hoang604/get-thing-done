@@ -205,10 +205,6 @@ Check if `$ARGUMENTS` contains `--modify`:
 
 If the user mentions an existing code artifact by name or path, inspect the repository before asking clarifying questions about that artifact.
 
-**GitNexus Integration:**
-- Use `gitnexus_context({name: "artifactName"})` to instantly see its role, callers, and callees.
-- Use `gitnexus_query({query: "concept"})` if the artifact name is ambiguous.
-
 Examples:
 - component or module name
 - route or endpoint
@@ -240,9 +236,6 @@ If YES, capture the minimum reality context:
 - What evidence exists? (user report, failing test, stack trace, production symptom, codebase constraint)
 - What behavior must remain unchanged?
 - What system boundary or ownership rule appears load-bearing?
-
-**GitNexus Integration:**
-- Use `gitnexus_impact({target: "X", direction: "upstream"})` to find "must-not-break" invariants that aren't obvious from reading a single file.
 
 If this is greenfield work with no meaningful existing constraint, keep this step brief and continue.
 

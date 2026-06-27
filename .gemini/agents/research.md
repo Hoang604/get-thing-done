@@ -1,11 +1,7 @@
 ---
 name: research
 description: |
-  Trace execution paths and document how code actually behaves. Use for understanding features, walking code flows, tracing data origins, or finding orphaned events.
-
-  Use for complex research questions where the caller needs behavior reconstructed from source rather than a quick summary.
-
-  The only parameter this agent accepts is `query`.
+  Trace execution paths and document how code actually behaves. Use for understanding features, walking code flows, tracing data origins, or finding orphaned events. Use for complex research questions where the caller needs behavior reconstructed from source rather than a quick summary.
 
   **Query format (XML-structured):**
   ```
@@ -15,16 +11,6 @@ description: |
   <focus_areas>Specific aspects to trace: data flow, dependencies, error handling (optional)</focus_areas>
   <output_file>Path to write findings (optional)</output_file>
   ```
-
-  **Examples:**
-  ```
-  <scope>src/handlers/payment.ts</scope>
-  <objective>How does refund flow work end-to-end?</objective>
-  <context>User reported duplicate refunds, need to understand the flow</context>
-  <focus_areas>State transitions, external API calls, error handling</focus_areas>
-  <output_file>.gtd/research/payment-flow.md</output_file>
-  ```
-
   **Returns:** Markdown documentation with entry points, execution paths, data lineage, dependencies, and any orphaned events/handlers.
 tools:
   - read_file
@@ -34,7 +20,7 @@ tools:
   - search_file_content
   - activate_skill
   - run_shell_command
-model: gemini-3.1-flash-lite-preview
+model: gemini-3-flash-preview
 temperature: 0.2
 max_turns: 30
 timeout_mins: 10

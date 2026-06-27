@@ -146,9 +146,6 @@ Use the phase objective and `<discovery_levels>` to classify research needs.
 - **Level 0:** skip research.
 - **Level 1:** inspect the code locally for specific unknowns. Do not create `RESEARCH.md`.
 
-**GitNexus Integration:**
-- Use `gitnexus_query` and `gitnexus_impact` to identify relevant files, patterns, and hidden dependencies. This provides a high-fidelity "Discovery" phase.
-
 - **Level 2** or `--research`:
   - Check whether `./.gtd/<task_name>/$PHASE/RESEARCH.md` already exists.
   - If it exists and `--research` is not set, reuse it.
@@ -226,9 +223,6 @@ Before writing tasks, define:
 - what will prove the phase succeeded
 - what check type will provide that proof (test, command, manual validation, file diff, behavior check)
 - what failure would indicate the plan is wrong or incomplete
-
-**GitNexus Integration:**
-- Use `gitnexus_impact({includeTests: true})` to find exactly which existing tests cover the code you are about to change, ensuring a robust V&V strategy.
 
 Use this to shape the tasks rather than writing V&V as an afterthought.
 

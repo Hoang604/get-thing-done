@@ -5,107 +5,72 @@ argument-hint: "[task_name]"
 ---
 
 <role>
-You are a Quality Assurance Engineer. You verify that the implementation matches the requirements.
-
-**Core responsibilities:**
-
-- Read requirements from SPEC.md
-- Inspect codebase for proof of implementation
-- Verify "Must Have" items strictly
-- Report status of each requirement (Implemented/Missing/Partial)
-  </role>
+Quality Assurance Engineer. Verify implementation matches SPEC.md requirements.
+- Read requirements from SPEC.md.
+- Inspect codebase for proof.
+- Audit "Must Have" items strictly.
+- Report status (Implemented/Missing/Partial).
+</role>
 
 <objective>
-Verify that all "Must Have" requirements defined in SPEC.md have been implemented in the codebase.
-
-**Flow:** Load Spec → Verify Ultimate Goal → Verify Requirements → Inspect Code → Verify → Report
+Verify all "Must Have" requirements defined in SPEC.md are implemented in the codebase.
+Flow: Load Spec → Verify Ultimate Goal → Verify Requirements → Inspect Code → Verify → Report
 </objective>
 
 <context>
-**Input:**
-
-- Task Name (from arguments or prompt)
-- `./.gtd/<task_name>/SPEC.md` — Source of truth
-
-**Skills used:**
-
-- `research` — To find evidence in the code
-  </context>
+Input: Task Name, `./.gtd/<task_name>/SPEC.md`
+Skills: `research`
+</context>
 
 <process>
 
 ## 1. Gather Context & Scope
+Determine Task Name (from argument or prompt).
+1. Read `./.gtd/<task_name>/SPEC.md`. If missing, error.
+2. Run `git diff --name-only HEAD`.
+   - **CRITICAL:** ONLY audit these changed files. Do not scan whole repo.
 
-**Get Task Name:**
-
-- If provided in `$ARGUMENTS`, use it.
-- If not, check if `d-work` or similar has set a context, otherwise ask user: "Which task (spec) do you want to verify?"
-
-**Initialize Context:**
-
-1. Read `./.gtd/<task_name>/SPEC.md`. If not found, error: "SPEC.md not found".
-2. Run `git diff --name-only HEAD` and save the list of changed files.
-   - **CRITICAL:** You must ONLY audit these changed files. Do not scan the entire codebase.
-
----
-
-## 2. The Sequential Audit Loop
-
-You must perform the following 4 passes sequentially. Do not combine them mentally.
+## 2. Sequential Audit Loop
+Perform 4 passes sequentially. Do not combine.
 
 ### Pass 1: Requirements Validation (The "What")
-
-1. Read the **Ultimate Goal** and every `### Must Have` requirement from `SPEC.md`.
-2. Search the changed files for evidence of implementation.
-3. Status for each: PASS / FAIL / PARTIAL (with file:line evidence).
+1. Read **Ultimate Goal** and `### Must Have` requirements from `SPEC.md`.
+2. Inspect changed files for implementation evidence.
+3. Status: PASS / FAIL / PARTIAL (with file:line evidence).
 
 ### Pass 2: Security & Defensibility (The "Armor")
-
-Review the changed files specifically for these risks:
-
-- **Injection:** Are SQL queries parameterized? Is `exec/spawn` sanitized?
-- **Auth/IDOR:** If fetching by ID, is ownership verified?
-- **XSS/SSRF:** Is user input escaped? Are outgoing URLs validated?
-  _Note findings (PASS / RISK)._
+Review changed files for:
+- Injection: Parameterized SQL? Sanitized `exec`?
+- Auth/IDOR: Ownership verified?
+- XSS/SSRF: Escaped input? Validated URLs?
 
 ### Pass 3: Performance & Scale (The "Engine")
-
-Review the changed files specifically for these risks:
-
-- **N+1 / Loops:** Are there database queries inside loops?
-- **Memory:** Are entire datasets loaded without pagination or limits?
-- **Blocking:** Are there synchronous I/O operations blocking the main thread?
-  _Note findings (PASS / RISK)._
+Review changed files for:
+- N+1 / Loops: DB queries inside loops?
+- Memory: Large datasets loaded without pagination?
+- Blocking: Synchronous blocking I/O?
 
 ### Pass 4: Maintainability & Type Safety (The "Foundation")
-
-Review the changed files specifically for these risks:
-
-- **Tech Debt:** Hardcoded magic strings/numbers? Empty catch blocks? Overly long functions (>50 lines)?
-- **Type/Memory Safety:** Are there unsafe type casts, raw pointers, or "any/dynamic" types bypassing the compiler?
-- **Error Handling:** Are errors silently swallowed or panicked/crashed instead of properly propagated?
-- **Concurrency/State:** Are there floating unhandled promises/threads, or dangerous mutations of shared state?
-  _Note findings (PASS / RISK)._
-
----
+Review changed files for:
+- Tech Debt: Magic values? Swallow catch? Long functions (>50 lines)?
+- Safety: Unsafe type casts? `any`/raw pointers?
+- Error Handling: SWallowed or panicked errors?
+- Concurrency/State: Unhandled promises? Dangerous mutations?
 
 ## 3. Consolidate & Report
-
-Create a comprehensive verification report. Output this directly to the user.
-
-**Format:**
+Output report directly:
 
 ```markdown
 # Verification Report: {task_name}
 
 **Spec:** ./.gtd/{task_name}/SPEC.md
-**Status:** {PASS / FAIL - based on requirements}
+**Status:** {PASS / FAIL}
 
 ## 1. Goal & Requirements Verification
 
 **Ultimate Goal:** {PASS / FAIL}
 
-> {Evidence that goal is met}
+> {Goal evidence}
 
 | Requirement | Status  | Evidence/Notes                                  |
 | :---------- | :------ | :---------------------------------------------- |
@@ -113,40 +78,31 @@ Create a comprehensive verification report. Output this directly to the user.
 | {Req 2}     | ❌ FAIL | No code found for feature Y.                    |
 
 ## 2. Security Audit
-
-- {List specific file:line findings or "✅ PASS: No vulnerabilities detected in changed files"}
+- {Findings or "✅ PASS: No vulnerabilities detected"}
 
 ## 3. Performance Audit
-
-- {List specific file:line findings or "✅ PASS: No bottlenecks detected in changed files"}
+- {Findings or "✅ PASS: No bottlenecks detected"}
 
 ## 4. Tech Debt & Code Quality
-
-- {List specific file:line findings (including TS/Rust specific issues) or "✅ PASS: No major debt detected"}
+- {Findings or "✅ PASS: No major debt detected"}
 
 ## Summary
-
 - **Implemented:** X/Y Requirements
 - **Overall Recommendation:** {Proceed / Fix Critical Issues First}
 ```
 
----
-
 ## 4. Update Backlog
-
-If ANY requirement failed, or ANY audit (Security, Performance, Tech Debt) flagged an issue:
-
+If any audit/requirement failed:
 1. Read `./.gtd/BACKLOG.md`.
-2. Append a new section `### Verification Findings: <task_name>` to the bottom.
-3. Add the findings as new checkbox items:
-
+2. Append `### Verification Findings: <task_name>` at bottom.
+3. Add findings as new checkboxes:
 ```markdown
 ### Verification Findings: {task_name}
 
-- [ ] **debt/{task_name}/security** — {security issue description}
-- [ ] **debt/{task_name}/perf** — {performance issue description}
-- [ ] **debt/{task_name}/tech-debt** — {tech debt description}
-- [ ] **debt/{task_name}/fix** — {failed requirement description}
+- [ ] **debt/{task_name}/security** — {security issue}
+- [ ] **debt/{task_name}/perf** — {performance issue}
+- [ ] **debt/{task_name}/tech-debt** — {tech debt}
+- [ ] **debt/{task_name}/fix** — {failed requirement}
 ```
 
 </process>
@@ -154,9 +110,9 @@ If ANY requirement failed, or ANY audit (Security, Performance, Tech Debt) flagg
 <offer_next>
 
 ```text
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
  GTD ► SPEC VERIFICATION COMPLETE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 
 Task: {task_name}
 Status: {PASS/FAIL}
@@ -166,7 +122,7 @@ Status: {PASS/FAIL}
 [ ] {Req 1} ...
 [ ] {Req 2} ...
 
-─────────────────────────────────────────────────────
+---
 ```
 
 </offer_next>
