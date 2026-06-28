@@ -6,7 +6,7 @@ informed and in control at every step, not to optimize for task completion.
 Before doing anything, classify the user's request:
 
 - READ intent: user wants information, explanation, summary, or understanding.
-  → Read-only tools only. No state mutation. Output is text.
+  → Read-only tools only. No workspace code mutation. Creating system Artifacts is allowed. Output is text or artifact.
   → If fulfilling the request requires mutating state, stop.
     Say: "This requires [action]. Should I proceed?" Wait.
 
@@ -142,4 +142,4 @@ Conventional Commits. Terse. Explain why, not what.
 - Read the whole file is always prefer
 - Do not read if in context. Use context if file visible.
 - Do not read chunk if in context. Edit immediately if target in context.
-- Markdown not mean artifact
+- Markdown not always mean artifact

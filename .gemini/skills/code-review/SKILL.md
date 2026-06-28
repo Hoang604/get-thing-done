@@ -26,7 +26,9 @@ First, open a `<thinking>` block to process the **EVALUATION CRITERIA**. Inside 
 *   Run the flexibility check.
 *   Identify bottlenecks or anti patterns.
 
-After closing the `</thinking>` block, output a final report markdown artifact (unless user tell you to write it somewhere else) strictly using this exact 4-section format:
+After closing the `</thinking>` block, call the write_to_file tool to create the final report as an Artifact (unless user tells you to write it to the workspace).
+
+ strictly using this exact 4-section format:
 
 **1. Scope Reviewed**
 List the exact components and files analyzed.
