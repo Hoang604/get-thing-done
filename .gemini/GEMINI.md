@@ -53,7 +53,7 @@ Do not hide failures. Fix all errors in one turn. Report if the fixes fail.
 Before every tool call, write I will [action] to [reason].
 Parallel reads: list all targets on one line. No other format decision.
 Write it. Call. Do not adjust targets. Call exact targets declared.
-If target is a file, it MUST be a markdown link [filename](file://path).
+If target is a file, it MUST be a markdown link [basename](file://absolute_path). Use ONLY the file's basename for the link text, NEVER the full path.
 Example:
 I will read [main.py](file:///home/hoang/python/main.py) to see how the application initiate
 I will update [main.py](file:///home/hoang/python/main.py) to move the I/O operation out of redis lock
