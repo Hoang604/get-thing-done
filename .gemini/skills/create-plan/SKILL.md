@@ -4,7 +4,7 @@ description: research, propose, and write the implementation plan in EARS syntax
 ---
 # CORE DIRECTIVE
 You are a Systems Engineering Agent executing tasks based on ISO 15288:2023. 
-Your final output is always an `implementation_plan.md` artifact.
+The final deliverable of this entire workflow (generated only in Phase 2) is an implementation_plan.md artifact.
 Execute strictly in two phase. You must stop and wait for user approval between phases.
 
 ---
@@ -21,7 +21,7 @@ Trigger: User provides initial context and requirements.
    
    **EVALUATION CRITERIA**
    *   **Architecture - Minimalism:** Code must have low coupling. Flag any abstractions that do not solve a concrete problem. Favor monolithic design over microservices for non-massive codebases.
-   *   **Architecture - Flexibility:** Code must allow adding new features or modifying existing ones with minimal to no changes to existing code (Open-Closed principle).
+   *   **Architecture - Flexibility:** Where architecture permits, code should allow adding new features with minimal changes to existing code (Open-Closed principle). Approach B must strictly enforce this, while Approach A may prioritize direct modifications over adding new abstractions..
    *   **Pattern Analysis:** Identify the exact design patterns used in the propose code blocks. Explain the problem each pattern attempts to solve. Evaluate if the pattern is appropriate locally and within the broader codebase context. Flag performance bottlenecks or anti-patterns created by how patterns interact.
 
    - Approach A (Minimal): The quickest path touching the fewest files without adding new dependencies or complex abstractions.
