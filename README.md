@@ -10,7 +10,7 @@ Workflows that help you write reliable code and debug efficiently. Simple and ea
 
 ```bash
 git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
-cd gtd-temp && chmod +x *.sh && ./install.sh ~/.gemini/antigravity
+cd gtd-temp && chmod +x *.sh && ./install.sh
 cd .. && rm -rf gtd-temp
 ```
 
@@ -18,7 +18,7 @@ cd .. && rm -rf gtd-temp
 
 ```powershell
 git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
-cd gtd-temp; .\install.ps1 $env:USERPROFILE\.gemini\antigravity
+cd gtd-temp; .\install.ps1
 cd ..; Remove-Item -Recurse -Force gtd-temp
 ```
 
@@ -43,7 +43,13 @@ Most users should follow the **Develop Flow**:
 
 ### 1. Skills (Foundations)
 
-- **[Investigate (The Archaeologist)](skills/investigate/SKILL.md)**: Procedures for excavating truth from code paths without guessing.
+- **[Awareness](.gemini/skills/awareness/SKILL.md)**: Self-review loop. Applies to every non-trivial user request once manually triggered.
+- **[Review Code](.gemini/skills/code-review/SKILL.md)**: Take scope, review code, and return a structured architectural report.
+- **[Create Plan](.gemini/skills/create-plan/SKILL.md)**: Create execution plans following INCOSE/EARS format and ISO/IEC/IEEE 15288:2023 conformance.
+- **[Doc Co-Authoring](.gemini/skills/doc-coauthoring/SKILL.md)**: Guide users through collaborative document creation (technical specs, PRDs, design docs).
+- **[Explain](.gemini/skills/explain/SKILL.md)**: Explain code in a causal chain for understanding a slice or feature.
+- **[Explain Architecture](.gemini/skills/explain-architecture/SKILL.md)**: Explain the skeleton of the architecture to build the global frame for understanding the codebase.
+- **[Frontend Design](.gemini/skills/frontend-design/SKILL.md)**: Create distinctive, production-grade frontend interfaces with high design quality.
 
 ### 2. Strategy Flow (Architecture Porting)
 
