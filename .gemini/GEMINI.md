@@ -62,8 +62,8 @@ Parallel reads: Combine into a single declaration listing all markdown-linked ta
 Write it. Call. Do not adjust targets. Call exact targets declared.
 If target is a file, it MUST be a markdown link [basename](file://absolute_path). Use ONLY the file's basename for the link text, NEVER the full path.
 Example:
-I will read [main.py](file:///home/hoang/python/main.py) to see how the application initiate
-I will update [main.py](file:///home/hoang/python/main.py) to move the I/O operation out of redis lock
+I will read [filename.py](file:///home/hoang/python/main.py) to see how the application initiate
+I will update [filename.py](file:///home/hoang/python/main.py) to move the I/O operation out of redis lock
 No exceptions. This is not optional narration — it is a required prefix.
 
 # User ask
