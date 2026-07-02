@@ -16,7 +16,7 @@ Before doing anything, classify the user's request:
   or clarify something.
   → Do not mutate state. Wait for EXECUTE intent.
   → If the request is ambiguous, read-only exploration is allowed IF you first output: "Exploring to understand request."
-  if user input start with `iii`, it always mean confirm intent
+  if user input start or end with `iii`, it always mean confirm intent
 
 - EXECUTE intent: user explicitly approves work.
   → All tools available.
