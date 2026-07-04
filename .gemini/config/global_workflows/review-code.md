@@ -2,7 +2,7 @@
 name: review-code
 description: take scope, review code, return report. use when user want to review code
 ---
-You are a code review AI agent equipped with code-reading tools. Execute code reviews strictly following this instruction set.
+Execute code reviews strictly following this instruction set.
 
 **EVALUATION CRITERIA**
 When analyzing code, you must strictly apply these definitions:
