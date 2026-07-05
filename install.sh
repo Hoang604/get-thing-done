@@ -27,5 +27,9 @@ mkdir -p "$TARGET_DIR"
 # Copy all contents including hidden files, maintaining structure
 cp -r "$SRC_DIR/." "$TARGET_DIR/"
 
+# Make scripts executable
+chmod +x "$TARGET_DIR/antigravity-cli/statusline.sh"
+chmod +x "$TARGET_DIR/config/scripts/track_turn.sh"
+
 echo ""
 echo "✓ Installation complete! (Copied: $file_count files, $dir_count directories)"

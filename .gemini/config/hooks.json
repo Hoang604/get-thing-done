@@ -1,0 +1,10 @@
+{
+  "statusline-tracker": {
+    "PostInvocation": [
+      {
+        "type": "command",
+        "command": "~/.gemini/config/scripts/track_turn.sh"
+      }
+    ]
+  }
+}
