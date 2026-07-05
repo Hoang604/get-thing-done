@@ -45,6 +45,7 @@ Most users should follow the **Develop Flow**:
 
 - **[Awareness](.gemini/skills/awareness/SKILL.md)**: Self-review loop. Applies to every non-trivial user request once manually triggered.
 - **[Review Code](.gemini/skills/code-review/SKILL.md)**: Take scope, review code, and return a structured architectural report.
+- **[Verify Issue](.gemini/skills/verify-issue/SKILL.md)**: Trace codebase to verify if issues flagged in code review are false positives.
 - **[Create Plan](.gemini/skills/create-plan/SKILL.md)**: Create execution plans following INCOSE/EARS format and ISO/IEC/IEEE 15288:2023 conformance.
 - **[Doc Co-Authoring](.gemini/skills/doc-coauthoring/SKILL.md)**: Guide users through collaborative document creation (technical specs, PRDs, design docs).
 - **[Explain](.gemini/skills/explain/SKILL.md)**: Explain code in a causal chain for understanding a slice or feature.
