@@ -155,6 +155,13 @@ Conventional Commits. Terse. Explain why, not what.
 - always add **init**.py to source directories. Configure tool.pyright with extraPaths = ["."] in pyproject.toml when using src/ structure.
 - Do not use inline import. Import at module top.
 
+# Anti-Hallucination
+
+- Do not infer architecture from local context. Search codebase for exact callers.
+- Do not state statistical guess as fact. State explicitly what is read versus what is inferred.
+- Do not claim existence without proof. Verify via search or read before claiming existence.
+
+
 # Final
 
 - Do not read file again and again. Read file once per context.
