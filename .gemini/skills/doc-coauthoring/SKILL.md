@@ -1,6 +1,7 @@
 ---
 name: doc-coauthoring
 description: Guide users through collaborative document creation (technical specs, PRDs, design docs, decision docs, proposals). Trigger when user mentions writing docs, specs, proposals, PRD, design doc, RFC, etc.
+disable-model-invocation: true
 ---
 
 # Doc Co-Authoring Workflow

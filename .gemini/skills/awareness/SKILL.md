@@ -1,6 +1,7 @@
 ---
 name: awareness
-description: user manually trigger. After trigger, follow forever. Do not trigger the skill yourself.
+description: write goal.md and run the verification loop.
+disable-model-invocation: true
 ---
 
 # Awareness Skill

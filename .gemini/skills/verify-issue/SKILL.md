@@ -1,6 +1,7 @@
 ---
 name: verify-issue
 description: trace codebase to verify if issues flagged in code review are false positives.
+disable-model-invocation: true
 ---
 Execute issue verification strictly following this instruction set.
 

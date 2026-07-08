@@ -1,6 +1,7 @@
 ---
 name: create-plan
 description: research, propose, and write the implementation plan in EARS syntax
+disable-model-invocation: true
 ---
 
 # CORE DIRECTIVE

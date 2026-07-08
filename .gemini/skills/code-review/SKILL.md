@@ -1,63 +1,56 @@
 ---
 name: code-review
-description: take scope, review code, return report. use when user want to review code
+description: take scope, review code, return report
+disable-model-invocation: true
 ---
-Execute code reviews strictly following this instruction set.
-
-**EVALUATION CRITERIA**
-When analyzing code, you must strictly apply these definitions:
-*   **Architecture - Minimalism:** Code must have low coupling. Flag any abstractions that do not solve a concrete problem. Favor monolithic design over microservices for non-massive codebases.
-*   **Architecture - Flexibility:** Code must allow adding new features or modifying existing ones with minimal to no changes to existing code (Open-Closed principle).
-*   **Pattern Analysis:** Identify the exact design patterns used in specific code blocks. Explain the problem each pattern attempts to solve. Evaluate if the pattern is appropriate locally and within the broader codebase context. Flag performance bottlenecks or anti-patterns created by how patterns interact.
+Execute code reviews strictly.
 
 **PHASE 1: DISCOVERY & SCOPING**
-1. Receive the feature target from the user.
-2. Use your tools to search, traverse, and read all code files and dependencies related to that feature.
-3. Output a detailed list of the discovered scope.
-4. **STOP EXECUTION.** Ask the user: "Is this scope complete, or do I need to read other areas before analyzing?"
-5. Wait for user confirmation to proceed. Do not begin analysis.
+1. Receive feature target from user.
+2. Search, traverse, and read all code files and dependencies related to target.
+3. Output detailed list of discovered scope.
+4. **STOP EXECUTION.** Ask user: "Is scope complete?" Wait for user confirmation. Do not begin analysis.
 
 **PHASE 2: ANALYSIS & REPORTING**
-Once the user confirms the scope, you must analyze the code before writing the report.
+1. Open `<thinking>` block. Exhaustively dissect the scope against every rule in the **EVALUATION CRITERIA**. You must cite exact lines of code for every boundary and pattern evaluated. Stop only when every file and all the interaction between them is mapped.
+2. Write final report to artifact using exact **REPORT FORMAT**.
 
-First, open a `<thinking>` block to process the **EVALUATION CRITERIA**. Inside this block:
-*   Map specific code blocks to design patterns and analyze their interactions.
-*   Run the minimalism check
-*   Run the flexibility check.
-*   Identify bottlenecks or anti patterns.
+**EVALUATION CRITERIA**
+*   **Decoupled:** Code must enforce strict boundaries. Boundaries must operate and evolve in isolation. Abstractions must actively decouple the system, else they should not exist.
+*   **Open-Closed:** The system must absorb new features strictly by adding new code. If adding a new variant forces you to mutate old code, the contract is closed and fails this rule.
+*   **Patterns:** A design pattern must solve a concrete, existing problem. If a pattern exists solely for speculative future-proofing, or if pattern interactions create bottlenecks, it is an anti-pattern and fails this rule.
 
-After closing the `</thinking>` block, call the write_to_file tool to create the final report as an Artifact (unless user tells you to write it to the workspace).
-
- strictly using this exact 4-section format:
+**REPORT FORMAT**
+Use exact 4-section format. You must cite all files, code symbols, and line ranges as clickable markdown links using the `file://` scheme with absolute paths (e.g., `[basename.py:L10-20](file:///absolute/path/to/basename.py#L10-L20)`). Use only the file's basename for the link text. Never wrap links in backticks.
 
 **1. Scope Reviewed**
-List the exact components and files analyzed.
+List exact components and files analyzed using strict file links.
 
 **2. Architecture & Pattern Analysis (The Good)**
-Use the 🟢 icon for every bullet point. List only positive findings here:
-*   `🟢 Architecture - Minimalism:` [Your positive evaluation]
-*   `🟢 Architecture - Flexibility:` [Your positive evaluation]
-*   `🟢 [Pattern Name]:` [Identify all pattern, specific code block, problem solved, and appropriateness]
+Use 🟢 icon. List positive findings here:
+*   `🟢 Decoupled:` [Positive evaluation with linked evidence]
+*   `🟢 Open-Closed:` [Positive evaluation with linked evidence]
+*   `🟢 [Pattern Name]:` [Identify pattern, link specific code block, explain problem solved]
 
 **3. Actionable Issues & Bottlenecks (The Problematic)**
-Use GitHub-style blockquotes (e.g., `> [!CAUTION]`, `> [!WARNING]`, `> [!IMPORTANT]`, `> [!NOTE]`). Group issues under these exact headers:
-*   **🔴 Critical Performance & Reliability Issues:** [Severe bottlenecks or anti-patterns from pattern interactions]
-*   **🟠 Memory & Scalability Issues:** [Memory leaks, O(N^2) allocations, or unbounded growth]
-*   **🟡 Design & Architecture Violations:** [Must explicitly tag titles with `[Minimalism Violation]` or `[Flexibility Violation]` based on the criteria]
+Use GitHub-style blockquotes (`> [!CAUTION]`, `> [!WARNING]`, `> [!IMPORTANT]`, `> [!NOTE]`). Group issues under exact headers:
+*   **🔴 Critical Performance & Reliability Issues:** [Severe bottlenecks or anti-patterns]
+*   **🟠 Memory & Scalability Issues:** [Memory leaks, O(N^2) allocations, unbounded growth]
+*   **🟡 Design & Architecture Violations:** [Explicitly tag `[Decoupled Violation]` or `[Open-Closed Violation]`]
 
-For each issue, you MUST explicitly state the pattern used and dissect the problem in this exact format:
+For each issue, dissect problem in exact format:
 > [!WARNING]
-> **Pattern/Implementation Used:** [The specific design pattern or code snippet involved]
-> **Why/When/How It Causes Problems:**
-> - **Normally:** [How it behaves under normal/ideal conditions]
-> - **When:** [The specific condition, scale, or edge case where it breaks down]
-> - **Why:** [The root cause mechanism of the failure]
-> - **How:** [A concrete example scenario showing the failure in action]
+> **Pattern/Implementation Used:** [Link specific code block using strict syntax]
+> **Failure Mechanics:**
+> - **Normally:** [Behavior under ideal conditions]
+> - **When:** [Specific condition where it breaks down]
+> - **What:** [What happen when specific condition met]
+> - **Why:** [Root cause mechanism]
+> - **How:** [Concrete example scenario]
 
 **4. Proposed Changes**
-Provide a bulleted list of architectural and performance improvements.
+List architectural and performance improvements.
 
 **CONSTRAINTS**
-*   Do not modify, fix, or rewrite code. Output architectural and structural proposals only.
-*   Do not guess, assume, or invent business rules not explicitly present in the code.
-*   Keep the report direct and concise. Omit conversational filler and decorative language.
+*   Output architectural and structural proposals only.
+*   Base findings strictly on explicit code evidence using required link syntax.
