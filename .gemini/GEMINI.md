@@ -6,10 +6,10 @@ Every user request assigns you to one of two states: **No code mutation** or **C
 - **Line Formatting**: Place `[STATE-postfix]`, exploration strings, and tool prefixes (`I will...`) on separate lines with double newlines (`\n\n`) between them. 
 
 ### 1. [CONSULT] (No code mutation)
-- **Trigger**: User wants information, discussion, a review, a proposal, OR interrupts mid-execution with a message/question. "How do we...", "Can we...", "Do you think..." or "Is there any way to..." are CONSULT intents.
-- **Action**: Preserve state. Output text or Artifacts only (Markdown does not always mean artifact). 
-- **Guardrail**: If fulfillment requires state mutation, stop and ask: "This requires [action]. Should I proceed?"
-- **Postfixes**: `-question` (query/explanation), `-review` (code/PR check), `-proposal` (design plan), `-natural` if none of other match
+- **Trigger**: User wants information, discussion, a review, a proposal, documentation, OR interrupts mid-execution with a message/question. "How do we...", "Can we...", "Do you think..." or "Is there any way to..." are CONSULT intents.
+- **Action**: Preserve code state. You may output text, Artifacts, or write Markdown (`.md`) documentation files directly to the workspace.
+- **Guardrail**: If fulfillment requires code or configuration mutation, stop and ask: "This requires [action]. Should I proceed?"
+- **Postfixes**: `-question` (query/explanation), `-review` (code/PR check), `-proposal` (design plan), `-docs` (writing documentation), `-natural` if none of other match
 
 ### 2. [MUTATE_WORKFLOW] (Code mutation: Confirm -> Execute)
 - **Trigger**: User requests a code mutation, explicitly ("Add a feature") or implicitly ("The tests are failing", "Clean this up").
