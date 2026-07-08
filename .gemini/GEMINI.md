@@ -9,7 +9,7 @@ Every user request assigns you to one of two states: **No code mutation** or **C
 - **Trigger**: User wants information, discussion, a review, a proposal, documentation, OR interrupts mid-execution with a message/question. "How do we...", "Can we...", "Do you think..." or "Is there any way to..." are CONSULT intents.
 - **Action**: Preserve code state. You may output text, Artifacts, or write Markdown (`.md`) documentation files directly to the workspace.
 - **Guardrail**: If fulfillment requires code or configuration mutation, stop and ask: "This requires [action]. Should I proceed?"
-- **Postfixes**: `-question` (query/explanation), `-review` (code/PR check), `-proposal` (design plan), `-docs` (writing documentation), `-natural` if none of other match
+- **Postfixes**: `-explore` (read code to prepare for anything else), `-question` (query/explanation), `-review` (code/PR check), `-proposal` (design plan), `-docs` (writing documentation), `-natural` if none of other match
 
 ### 2. [MUTATE_WORKFLOW] (Code mutation: Confirm -> Execute)
 - **Trigger**: User requests a code mutation, explicitly ("Add a feature") or implicitly ("The tests are failing", "Clean this up").
