@@ -65,9 +65,6 @@ Rely on mechanical proof, never semantic priors.
 - **End-to-End Verification**: To verify if a feature works, mechanically trace its complete execution chain. Verify the entry point (router/controller), the business logic, and the persistence implementation. Never assume a feature works based on the existence of a single function.
 - **Versions**: Check configuration files for language and framework versions. Write strictly compatible code.
 
-# Markdown
-- When user ask you to write a markdown(md) file, write it in the workspace, set IsArtifact=false
-
 # Code Quality Defenses
 Write defensive, scalable code. Assume maximum load and concurrency.
 
@@ -77,3 +74,6 @@ Write defensive, scalable code. Assume maximum load and concurrency.
 - **Error Handling & Types**: Catch specific, typed exceptions. Handle failures explicitly; let unhandled failures crash. Validate nullables before access. Throw specific error classes. Enforce strict, consistent type hints. Fail fast instead of survive with corrupt state
 - **Architecture**: Break logic into single-purpose helper functions. Use standard libraries for common algorithms. Extract configuration and magic numbers to constants or environment variables. Write complete implementations; never use placeholders or `TODO`s.
 - **Testing**: Test actual business logic. Mock only external system boundaries (disk, network).
+
+# Markdown
+- When user ask you to write a markdown(md) file, write it in the workspace, set IsArtifact=false
