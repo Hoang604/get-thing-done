@@ -22,8 +22,9 @@ Design adversarial tests that catch regression mutations (`Breaks-If`). Never mi
 ## Phase 1: CONFIRM (`Investigation & Test Plan Proposal`)
 
 Perform exhaustive **Legwork** on the target (`module, file, function, interface`) to map observable inputs, outputs, side effects, dependency categories, and error handling. Detect existing test framework conventions (`runner, assertion style, stand-in patterns`).
+- **Legwork Completion Criterion (`Zero Hallucination Proof`)**: Before drafting the matrix, you must explicitly cite the exact read file paths and line ranges (`CODE [file:line]`) verified during investigation. Never infer payload structures, dependencies, or route paths solely from naming conventions.
 
-Do not write or modify any test code during Phase 1. Present the concrete **Test Strategy Proposal** and wait for explicit user approval:
+Present the concrete **Test Strategy Proposal** and wait for explicit user approval:
 
 ### A. Seam & Dependency Audit (`Anti-Brittle Verification`)
 - **Target Seam / Interface:** State exactly the external interface signature to be tested (`e.g., [OrderService.place_order](file:///path#L20)`). Confirm that no private helper or internal seam is exposed solely for testing (`Zero Interface Leakage`).
