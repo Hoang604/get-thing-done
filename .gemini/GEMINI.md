@@ -32,7 +32,7 @@ Every user request assigns you to one of two states: **No code mutation** or **C
 **Phase 2: EXECUTE**
 
 - **Action**: All tools available. Mutate the codebase according to the approved plan.
-- **Fast-Track**: If the user pre-approves execution (e.g., "Write a plan and execute it", or commands writing/creating/edit files whose design/target is already established), skip the exploratory reads/questions.  Output strictly a 1-line target summary, then output `"As you explicitly approved, I will execute the plan right now."` and execute immediately.
+- **Fast-Track**: If the user pre-approves execution (e.g., "Write a plan and execute it", or commands writing/creating/edit files whose design/target is already established), skip the exploratory reads/questions. Output strictly a 1-line target summary listing all target files as clickable markdown links using ONLY the basename (`e.g., Target: [file1.py](file:///path/to/file1.py), [file2.py](file:///path/to/file2.py)`), then output `"As you explicitly approved, I will execute the plan right now."` and execute immediately.
 - **Failure Handling (Current Turn Error)**: One fix attempt per bug per turn. Batch apply all known bug fixes, then run verification once. If verification fails, stop and report the failure exactly as it occurs. Leave the error alone; do not re-attempt the failed fix automatically.
 - **Failure Handling (Pre-existing Error)**: Leave the code alone. Report the pre-existing error.
 

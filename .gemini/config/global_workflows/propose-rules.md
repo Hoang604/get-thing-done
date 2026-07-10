@@ -1,6 +1,6 @@
 ---
 name: propose-rules
-description: Analyze agent trajectory or codebase artifacts for decision flaws and propose global rule improvements without editing files.
+description: Analyze agent trajectory or codebase artifacts for decision flaws and propose global or project-scoped rule improvements without editing files.
 disable-model-invocation: true
 ---
 
@@ -8,19 +8,25 @@ disable-model-invocation: true
 
 - **Decision Point**: Either the exact turn/action where the agent erred in the current conversation (`Active Trajectory`), or the specific code anti-pattern/defect observed in the codebase (`Code Inspection`).
 - **Pattern Defect**: A concrete code anti-pattern, architectural flaw, or missing defense observed during codebase inspection, serving as undeniable mechanical proof of a rule gap.
-- **Root Flaw**: The underlying systemic gap in assumptions, verification, or defensive practices (`<RULE[user_global]>`) that caused the divergence at the `Decision Point` or allowed the `Pattern Defect` to be generated.
-- **Global Principle**: A universal invariant rule devoid of local context (no specific file paths, variable names, or project-specific architecture).
+- **Root Flaw**: The underlying systemic gap in assumptions, verification, or defensive practices (`<RULE[user_global]>` or `<RULE[AGENTS.md]>`) that caused the divergence at the `Decision Point` or allowed the `Pattern Defect` to be generated.
+- **Global Scope (`<RULE[user_global]>`)**: Universal Computer Science invariants devoid of local context, valid across any programming language, framework, or repository structure.
+- **Project Scope (`<RULE[AGENTS.md]>` or `<RULE[GEMINI.md]>`)**: Repository-specific architectural conventions, layering rules, framework patterns, and library guardrails that apply across the entire target codebase.
 
 ---
 
-## Target Blocks
+## Target Blocks & Scope Categories
 
-All proposals must strictly target one of these four sections in `<RULE[user_global]>`:
+All proposals must strictly target one of two scopes and a concrete block within that scope:
 
-1. `# Intent Classification & Execution Model` (Rules governing state classification [CONSULT] vs [MUTATE_WORKFLOW], phase transitions CONFIRM -> EXECUTE, exploration, confirmation, and failure handling)
-2. `# Context & Tool Mechanics` (Rules governing tool selection, batching, reads, edits, and context management)
-3. `# Anti-Hallucination & Verification` (Rules governing mechanical proof, API verification, logic verification, and tracing)
-4. `# Code Quality Defenses` (Rules governing defensive coding, I/O performance, concurrency, state management, and error handling)
+### Tier 1: Global Scope (`<RULE[user_global]>`)
+Strictly for universal Computer Science invariants passing the **Two-Stack Test**. Target one of these four blocks:
+1. `# Intent Classification & Execution Model`
+2. `# Context & Tool Mechanics`
+3. `# Anti-Hallucination & Verification`
+4. `# Code Quality Defenses`
+
+### Tier 2: Project Scope (`<RULE[AGENTS.md]>` or `<RULE[GEMINI.md]>`)
+For stack-specific architectural boundaries, ORM patterns, and testing conventions. Target exact project sections (`e.g., # Architecture & Layering, # Database & ORM Conventions, # Testing Framework Rules, # API Standards`).
 
 ---
 
@@ -34,24 +40,36 @@ Inspect the current conversation trajectory or codebase artifacts.
    - **Active Trajectory Branch**: Trace where errors, missteps, or user corrections occurred during the current conversation.
    - **Code Inspection Branch**: Isolate exact code anti-patterns (`Pattern Defect`), structural flaws, or missing defenses observed in codebase files from past sessions.
 2. **Isolate the Decision Point**: Pinpoint the exact turn of divergence (`Active Trajectory`) or the specific code structure exhibiting the defect (`Code Inspection`).
-3. **Determine the Root Flaw**: Why did existing system instructions (`<RULE[user_global]>`) and priors allow this failure or permit this code structure to be written? (For `Code Inspection`, do not guess or reconstruct past thoughts outside context; treat the code artifact itself as mechanical proof of a rule gap).
+3. **Determine the Root Flaw**: Why did existing system instructions (`<RULE[user_global]>` or `<RULE[AGENTS.md]>`) allow this failure or permit this code structure to be written? (For `Code Inspection`, treat the code artifact itself as mechanical proof of a rule gap without speculating outside context).
 
 _Completion Criterion_: Every identified mistake, correction, or code defect in scope is mapped to exactly one `Decision Point` (`Active Trajectory` or `Code Inspection`) and its underlying `Root Flaw`.
 
 ---
 
-### Step 2: Global Rule Synthesis & Pruning
+### Step 2: Scope Allocation, Generalization & Pruning
 
-Formulate candidate rule additions or modifications for the exact target block that governs the `Root Flaw`. Apply these strict filters to every candidate rule before finalizing:
+Formulate candidate rule additions or modifications. Apply this strict 2-stage allocation and pruning gate:
 
-1. **Global Principle Check**: Strip all local references. If the rule mentions a specific file, class, function, or project pattern, rewrite it until it applies universally across any repository.
+1. **Scope Allocation Gate (`Global vs Project Router`)**:
+   - **Test 1: Two-Stack De-localization Test (`Global Proof Gate`)**: Does the candidate rule apply with zero modification across at least two radically different technology stacks (`e.g., Python/Postgres backend AND Rust/Embedded system OR TypeScript/Vanilla JS frontend`)?
+     - `YES` -> Allocate to **Global Scope (`<RULE[user_global]>`)**. Strip every trace of framework/library names.
+     - `NO` -> Allocate to **Project Scope (`<RULE[AGENTS.md]>` or `<RULE[GEMINI.md]>`)**. Proceed to Test 2.
+   - **Test 2: Project Generalization Test (`No 1-File Rules`)**: Does the Project-Scoped rule apply universally to *every* component sharing that architectural role across the workspace (`e.g., all controllers, all repository classes, all async tasks`)? If the rule only names a single specific file or function (`e.g., OrderService.py`), **it fails and must be rewritten to cover the entire architectural layer or component family**.
 2. **No-Op Test**: Will this rule change agent behavior compared to default model behavior? If the model already follows the rule by default, discard it.
 3. **Single Source of Truth Check (`[ADDITION]` vs `[MODIFICATION]`)**:
-   - **When to Modify (`[MODIFICATION]`)**: If any existing bullet in `<RULE[user_global]>` touches the same domain, concept, or tool mechanic, you **MUST** propose a `[MODIFICATION]` to refine, clarify, or split that existing rule. Never append a new rule just because adding feels safe; adding to an existing domain creates **Duplication** and **Sediment** (`writing-great-skills`).
-   - **When to Add (`[ADDITION]`)**: Propose an `[ADDITION]` **ONLY** when the `Root Flaw` exposes a completely new domain, vulnerability class, or behavioral pattern that is 100% absent across the entire target block.
+   - **When to Modify (`[MODIFICATION]`)**: If any existing bullet in the target scope touches the same domain or mechanic, you **MUST** propose a `[MODIFICATION]` to refine or split that existing rule. Never append duplicate rules (`Duplication / Sediment`).
+   - **When to Add (`[ADDITION]`)**: Propose an `[ADDITION]` **ONLY** when the `Root Flaw` exposes a completely new domain or architectural pattern 100% absent in that scope.
 4. **Positive Framing**: State the required action ("Do X before Y") instead of a bare prohibition ("Never do Z"), unless the prohibition is a hard safety guardrail.
 
-_Completion Criterion_: A deduplicated, pruned list of universal rule changes or additions sorted by their target block.
+_Completion Criterion_: Before proceeding to Step 3, you must output a 3-column verification table proving scope allocation and generalization for every candidate:
+
+| Local Defect / Trajectory Error | Allocated Scope (`Global vs Project`) | Generalized Rule Text (`Passed Two-Stack or Project Generalization Test`) |
+| :--- | :--- | :--- |
+| `Leaking uncommitted DB state across loop yield points` | `Global (<RULE[user_global]>)` | `Wrap external resource mutations (`disk, storage, network state`) inside explicit context managers or atomic check-then-act boundaries. Never leave partial mutations exposed across I/O yield points or failure paths.` |
+| `Forgot SQLAlchemy .with_for_update() in OrderService debit` | `Project (<RULE[AGENTS.md]>)` | `Always hold explicit row-level database locks (`SELECT ... FOR UPDATE` via `with_for_update()`) inside service layer transaction boundaries before executing read-then-write balance mutations across any financial entity.` |
+| `Hardcoded raw SQL inside FastAPI controller route handler` | `Project (<RULE[AGENTS.md]>)` | `Strictly isolate all SQL and ORM queries inside repository layer classes (`src/repositories/`). Never execute queries directly within FastAPI controller route handlers or serialization logic.` |
+
+Only rules listed in the right column are permitted to enter Step 3 (`Proposal Presentation`).
 
 ---
 
@@ -63,14 +81,16 @@ Present the final proposals clearly to the user using the format below. **For ea
 
 # Rule Proposals
 
-## 1. Target Block: <Exact Block Name>
+## Scope: `[Global (<RULE[user_global]>)]` OR `[Project (<RULE[AGENTS.md]> / <RULE[GEMINI.md]>)]`
 
-### Proposal A: <Short Title>
+### Target Block: <Exact Block Name>
+
+#### Proposal A: <Short Title>
 
 - **Type**: `[ADDITION]` or `[MODIFICATION of existing rule]`
 - **Branch**: `[Active Trajectory]` or `[Code Inspection]`
 - **Decision Point**: <Exact turn/action where agent erred, or exact code structure/Pattern Defect observed>
-- **Root Flaw**: <Why the existing priors or <RULE[user_global]> failed to prevent this>
+- **Root Flaw**: <Why the existing priors or target rules failed to prevent this>
 - **Proposed Text**:
 
 ```markdown
