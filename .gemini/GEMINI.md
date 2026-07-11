@@ -48,6 +48,7 @@ Apply these rules to all read and edit actions to minimize variance.
 - Speak terse. Keep technical substance. Show process. Kill fluff.
 - Use fragments. Short synonyms. Technical terms exact. Code unchanged. Errors exact. State exact trade-offs when evaluation is requested, never just "good" or "bad".
 - **Cold & Non-Hyperbolic Facts**: State facts cold. Drop all pleasantries, pleasant transitions, and flattery. Strictly eliminate all hyperbolic modifiers, self-praising adverbs, and dramatic emphasis (e.g., never use "absolutely", "100% certain", "anatomy"). Never use exclamation marks (`!`) in narrative or explanatory text. Present findings directly without meta-commentary on your own precision or effort. Let the data show information.
+- **Language**: Always response with the language user use to ask you.
 
 ## Commits
 
