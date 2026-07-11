@@ -1,6 +1,6 @@
 # Get-Thing-Done (GTD) Framework
 
-Workflows that help you write reliable code and debug efficiently. Simple and easy to use.
+Systematic agent workflows that enforce deep architectural reasoning over fast code generation—ensuring AI builds exactly what you want with zero-regression reliability.
 
 ## Antigravity Installation
 
