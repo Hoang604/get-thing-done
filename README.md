@@ -22,58 +22,42 @@ cd gtd-temp; .\install.ps1
 cd ..; Remove-Item -Recurse -Force gtd-temp
 ```
 
-## Start Here (Default Workflow)
+## Primary Workflows (Daily Use)
 
-Most users should follow the **Develop Flow**:
+Systematic sequence of skills for rigorous development, auditing, and delivery:
 
-1. **[/spec](.gemini/config/global_workflowsspec.md)** → define requirements in `./.gtd/<task>/SPEC.md`
-2. **[/roadmap](.gemini/config/global_workflowsroadmap.md)** → split work into phases in `./.gtd/<task>/ROADMAP.md`
-3. **[/plan-phase](.gemini/config/global_workflowsplan-phase.md)** → create `./.gtd/<task>/<phase>/PLAN.md`
-4. **[/execute](.gemini/config/global_workflowsexecute.md)** → implement and produce `./.gtd/<task>/<phase>/SUMMARY.md`
-5. **[/commit-spec](.gemini/config/global_workflowscommit-spec.md)** → generate final commit message from summaries
-6. **[/archive](.gemini/config/global_workflowsarchive.md)** → archive completed task history
+> [!NOTE]
+> Every skill listed below has an identical corresponding slash command available in global workflows (`.gemini/config/global_workflows/`). For example, invoking `/propose-plan` runs the exact same logic as the `propose-plan` skill.
 
-## Which Flow To Use
+### 1. Planning & Architecture
+- **[propose-plan](.gemini/skills/propose-plan/SKILL.md)**: Gather context and propose architectural approaches with clear trade-offs before drafting a plan.
+- **[draft-plan](.gemini/skills/draft-plan/SKILL.md)**: Draft formal `implementation_plan.md` artifact using EARS syntax with zero-prose literal contracts and seam test matrix.
 
-- **Build a new feature from requirements**: use Develop Flow (above).
-- **Port/execute from architecture docs and backlog**: use Strategy Flow.
-- **Fix a bug with root-cause discipline**: use Debug Flow.
+### 2. Auditing & Stress Testing
+- **[stress-test](.gemini/skills/stress-test/SKILL.md)**: Audit agent-produced work across operating regimes with zero-regression fixes.
 
-## Workflow Structure
+### 3. Code Review & Verification
+- **[code-review](.gemini/skills/code-review/SKILL.md)**: Take scope, review code, and return a structured architectural report.
+- **[verify-issue](.gemini/skills/verify-issue/SKILL.md)**: Trace codebase to verify whether issues flagged in code review are false positives.
 
-### 1. Skills (Foundations)
+### 4. Analysis & Rule Improvement
+- **[propose-rules](.gemini/skills/propose-rules/SKILL.md)**: Analyze agent trajectory or codebase artifacts for decision flaws and propose global or project-scoped rule improvements without editing files.
+- **[explain](.gemini/skills/explain/SKILL.md)**: Explain code in a causal chain when analyzing a slice or feature.
+- **[explain-architecture](.gemini/skills/explain-architecture/SKILL.md)**: Explain the skeleton of the architecture to build the global frame for understanding the codebase.
 
-- **[Awareness](.gemini/skills/awareness/SKILL.md)**: Self-review loop. Applies to every non-trivial user request once manually triggered.
-- **[Review Code](.gemini/skills/code-review/SKILL.md)**: Take scope, review code, and return a structured architectural report.
-- **[Verify Issue](.gemini/skills/verify-issue/SKILL.md)**: Trace codebase to verify if issues flagged in code review are false positives.
-- **[Create Plan](.gemini/skills/create-plan/SKILL.md)**: Create execution plans following INCOSE/EARS format and ISO/IEC/IEEE 15288:2023 conformance.
-- **[Doc Co-Authoring](.gemini/skills/doc-coauthoring/SKILL.md)**: Guide users through collaborative document creation (technical specs, PRDs, design docs).
-- **[Explain](.gemini/skills/explain/SKILL.md)**: Explain code in a causal chain for understanding a slice or feature.
-- **[Explain Architecture](.gemini/skills/explain-architecture/SKILL.md)**: Explain the skeleton of the architecture to build the global frame for understanding the codebase.
-- **[Frontend Design](.gemini/skills/frontend-design/SKILL.md)**: Create distinctive, production-grade frontend interfaces with high design quality.
+### 5. Self-Review Loop
+- **[awareness](.gemini/skills/awareness/SKILL.md)**: Write `goal.md` and execute the self-review verification loop for non-trivial tasks. Only work for Antigravity CLI, because Antigravity IDE don't have subagent.
 
-### 2. Strategy Flow (Architecture Porting)
+### 6. Testing & Verification Suites
+- **[create-test](.gemini/skills/create-test/SKILL.md)**: Design repo-specific test strategy and write deterministic tests catching real boundary and invariant bugs at clean external seams.
+- **[create-postman-collection](.gemini/skills/create-postman-collection/SKILL.md)**: Design and write importable Postman collections with deterministic request flows, schema-validated responses, and explicit prerequisite discovery.
 
-Systematic execution from architecture docs to backlog-driven delivery:
+### 7. Specification & Task Breakdown
+- **[spec](.gemini/skills/spec/SKILL.md)**: Relentlessly interview to identify domain requirements and edge cases in EARS syntax without code leakage.
+- **[to-ticket](.gemini/skills/to-ticket/SKILL.md)**: Break a confirmed `./.gtd/<task_name>/SPEC.md` into a set of tracer-bullet tickets, mapping domain concepts to codebase seams with explicit blocking edges published to `./.gtd/<task_name>/tickets/`.
 
-1. **[/bootstrap](.gemini/config/global_workflowsbootstrap.md)**: Initialize `BACKLOG.md` from architecture docs.
-2. **[/expand-backlog](.gemini/config/global_workflowsexpand-backlog.md)**: Break high-level items into executable sub-items.
-3. **[/s:spec](.gemini/config/global_workflowss-spec.md)**: Pull next item from `BACKLOG.md` and generate `SPEC.md`.
-4. Continue with Develop Flow (`/roadmap` → `/plan-phase` → `/execute`).
-5. **[/s:archive](.gemini/config/global_workflowss-archive.md)**: Archive work and mark backlog item complete.
+## Supporting Foundations
 
-### 3. Debug Flow (Fixes)
-
-Systematic process for resolving defects:
-
-1. **[/d-symptom](.gemini/config/global_workflowsd-symptom.md)**: Document expected vs actual behavior.
-2. **[/d-inspect](.gemini/config/global_workflowsd-inspect.md)**: Trace code paths and form ranked hypotheses.
-3. **[/d-verify](.gemini/config/global_workflowsd-verify.md)**: Verify hypotheses with targeted debug evidence.
-4. **[/d-plan-fix](.gemini/config/global_workflowsd-plan-fix.md)**: Create an atomic fix plan.
-5. **[/d-execute](.gemini/config/global_workflowsd-execute.md)**: Implement fix and verify symptom resolution.
-6. **[/d-archive](.gemini/config/global_workflowsd-archive.md)**: Archive completed debug work.
-
-### 4. Lifecycle Management
-
-- **[/archive](.gemini/config/global_workflowsarchive.md)**: Move completed independent task to `./.gtd/archive/`.
-- **[/d-archive](.gemini/config/global_workflowsd-archive.md)**: Move completed debug work to `./.gtd/archive/`.
+- **[frontend-design](.gemini/skills/frontend-design/SKILL.md)**: Create distinctive, production-grade frontend interfaces with high design quality.
+- **[codebase-design](.gemini/skills/codebase-design/SKILL.md)**: Shared vocabulary for designing deep modules, seams, and testable interfaces - from https://github.com/mattpocock/skills
+- **[write-great-skills](.gemini/skills/write-great-skills/SKILL.md)**: Reference for writing and editing skills well — the vocabulary and principles that make a skill predictable - from https://github.com/mattpocock/skills

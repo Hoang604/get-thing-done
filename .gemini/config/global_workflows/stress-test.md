@@ -14,11 +14,11 @@ State precisely why this target element exists right where it is placed.
 
 ## 2. Real-World Scenarios & Operating Regimes
 
-Audit the target by enumerating concrete, observable **real-world situations** derived directly from the operating environment. Strictly discard theoretical or AI-hallucinated edge cases.
+Enumerate concrete, observable **real-world situations** that make this target necessary to exist, directly tied to its **Reason for Existence**. Strictly discard theoretical or AI-hallucinated edge cases.
 
 Categorize how the target actually behaves under these real-world scenarios into three strict regimes:
 - **Effective**: Real-world scenarios where the target works smoothly and efficiently as intended.
-- **Degraded**: Real-world scenarios where the target still functions but not good as expect.
+- **Degraded**: Real-world scenarios where the target still functions but does not perform as expected.
 - **Dead**: Real-world scenarios where the target completely breaks down. State the exact scenario and reason for failure.
 
 ## 3. Zero-Regression Remediation
