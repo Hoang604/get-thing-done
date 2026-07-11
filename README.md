@@ -1,4 +1,4 @@
-# Get-Thing-Done (GTD) Framework
+# Get-Thing-Done (GTD) Framework - Antigravity
 
 Systematic agent workflows that enforce deep architectural reasoning over fast code generation—ensuring AI builds exactly what you want with zero-regression reliability.
 
