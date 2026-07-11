@@ -36,18 +36,22 @@ You are authorized and recommended to **interview the user relentlessly** until 
 
 ---
 
-## Phase 2: Execution Roadmap (Domain Sizing)
+## Phase 2: Execution Roadmap (Adaptive Branching & Slicing)
 
-Once all domain branches are confirmed (`domain entropy = 0`) and written to `./.gtd/<task_name>/SPEC.md`, finalize the document by appending the sequential execution roadmap.
+Once all domain branches are confirmed (`domain entropy = 0`) and written to `./.gtd/<task_name>/SPEC.md`, evaluate the domain scope to select the execution branch:
 
-### Step 1: Append Roadmap
-Conclude `./.gtd/<task_name>/SPEC.md` with a sequential phase breakdown to prevent context-window overload during downstream implementation:
+### Step 1: Branch Selection (`Complexity Gate`)
+- **Branch A (`Single-Slice Feature` — Direct Completion):** If all confirmed EARS requirements and error fallbacks can be delivered and `Black-Box Verified` within **a single end-to-end domain deliverable** (`e.g., a single synchronous user flow, an atomic API transaction, or a localized UI component`), **DO NOT append an Execution Roadmap**. Proceed directly to `Step 3: Completion Contract`.
+- **Branch B (`Multi-Slice Epic` — Domain Roadmap):** If the confirmed requirements span **multiple decoupled domain milestones, independent user personas/portals, or asynchronous temporal stages** that must be delivered and verified sequentially (`e.g., Phase 1: Ingestion Engine -> Phase 2: Rating & Billing -> Phase 3: Dunning & Retry`), append a sequential execution roadmap to `./.gtd/<task_name>/SPEC.md` (`Step 2`).
 
-- **Strict Domain Scope Guardrail:** Output strictly **observable domain deliverables and acceptance criteria** (`WHAT/WHY`). Enforce `Reference B` (`Zero Engineering Leakage`). Never list file paths, code topology, or architectural seams in the roadmap (`WHERE/HOW`).
-- **PR Scope Sizing (`Internal Legwork`):** Estimate implementation complexity internally. Size each phase to approximately **1 PR scope** (`<= 5 core seams/files when implemented`), but record strictly observable domain boundaries in `SPEC.md`.
-- **Phase Contract:** Each phase must produce observable domain value or a stable internal domain contract (`Black-Box Verifiable`) before the next begins.
+### Step 2: Append Roadmap (`Branch B Only`)
+Conclude `./.gtd/<task_name>/SPEC.md` with a sequential phase breakdown to prevent context-window overload and state explosion during downstream implementation:
 
-### Step 2: Completion Contract
+- **Strict Domain Scope Guardrail:** Output strictly **observable domain deliverables and acceptance criteria** (`WHAT/WHY`). Enforce `Reference B` (`Zero Engineering Leakage`). Never list file paths, code topology, or architectural seams (`WHERE/HOW`).
+- **Vertical Slicing (`Tracer Bullet Contract`):** Each phase MUST cut a narrow but COMPLETE vertical slice through the domain logic. A phase must deliver an independently demonstrable or `Black-Box Verifiable` user/system value (`e.g., Phase 1: Ingestion to DB -> Phase 2: Billing Calculation -> Phase 3: Dunning Retry`). Strictly prohibit horizontal layer-by-layer phases (`e.g., forbidden: Phase 1 only DB schemas, Phase 2 only APIs`).
+- **PR Scope Sizing (`Internal Legwork`):** Estimate complexity internally. Size each vertical slice phase to approximately **1 PR scope** (`<= 5 core seams/files when implemented`), recording strictly observable domain boundaries in `SPEC.md`.
+
+### Step 3: Completion Contract
 - **Interactive Execution (`Default`):** Output exactly `Please review ./.gtd/<task_name>/SPEC.md. I will await your explicit confirmation or next instruction.` and stop calling tools.
 
 ---
