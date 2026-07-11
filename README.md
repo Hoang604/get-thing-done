@@ -58,6 +58,6 @@ Systematic sequence of skills for rigorous development, auditing, and delivery:
 
 ## Supporting Foundations
 
-- **[frontend-design](.gemini/skills/frontend-design/SKILL.md)**: Create distinctive, production-grade frontend interfaces with high design quality.
+- **[frontend-design](.gemini/skills/frontend-design/SKILL.md)**: Create distinctive, production-grade frontend interfaces with high design quality. - from https://github.com/anthropics/skills
 - **[codebase-design](.gemini/skills/codebase-design/SKILL.md)**: Shared vocabulary for designing deep modules, seams, and testable interfaces - from https://github.com/mattpocock/skills
 - **[write-great-skills](.gemini/skills/write-great-skills/SKILL.md)**: Reference for writing and editing skills well — the vocabulary and principles that make a skill predictable - from https://github.com/mattpocock/skills
