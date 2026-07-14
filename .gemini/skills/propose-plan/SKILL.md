@@ -14,6 +14,7 @@ Do not draft implementation steps or EARS requirements during this phase. Stop a
 ## 1. Gather Context (Exhaustive Legwork)
 
 Explore codebase to identify all direct dependencies, imports, and caller interfaces affected by the user request.
+
 - **Completion Criterion**: You must list every read target file, direct import, and calling function. Do not stop at surface-level files.
 
 ---
@@ -53,6 +54,7 @@ Evaluate both valid trade-off paths against these self-contained design principl
   - Name exact design patterns. If a pattern exists solely for speculative future-proofing or creates concurrency/I/O bottlenecks, it is an anti-pattern and fails.
 
 For each approach, explicitly list:
+
 - **Trade-offs**: Concrete pros and cons across module depth, seam complexity, and performance.
 - **User Outcomes**:
   - After this task, user should be able to `<do something specific>`
@@ -63,4 +65,4 @@ For each approach, explicitly list:
 ## 4. Hard Stop
 
 Output exactly this line and stop calling tools or generating plan text:
-`Please select an approach or request modifications. I will not draft the plan until an approach is finalized.`
+`Please select an approach or request modifications.`
