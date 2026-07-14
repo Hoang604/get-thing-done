@@ -49,10 +49,11 @@ For every target file to create (`[NEW]`), modify (`[MODIFY]`), or delete (`[DEL
 ### B. Seam Verification & Test Replacement Matrix (`Replace, Don't Layer`)
 The interface is the test surface. Enforce a mechanical 4-column mapping table to trace test replacement across seams:
 
-| Target Seam / Module | Old Shallow Test to `[DELETE]` | New Deep Test to `[CREATE/MODIFY]` | Test Stand-in / Adapter |
+| Target Seam / Module | Old Shallow Test to [DELETE] | New Deep Test & Observable Assertion | Dependency Category & Adapter Strategy |
 | :--- | :--- | :--- | :--- |
-| [SymbolName](file:///path/target.py#L10-L40) | [old_test.py:L12-50](file:///path/old_test.py#L12-L50) | [new_seam_test.py:L10-60](file:///path/new_seam_test.py#L10-L60) | `LocalStandIn / Adapter` |
+| [SymbolName](file:///path/target.py#L10-L40) | [old_test.py:L12-50](file:///path/old_test.py#L12-L50) or None | [new_seam_test.py:L10-60](file:///path/new_seam_test.py#L10-L60): Asserts exact observable behavior across seam without asserting on internal state | Remote but owned: HTTP Adapter for production, In-Memory Adapter for testing |
 
+- **Seam & Dependency Discipline:** In Column 3, state the exact test file link (`[basename](file:///path#L10-L20)`) and the exact observable behavior asserted (`codebase-design`). In Column 4, classify the dependency (`In-process`, `Local-substitutable`, `Remote but owned`, `True external`) and state exact adapter strategy (`codebase-design/DEPENDING`). Do not wrap table cell text or links inside backticks.
 - **No Interface Leakage for Testing:** Never make private helper methods or internal seams public solely for unit test setup. Tests must assert on observable outcomes strictly through the module's external seam.
 
 ---
