@@ -17,16 +17,19 @@ Convert a feature request into a zero-entropy, reviewable `SPEC.md` specificatio
 You are authorized and recommended to **interview the user relentlessly** until domain ambiguity (`domain entropy`) reaches zero. Build `./.gtd/<task_name>/SPEC.md` progressively as information blocks are confirmed.
 
 ### 1. Batched Interview & Recommended Defaults
+
 - **Batched Delivery:** Ask <= 5 clarifying questions per turn. For every confirmed requirement, dynamically trace and interrogate its immediate prerequisites (`upstream dependencies`) and unstated boundary fallbacks (`downstream failure states`) across turns. Walk down every branch of the decision tree to eliminate implementation ambiguity (`multiple conflicting valid behaviors or missing error fallbacks`). Do not stop until a downstream developer could implement every domain rule without inventing or assuming a single missing rule.
 - **Mandatory Defaults:** For every question asked, explicitly provide a concrete, recommended default fallback based on domain best practices.
 - **Auto-Locking:** If the user approves the recommended defaults or commands drafting (`e.g., "proceed", "looks good"`), lock all unanswered edge cases to their recommended defaults.
 
 ### 2. Progressive BA/RA File Building
+
 - Do not wait until the end of the interview to write `SPEC.md`.
 - **Incremental Updates:** Every time the user confirms an information block (`e.g., Scope & Reality, specific domain rules, error handling`), immediately write or append those verified sections to `./.gtd/<task_name>/SPEC.md` using `EARS Syntax` (consult `Reference Tier` below).
 - By the end of Phase 1, `./.gtd/<task_name>/SPEC.md` must be a single, comprehensive specification document containing all confirmed requirements and invariants (`domain entropy = 0`).
 
 ### 3. Continuous Contradiction Audit (`Reconcile Engine`)
+
 - **Cross-Reference Audit:** Before writing any new answer to `SPEC.md`, cross-reference it against confirmed **Product Invariants**, existing **EARS Requirements**, and the core **Business Goal**.
 - **Stop & Reconcile:** If the user's answer contradicts a prior confirmation or introduces unmotivated on-the-fly scope creep, **do NOT append it to `SPEC.md`**. Output an explicit **`[RECONCILE]`** block:
   1. **The Collision:** State exactly which requirement or invariant is contradicted.
@@ -41,10 +44,12 @@ You are authorized and recommended to **interview the user relentlessly** until 
 Once all domain branches are confirmed (`domain entropy = 0`) and written to `./.gtd/<task_name>/SPEC.md`, evaluate the domain scope to select the execution branch:
 
 ### Step 1: Branch Selection (`Complexity Gate`)
+
 - **Branch A (`Single-Slice Feature` — Direct Completion):** If all confirmed EARS requirements and error fallbacks can be delivered and `Black-Box Verified` within **a single end-to-end domain deliverable** (`e.g., a single synchronous user flow, an atomic API transaction, or a localized UI component`), **DO NOT append an Execution Roadmap**. Proceed directly to `Step 3: Completion Contract`.
 - **Branch B (`Multi-Slice Epic` — Domain Roadmap):** If the confirmed requirements span **multiple decoupled domain milestones, independent user personas/portals, or asynchronous temporal stages** that must be delivered and verified sequentially (`e.g., Phase 1: Ingestion Engine -> Phase 2: Rating & Billing -> Phase 3: Dunning & Retry`), append a sequential execution roadmap to `./.gtd/<task_name>/SPEC.md` (`Step 2`).
 
 ### Step 2: Append Roadmap (`Branch B Only`)
+
 Conclude `./.gtd/<task_name>/SPEC.md` with a sequential phase breakdown to prevent context-window overload and state explosion during downstream implementation:
 
 - **Strict Domain Scope Guardrail:** Output strictly **observable domain deliverables and acceptance criteria** (`WHAT/WHY`). Enforce `Reference B` (`Zero Engineering Leakage`). Never list file paths, code topology, or architectural seams (`WHERE/HOW`).
@@ -52,6 +57,7 @@ Conclude `./.gtd/<task_name>/SPEC.md` with a sequential phase breakdown to preve
 - **PR Scope Sizing (`Internal Legwork`):** Estimate complexity internally. Size each vertical slice phase to approximately **1 PR scope** (`<= 5 core seams/files when implemented`), recording strictly observable domain boundaries in `SPEC.md`.
 
 ### Step 3: Completion Contract
+
 - **Interactive Execution (`Default`):** Output exactly `Please review ./.gtd/<task_name>/SPEC.md. I will await your explicit confirmation or next instruction.` and stop calling tools.
 
 ---
@@ -59,6 +65,7 @@ Conclude `./.gtd/<task_name>/SPEC.md` with a sequential phase breakdown to preve
 # SECONDARY TIER: IN-SKILL REFERENCE (`Consulted On Demand`)
 
 ## Reference A: File Persistence & Task Naming
+
 - **Task Naming (`<task_name>`):** Invent a concise, kebab-case task name derived from the user request (`e.g., billing-dunning`). Must be **<= 3 words**.
 - **No Artifacts:** Do NOT create an Artifact. Write directly to `./.gtd/<task_name>/SPEC.md` using `write_to_file` / `replace_file_content`.
 

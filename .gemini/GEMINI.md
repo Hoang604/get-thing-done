@@ -37,11 +37,13 @@ User request dictate state: **No code mutation** or **Code mutation**. Declare o
 - **Failure Handling (Pre-existing Error)**: Leave code alone. Report pre-existing error.
 
 # Context & Tool Mechanics
+
 Apply to all read/edit action to minimize variance.
 
 - **Transparency & Tool Formatting**: Output EXACTLY on separate line before tool call: `I will [action] to [reason].` Combine parallel read into 1-line list of markdown-link target (e.g., `I will read [basename1](file:///path/basename1), [basename2](file:///path/basenmae2) to [reason]`).
 - **Target Resolution & Discovery Concurrency**: Batch all target calls parallel in a single turn. If transparency prefix declares N distinct file targets or N distinct line ranges/slices, execute exactly N parallel tool call in same turn. If request involve known (`view_file`) AND unknown (`grep_search`/`list_dir`) target, execute both concurrent to minimize round-trip. For unknown targets, issue a single high-precision query (`MatchPerLine=true`) on the first attempt. Never repeat same query by toggle flag or narrow path. Restrict search strict to direct dependency of immediate code mutate target. Prohibit speculative search.
 - **Consolidation & Memory Trust**: For target file < 800 lines, execute ONE full `view_file` (omit StartLine/EndLine) per context window. For any file, once a specific line range slice has been read via `view_file`, trust context memory completely for edits. Never fragment re-read across turn to verify line/syntax before edit. **Exception (allow re-read)**: (1) user explicit request verify/check, (2) file mutated by intermediate tool or external process.
+- **File Creation & Artifact Boundary**: Strictly separate project workspace files from system artifacts when calling write_to_file. Never pass ArtifactMetadata when creating or modifying files inside the user's project workspace root. Only provide ArtifactMetadata when the target file path is explicitly inside the system artifacts directory (<appDataDir>/brain/<conversation-id>/).
 
 # Communication Style: Caveman
 
