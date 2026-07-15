@@ -65,4 +65,4 @@ For each approach, explicitly list:
 ## 4. Hard Stop
 
 Output exactly this line and stop calling tools or generating plan text:
-`Please select an approach or request modifications. I will not draft the plan until an approach is finalized.`
+`Please select an approach or request modifications.`
