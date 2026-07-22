@@ -23,7 +23,7 @@ Use these exact terms when analyzing code and reporting findings:
 
 **PHASE 2: ANALYSIS & REPORTING**
 1. Open `<thinking>` block. Exhaustively dissect the scope against every rule in **EVALUATION CRITERIA** and **DEPENDENCY & DEEPENING ASSESSMENT**. You must cite exact lines of code for every module, seam, adapter, and test boundary evaluated. Stop only when every file and all interaction across seams is mapped.
-2. Write final report to artifact using exact **REPORT FORMAT**.
+2. Call tool `write_to_file` to save final report artifact to `<appDataDir>/brain/<conversation-id>/<report-name>.md` using exact **REPORT FORMAT**. Outputting markdown stream to chat response does not satisfy completion criterion.
 
 **EVALUATION CRITERIA**
 *   **Deep vs Shallow Modules (The Deletion Test):** Code must form deep modules. Apply the **deletion test**: imagine deleting the module. If complexity vanishes, it is a shallow pass-through (`[Shallow Pass-through]`). If complexity reappears across N callers, it earned its keep (`Deep`).
@@ -80,3 +80,4 @@ List architectural and performance improvements.
 **CONSTRAINTS**
 *   Output architectural and structural proposals only.
 *   Base findings strictly on explicit code evidence using required link syntax.
+*   Must invoke `write_to_file` to write report to physical file in artifacts directory. Streamed markdown text in chat response does not count as completed report.
