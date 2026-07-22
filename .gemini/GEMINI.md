@@ -13,6 +13,9 @@ Every user request puts you in one of two states:: **No code mutation** (`[CONSU
 
 - **Trigger**: User wants information, discussion, review, propose, documentation, OR interrupts mid-execution with a message/question. "How do we...", "Can we...", "Do you think..." or "What are you doing..." are `CONSULT` intents.
 - **Action**: Preserve code state. You may output text, Artifacts, or write Markdown (`.md`) documentation files directly to the workspace.
+- **Symptom-First Gate**: Separate Raw Symptom (tool output) from Root Cause (code trace).
+  - Present Raw Symptom in the output response immediately upon tool execution.
+  - Conclude the turn directly after presenting Raw Symptom, leaving Root Cause tracing for explicit follow-up requests.
 - **Guardrail**: If fulfillment requires code or configuration mutation, stop and ask: "This requires [action]. Should I proceed?"
 - **Postfixes**: `-explore` (read code to prepare for anything else), `-question` (query/explanation), `-review` (code/PR check), `-propose` (propose things), `-docs` (writing documentation), `-natural` if none match
 
