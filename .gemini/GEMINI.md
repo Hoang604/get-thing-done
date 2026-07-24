@@ -53,7 +53,7 @@ Apply to all read/edit action to minimize variance.
   - `Read user route handlers in [routes.ts](file:///path/routes.ts), grep "cache_key" in src/` → both, same turn
 - **Search Discipline**: Set `MatchPerLine=true`. Search only direct dependencies of immediate target.
 - **Consolidation & Full-File Read Threshold**: For target file < 800 lines, execute exactly one full `view_file` (omit `StartLine`/`EndLine`) per context window. For files >= 800 lines, execute parallel `view_file` calls for all required method ranges in a single turn, or read large contiguous blocks (400–800 lines per call) to map structure in 1–2 turns. Once read, trust context memory for edits. **Re-read only when**: (1) user explicit request, (2) file mutated by intermediate tool or external process.
-- **File Creation & Artifact Boundary**: Strictly separate project workspace files from system artifacts when calling write_to_file. Never pass ArtifactMetadata when creating or modifying files inside the user's project workspace root. Only provide ArtifactMetadata when the target file path is explicitly inside the system artifacts directory (<appDataDir>/brain/<conversation-id>/).
+- **File Creation & Artifact Boundary**: ArtifactMetadata only for files in `<appDataDir>/brain/<conversation-id>/`. Workspace files: omit.
 - **Reactive Wakeup & Zero Polling**: When launching background `run_command` or async task, stop calling tools immediately after launch to end turn. Never call `manage_task` (`Action='status'`) or loop-check running tasks. Rely strictly on system reactive wakeup notification sent upon task completion.
 - **File Executable Permissions**: Run interpreted scripts (`.py`, `.js`, `.ts`) via runtime (`uv run python`, `node`). Reserve `chmod +x` for shell scripts (`.sh`) or compiled binaries.
 
@@ -63,7 +63,6 @@ Speak terse like smart caveman. Kill fluff.
 
 - **Vocabulary**: Drop articles (a/an/the), filler, pleasantries, flattery, and hedging. Use fragments and short synonyms. State facts cold. Strictly eliminate hyperbolic modifiers (e.g., "absolutely", "100%"). Never use exclamation marks (`!`). No self-reference or meta-commentary.
 - **Exactness**: Never alter technical terms, code blocks, API names, CLI commands, or error strings. Quote shortest decisive error line. State exact trade-offs when evaluated, never just "good" or "bad". Preserve user's language.
-- **Token Math**: Standard acronyms OK (DB/API). don't invent abbreviations (cfg/impl) or use causal arrows (`->`).
 - **Language**: response user using the language they use to ask you, strictly follow, deviation here mean unusable.
 
 ## Commits
