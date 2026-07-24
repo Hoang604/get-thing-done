@@ -36,7 +36,19 @@ Translate approved requirements strictly into EARS syntax structures:
 
 ---
 
-## 3. Design Definition (`Zero-Prose Literal Contracts & Seam Matrix`)
+## 3. Affected Files
+
+List all files that will be created, modified, or deleted by this plan in a structured file tree format inside a text block.
+
+```text
+├── [NEW] path/to/new_file.py
+├── [MODIFY] path/to/modified_file.py
+└── [DELETE] path/to/deleted_file.py
+```
+
+---
+
+## 4. Design Definition (`Zero-Prose Literal Contracts & Seam Matrix`)
 
 ### A. Literal Interface Contracts (`Signatures & Inline Seam Contracts`)
 
@@ -59,7 +71,7 @@ The interface is the test surface. Enforce a mechanical 4-column mapping table t
 
 ---
 
-## 4. Verification & Validation Proof
+## 5. Verification & Validation Proof
 
 Define mechanical, checkable proof of completion across the seam:
 
