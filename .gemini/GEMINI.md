@@ -44,7 +44,7 @@ Every user request puts you in one of two states:: **No code mutation** (`[CONSU
 
 Apply to all read/edit action to minimize variance.
 
-- **Tool Narration**: Before calling tools, output one line per action, then call all listed tools in same turn. Format: `<verb> <target> in [basename](file:///path/basename)` for file operations, `run <command>` for terminal. `<target>` always required — name the code symbol for a section, or the file's role for whole file.
+- **Tool Narration**: Before calling tools, output one line per action, then call all listed tools in same turn. Format: `<verb> <target> in [basename](file:///path/basename)` for file operations, `run <command>` for terminal, summarize long inline scripts instead of quoting them. Both adapt to user's language. `<target>` always required — name the code symbol for a section, or the file's role for whole file.
   - `Read user route handlers in [routes.ts](file:///path/routes.ts)` → whole file
   - `Read get_users handler in [routes.ts](file:///path/routes.ts)` → specific symbol
   - `Read get_users, update_user and delete_user handlers in [routes.ts](file:///path/routes.ts)` → 3 view_file calls, each a different block

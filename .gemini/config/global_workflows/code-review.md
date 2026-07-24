@@ -34,6 +34,10 @@ Use these exact terms when analyzing code and reporting findings:
     3. *Maintain small surface area* (fewer methods and parameters).
 *   **Open-Closed:** The system must absorb new features strictly by adding new code. If adding a new variant forces mutation of existing code, tag `[Open-Closed Violation]`.
 *   **Patterns:** A design pattern must solve a concrete, existing problem. If a pattern exists solely for speculative future-proofing, or creates indirection bottlenecks, it is an anti-pattern.
+*   **Data & I/O Performance (The Loop Test):** I/O must happen outside loops. Tag `[N+1 I/O Violation]` if a DB query or network call runs inside a loop. Tag `[Greedy Load]` if large data is loaded entirely into memory instead of batched, paginated, or yielded.
+*   **Concurrency Hygiene:** Mutexes, locks, and atomic boundaries must encase strictly fast, in-memory state mutations. Tag `[Fat Lock Violation]` if external I/O, network calls, or slow DB queries execute while holding a lock.
+*   **State & Resource Leaks:** External resources must be wrapped in native context managers. Tag `[Mutable Default Violation]` if a mutable default (e.g., `[]`, `{}`) is used in function signatures.
+*   **Error Handling (Fail-Fast):** Code must crash loudly on unhandled states. Tag `[Silent Failure Violation]` if errors are swallowed by bare `except:` blocks, or nullables are accessed without explicit validation.
 
 **DEPENDENCY & DEEPENING ASSESSMENT**
 Classify dependencies to evaluate architectural boundaries and propose refactors:
@@ -60,17 +64,16 @@ Use 🟢 icon. List positive findings here:
 Use GitHub-style blockquotes (`> [!CAUTION]`, `> [!WARNING]`, `> [!IMPORTANT]`, `> [!NOTE]`). Group issues under exact headers:
 *   **🔴 Critical Performance & Reliability Issues:** [Severe bottlenecks or anti-patterns]
 *   **🟠 Memory & Scalability Issues:** [Memory leaks, O(N^2) allocations, unbounded growth]
-*   **🟡 Design & Architecture Violations:** [Explicitly tag `[Shallow Pass-through]`, `[Hypothetical Seam / Unnecessary Indirection]`, `[Test Surface Violation]`, `[Hardcoded Dependency]`, `[Side-Effect Mutation]`, or `[Open-Closed Violation]`]
+*   **🟡 Design & Architecture Violations:** [Architectural flaws and evaluation violations]
 
 For each issue, dissect problem in exact format:
 > [!WARNING]
-> **Pattern/Implementation Used:** [Link specific code block using strict syntax]
+> **Pattern/Implementation Used:** [Describe the exact pattern found, and link specific code block using strict syntax]
 > **Failure Mechanics:**
 > - **Normally:** [Behavior under ideal conditions]
-> - **When:** [Specific condition where it breaks down]
-> - **What:** [What happens when specific condition met]
-> - **Why:** [Root cause mechanism / failing deletion test / wrong seam]
-> - **How:** [Concrete example scenario]
+> - **When & What:** [Specific condition where it breaks down and what exactly thing will happen]
+> - **Why:** [Root cause mechanism]
+> - **How:** [Concrete real world example scenario]
 
 **4. Proposed Changes**
 List architectural and performance improvements.
