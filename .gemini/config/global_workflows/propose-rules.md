@@ -57,17 +57,20 @@ Formulate candidate rule additions or modifications. Apply this strict 2-stage a
    - **Test 2: Project Generalization Test (`No 1-File Rules`)**: Does the Project-Scoped rule apply universally to *every* component sharing that architectural role across the workspace (`e.g., all controllers, all repository classes, all async tasks`)? If the rule only names a single specific file or function (`e.g., OrderService.py`), **it fails and must be rewritten to cover the entire architectural layer or component family**.
 2. **No-Op Test**: Will this rule change agent behavior compared to default model behavior? If the model already follows the rule by default, discard it.
 3. **Single Source of Truth Check (`[ADDITION]` vs `[MODIFICATION]`)**:
-   - **When to Modify (`[MODIFICATION]`)**: If any existing bullet in the target scope touches the same domain or mechanic, you **MUST** propose a `[MODIFICATION]` to refine or split that existing rule. Never append duplicate rules (`Duplication / Sediment`).
+   - **When to Modify (`[MODIFICATION]`)**: If any existing bullet in the target scope touches the same domain or mechanic, you **MUST** propose a `[MODIFICATION]` to refine or split that existing rule. Keep the rule set deduplicated by modifying the existing rule (`Duplication / Sediment`).
    - **When to Add (`[ADDITION]`)**: Propose an `[ADDITION]` **ONLY** when the `Root Flaw` exposes a completely new domain or architectural pattern 100% absent in that scope.
 4. **Positive Framing**: State the required action ("Do X before Y") instead of a bare prohibition ("Never do Z"), unless the prohibition is a hard safety guardrail.
+5. **Leading Words**: Collapse fuzzy rule descriptions into strong, compact pretrained words. Anchor the rule's core concept in a specific vocabulary token rather than a rambling sentence.
+6. **Completion Criterion**: If the proposed rule dictates an action sequence or process, it must define a hard, checkable end-state to defend against premature completion.
+7. **Co-location & Sprawl**: Strictly compress the token count of the rule text. When proposing the rule, ensure its exact placement is adjacent to related concepts within the target block to maintain information hierarchy.
 
 _Completion Criterion_: Before proceeding to Step 3, you must output a 3-column verification table proving scope allocation and generalization for every candidate:
 
 | Local Defect / Trajectory Error | Allocated Scope (`Global vs Project`) | Generalized Rule Text (`Passed Two-Stack or Project Generalization Test`) |
 | :--- | :--- | :--- |
-| `Leaking uncommitted DB state across loop yield points` | `Global (<RULE[user_global]>)` | `Wrap external resource mutations (`disk, storage, network state`) inside explicit context managers or atomic check-then-act boundaries. Never leave partial mutations exposed across I/O yield points or failure paths.` |
-| `Forgot SQLAlchemy .with_for_update() in OrderService debit` | `Project (<RULE[AGENTS.md]>)` | `Always hold explicit row-level database locks (`SELECT ... FOR UPDATE` via `with_for_update()`) inside service layer transaction boundaries before executing read-then-write balance mutations across any financial entity.` |
-| `Hardcoded raw SQL inside FastAPI controller route handler` | `Project (<RULE[AGENTS.md]>)` | `Strictly isolate all SQL and ORM queries inside repository layer classes (`src/repositories/`). Never execute queries directly within FastAPI controller route handlers or serialization logic.` |
+| `Leaking uncommitted DB state across loop yield points` | `Global (<RULE[user_global]>)` | Wrap external resource mutations (`disk, storage, network state`) inside explicit context managers or atomic check-then-act boundaries. Contain all state mutations entirely within these boundaries before any I/O yield points or failure paths. |
+| `Forgot SQLAlchemy .with_for_update() in OrderService debit` | `Project (<RULE[AGENTS.md]>)` | Always hold explicit row-level database locks (`SELECT ... FOR UPDATE` via `with_for_update()`) inside service layer transaction boundaries before executing read-then-write balance mutations across any financial entity. |
+| `Hardcoded raw SQL inside FastAPI controller route handler` | `Project (<RULE[AGENTS.md]>)` | Strictly isolate all SQL and ORM queries inside repository layer classes (`src/repositories/`). Route handlers and serialization logic must exclusively call repository methods to fetch or mutate data. |
 
 Only rules listed in the right column are permitted to enter Step 3 (`Proposal Presentation`).
 
