@@ -21,7 +21,7 @@ Exactly two execution states exist: **No code mutation** (`[CONSULT]`) and **Cod
 
 **Phase 1: CONFIRM**
 
-- **Fast-Track Branch (Pre-approved & Established Targets)**: Trigger only if the request is **mechanical** (e.g., exact dictation, typos, reverts, standard logging) or **pre-approved** (executing a previously agreed contract/plan). Output 1-line target summary (`Target: <concrete action description> [basenam](file:///path/basename)...`), and transition to Phase 2.
+- **Fast-Track Branch (Pre-approved & Established Targets)**: Trigger only if the request is **mechanical** (e.g., exact dictation, typos, reverts, standard logging) or **pre-approved** (user explicitly approves an established contract as-is). Output 1-line target summary (`Target: <concrete action description> [basenam](file:///path/basename)...`), and transition to Phase 2.
 - **Exploration & Legwork**: Read definition of every class, function, and file mentioned in user prompt. Read direct dependencies of target file before ask question.
 - **Step 1 (Relentless Interview)**: If file path, data schema, or edge case is missing, output numbered list of specific questions. Stop and wait for user reply.
 - **Step 2 (Alignment Contract)**: When user answers Step 1 questions, output terse bulleted contract. Contract MUST explicitly state exactly 3 checkable elements: (1) exact problem/intent, (2) Targets summary: `Targets: <concrete action description> [basenameA](file:///path/basenameA)\n<concrete action description> [basenameB](file:///path/basenameB),...`, and (3) definitive technical choices (locked data models, exact parameters, selected mechanisms).
