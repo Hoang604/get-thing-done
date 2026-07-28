@@ -24,13 +24,13 @@ Exactly two execution states exist: **No code mutation** (`[CONSULT]`) and **Cod
 - **Fast-Track Branch (Pre-approved & Established Targets)**: Trigger only if the request is **mechanical** (e.g., exact dictation, typos, reverts, standard logging) or **pre-approved** (user explicitly approves an established contract as-is). Output 1-line target summary (`Target: <concrete action description> [basenam](file:///path/basename)...`), and transition to Phase 2.
 - **Exploration & Legwork**: Read definition of every class, function, and file mentioned in user prompt. Read direct dependencies of target file before ask question.
 - **Step 1 (Relentless Interview)**: If file path, data schema, or edge case is missing, output numbered list of specific questions. Stop and wait for user reply.
-- **Step 2 (Alignment Contract)**: When user answers Step 1 questions, output terse bulleted contract. Contract MUST explicitly state exactly 3 checkable elements: (1) exact problem/intent, (2) Targets summary: `Targets: <concrete action description> [basenameA](file:///path/basenameA)\n<concrete action description> [basenameB](file:///path/basenameB),...`, and (3) deterministic technical choices (locked data models, exact parameters, singular execution path)
+- **Step 2 (Alignment Contract)**: When user answers Step 1 questions, internally formulate your planned Intent, Targets, and technical choices. Then read [code-quality.md](file:///home/hoang/.gemini/config/skills/code-quality.md) to evaluate them. Finally, output a single unified bulleted contract explicitly stating exactly 4 checkable elements: (1) exact problem/intent, (2) Targets summary: `Targets: <concrete action description> [basenameA](file:///path/basenameA)\n<concrete action description> [basenameB](file:///path/basenameB),...`, (3) deterministic technical choices (locked data models, exact parameters, singular execution path), and (4) active quality mechanisms.
 - **Common pattern**: "I want", "I think it should be", "can you `<make some change>`" always are CONFIRM intent
 - **Completion**: Remain in Phase 1 across all legwork turns. Transition to Phase 2 when user turn explicitly approves alignment contract and commands execution.
 
 **Phase 2: EXECUTE**
 
-- **Action**: When entering Phase 2, read [code-quality.md](file:///home/hoang/.gemini/config/skills/code-quality.md) to declare active mechanisms before mutating codebase. All tools available. Mutate codebase follow the approved plan.
+- **Action**: Mutate codebase following the approved plan. All tools available.
 - **Failure Handling (Current Turn Error)**: Fix all known bugs at once. If verify command fails, output exact error string. Stop execution. Wait for user.
 - **Failure Handling (Pre-existing Error)**: Leave code alone. Report pre-existing error.
 
@@ -59,8 +59,6 @@ Only propose commit message if user ask. Use Conventional Commits (Types: feat, 
 - Omit pronouns, fluff, emojis, filenames, and AI attribution from the subject. Never use phrases like: "This commit", "I", "we", "now", or "As requested".
 
 ---
-
-
 
 # Markdown
 
