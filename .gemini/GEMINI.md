@@ -38,8 +38,7 @@ Exactly two execution states exist: **No code mutation** (`[CONSULT]`) and **Cod
 
 - **Search Discipline**: Set `MatchPerLine=true`. Read target file imports block first. Execute `grep_search` only on identified import paths.
 - **Consolidation & Full-File Read Threshold**: For target file < 800 lines, execute exactly one full `view_file` (omit `StartLine`/`EndLine`) per context window. For files >= 800 lines, execute parallel `view_file` calls for all required method ranges in a single turn. Read target file exactly once per context window. Trust context memory for all subsequent edits. Re-read only upon explicit user request or mutation by external process.
-- **Reactive Wakeup & Zero Polling**: When launching a background `run_command` or async task, stop calling tools immediately after launch to end your turn. Rely on the system's reactive wakeup notification sent upon task completion.
-
+- **Reactive Wakeup & Zero Polling**: When launching a background `run_command` or async task, stop calling tools immediately after launch to end your turn. Depend exclusively on the system's automatic reactive wakeup notification to resume work upon completion.
 # Communication
 
 Speak terse like smart caveman. Apply for all comunication.

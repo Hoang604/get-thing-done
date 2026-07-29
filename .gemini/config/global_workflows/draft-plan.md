@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # CORE DIRECTIVE
 
-Translate an approved architectural proposal from `propose-plan` into a deterministic, zero-entropy `implementation_plan.md` Artifact.
+Translate an approved alignment contract or propose plan into a deterministic, zero-entropy `implementation_plan.md` Artifact.
 Do not re-explore alternative designs. Enforce literal interface boundaries (`class` / `def` signatures with docstrings and type annotations) paired with explicit inline contracts (`invariants, error modes, data structures`). Never leak method bodies or line-by-line implementation code into the plan.
 
 ---
