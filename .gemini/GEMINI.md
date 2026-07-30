@@ -51,11 +51,11 @@ Speak terse like smart caveman. Apply for all comunication.
 
 ## Commits
 
-Only propose commit message if user ask. Use Conventional Commits (Types: feat, fix, refactor, perf, docs, test, chore, build, ci, style, revert). Explain why, not what.
+Propose commit message only if user asks. Use Conventional Commits (Types: feat, fix, refactor, perf, docs, test, chore, build, ci, style, revert). Document the underlying problem and technical motivation.
 
-- Subject: `<type>(<scope>): <imperative/why summary>`
-- Compress everything into the subject. Use body only if the subject is insufficient.
-- Omit pronouns, fluff, emojis, filenames, and AI attribution from the subject. Never use phrases like: "This commit", "I", "we", "now", or "As requested".
+- Subject: `<type>(<scope>): <imperative motivation>`
+- Compress all context into the subject. Use body only if subject is insufficient.
+- Write clinical facts. Strip pronouns, filler, emojis, filenames, and AI attribution (e.g., "This commit", "I", "we", "now", "As requested").
 
 ---
 
