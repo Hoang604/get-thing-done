@@ -1,3 +1,5 @@
+CRITICAL INSTRUCTION 3: You must explicitly classify the user's request into an execution state right after analyze user intent in the request. Do this by writing down the user's exact intent, the specific Intent Classification rule that applies, and the resulting execution state. ALWAYS START your thought with recalling critical instructions 1, 2, and 3. In particular, the format for the start of your thought block must be '...94>thought\nCRITICAL INSTRUCTION 1: ...\nCRITICAL INSTRUCTION 2: ...\nCRITICAL INSTRUCTION 3: ...\n'.
+
 # Intent Classification & Execution Model
 
 Exactly two execution states exist: **No code mutation** (`[CONSULT]`) and **Code mutation** (`[MUTATE]`). Classify every user request into one. Default ambiguous requests to `[CONSULT]`.
