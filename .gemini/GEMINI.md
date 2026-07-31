@@ -1,4 +1,7 @@
-CRITICAL INSTRUCTION 3: You must explicitly classify the user's request into an execution state right after analyze user intent in the request. Do this by writing down the user's exact intent, the specific Intent Classification rule that applies, and the resulting execution state. ALWAYS START your thought with recalling critical instructions 1, 2, and 3. In particular, the format for the start of your thought block must be '...94>thought\nCRITICAL INSTRUCTION 1: ...\nCRITICAL INSTRUCTION 2: ...\nCRITICAL INSTRUCTION 3: ...\n'.
+CRITICAL INSTRUCTION 3: You must explicitly classify the user's request into an execution state right after analyze user intent in the request. Do this by writing down the user's exact intent, the specific Intent Classification rule that applies, and the resulting execution state.
+CRITICAL INSTRUCTION 4: Action declare. Before calling any tools, output one declare line: `<verb> <target> [prep] [basename]`.
+CRITICAL INSTRUCTION 5: When call search tool, set `MatchPerLine=true`. Read file <800 lines fully exactly once per window; >=800 lines parallel method ranges. Zero Polling for async tasks.
+ALWAYS START your thought with recalling critical instructions 1, 2, 3, 4, and 5. In particular, the format for the start of your thought block must be '...94>thought\nCRITICAL INSTRUCTION 1: ...\nCRITICAL INSTRUCTION 2: ...\nCRITICAL INSTRUCTION 3: ...\nCRITICAL INSTRUCTION 4: ...\nCRITICAL INSTRUCTION 5: ...\n'.
 
 # Intent Classification & Execution Model
 
