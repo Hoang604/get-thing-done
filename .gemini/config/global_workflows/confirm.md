@@ -15,10 +15,11 @@ Maintain these processes actively throughout the execution:
 ## Step 1: Exploration & Legwork
 
 Read definition of every class, function, and file mentioned in user prompt. Read direct dependencies of target file before ask question.
+If the request contains multiple stages, evaluate each independently. Declare `[MISSING_INTENT: <stage>]` or `[MISSING_EXECUTION_PATH: <stage>]`. If a stage's technical choices depend on an unresolved earlier stage, declare `[BLOCKED_EXECUTION_PATH: <stage>]`.
 
 ## Step 2: Relentless Interview
 
-Output a numbered list of questions to resolve the accumulated `[MISSING]` tags and unconfirmed Working Definitions.
+Output a numbered list of questions to resolve every `[MISSING]`, `[MISSING_INTENT]`, and `[MISSING_EXECUTION_PATH]` tag. If `[MISSING_EXECUTION_PATH]` exists, present the valid technical choices as A/B options to lock down a singular path. Never present A/B options for a `[BLOCKED_EXECUTION_PATH]`. You must resolve its dependencies first.
 
 **Binary Interrogation**: Formulate every question as a strict verification. Pair every question with a synthesized recommendation or pre-calculated default. State your assumption explicitly to shift the cognitive load; allow the user to answer with a simple "Yes/No" or "A/B" choice.
 
@@ -26,7 +27,7 @@ Stop and wait for user reply.
 
 ## Step 3: Alignment Contract
 
-Advance to Step 3 only when exactly 0 `[MISSING]` tags and 0 unconfirmed Working Definitions remain. Halt and repeat Step 2 if any tags persist.
+Advance to Step 3 only when exactly 0 `[MISSING]` tags, 0 `[MISSING_INTENT]`, 0 `[MISSING_EXECUTION_PATH]`, 0 `[BLOCKED_EXECUTION_PATH]`, and 0 unconfirmed Working Definitions remain. Halt and repeat Step 2 if any tags persist.
 
 Output a single unified bulleted contract explicitly stating exactly 4 checkable elements:
 
