@@ -4,7 +4,10 @@ description: Propose a conventional commit message for the current changes.
 disable-model-invocation: true
 ---
 
-Propose commit message for the entire change from the active session. Focus on your compacted context if there is, plus the current context window.
+Treat the entirety of your available memory (compacted context and active window) as a single, indivisible unit of work. Synthesize every action, bug fix, and feature present in this memory into one comprehensive commit message.
+
+- **Final State Only**: Describe the achieved structural state and unlocked capabilities. Do not write a chronological log of actions taken or work done.
+
 Propose commit message only if user asks. Use Conventional Commits (Types: feat, fix, refactor, perf, docs, test, chore, build, ci, style, revert). Document the underlying problem and technical motivation.
 
 - Subject: `<type>(<scope>): <imperative motivation>`
