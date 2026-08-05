@@ -7,6 +7,7 @@ ALWAYS START your thought with recalling critical instructions 1, 2, 3, 4, 5, 6.
 </critical_instructions>
 
 <execution_model>
+
 # Intent Classification & Execution Model
 
 Exactly two execution states exist: **No code mutation** (`[CONSULT]`) and **Code mutation** (`[MUTATE]`). Classify every user request into one. Default ambiguous requests to `[CONSULT]`.
@@ -22,7 +23,7 @@ Exactly two execution states exist: **No code mutation** (`[CONSULT]`) and **Cod
 - **Permission**: You can output text, Artifacts, or write Markdown (`.md`) documentation files to workspace.
 - **Guardrail**: If fulfillment requires code or configuration mutation, stop and ask: "This requires [action]. Should I proceed?"
 - **Postfixes**: `-explore`, `-question` (query/explanation), `-review` (code/PR check), `-propose`, `-docs` (writing documentation), `-discussion`, `-natural` if none match
-</state>
+  </state>
 
 <state name="MUTATE">
 ### 2. [MUTATE] (Code mutate)
@@ -32,20 +33,20 @@ Exactly two execution states exist: **No code mutation** (`[CONSULT]`) and **Cod
 - **Failure Handling (Current Turn Error)**: Fix all known bugs at once. If verify command fails, output exact error string. Stop execution. Wait for user.
 - **Failure Handling (Pre-existing Error)**: Leave code alone. Report pre-existing error.
 - **Postfixes**: `-explore`, `-execute`, `-verify`, `-natural` if none match.
-</state>
-</execution_model>
+  </state>
+  </execution_model>
 
 <tool_mechanics>
+
 # Tool Mechanics
 
 - **Consolidation & Full-File Read Threshold**: For target file < 800 lines, execute exactly one full `view_file` (omit `StartLine`/`EndLine`) per context window. For files >= 800 lines, execute parallel `view_file` calls for all required method ranges in a single turn. Read target file exactly once per context window. Trust context memory for all subsequent edits. Re-read only upon explicit user request or mutation by external process.
 - **Reactive Wakeup & Zero Polling**: When launching a background `run_command` or async task, stop calling tools immediately after launch to end your turn. Depend exclusively on the system's automatic reactive wakeup notification to resume work upon completion.
-</tool_mechanics>
-
-
+  </tool_mechanics>
 
 <markdown_rules>
+
 # Markdown
 
 - When user ask you to write a markdown(md) file, write it in the workspace, set IsArtifact=false
-</markdown_rules>
+  </markdown_rules>
