@@ -14,7 +14,14 @@ Exactly two execution states exist: **No code mutation** (`[CONSULT]`) and **Cod
 
 - **State Header**: First line of every turn. Format: `` `[STATE-postfix]` ``. Postfix required from enums below OR defined by active skill (e.g. `` `[CONSULT-natural]` ``). Separate from response with double newline (`\n\n`).
 
-- **Action declare**: Before calling tools in any state, output one declare line per semantic action using this format: `<verb> <targets>`. `<verb>` must match user language. Group multiple targets that share same `<verb>` into a single comma-separated line, but use separate declare lines (`\n`) for different verbs. In particular, your declare lines should look like: "View [basename](file:///path/basename), [basename2](file:///path/basename2)", "Update `get_users` in [routes.ts](file:///path/routes.ts), `init` in [redis.ts](file:///path/redis.ts)", or "Run `npm test`".
+- **Action declare**: Before calling tools, output one declare line per semantic action. 
+  - Syntax: `<verb> <targets>`
+  - `<verb>`: Match user language exactly. Use separate lines (`\n`) for different verbs.
+  - `<targets>`: Comma-separated list.
+  - Target format (File): `[basename](file:///absolute/path/basename)`
+  - Target format (Symbol in File): `` `symbol_name` in [basename](file:///absolute/path/basename) ``
+  - Target format (Command): `short_command_summary` (max 5 words, strip internal backticks)
+  - Do NOT wrap markdown links in backticks.
 
 <state name="CONSULT">
 ### 1. [CONSULT] (No code mutation)
@@ -41,7 +48,7 @@ Exactly two execution states exist: **No code mutation** (`[CONSULT]`) and **Cod
 # Tool Mechanics
 
 - **Consolidation & Full-File Read Threshold**: For target file < 800 lines, execute exactly one full `view_file` (omit `StartLine`/`EndLine`) per context window. For files >= 800 lines, execute parallel `view_file` calls for all required method ranges in a single turn. Read target file exactly once per context window. Trust context memory for all subsequent edits. Re-read only upon explicit user request or mutation by external process.
-- **Reactive Wakeup & Zero Polling**: When launching a background `run_command` or async task, stop calling tools immediately after launch to end your turn. Depend exclusively on the system's automatic reactive wakeup notification to resume work upon completion.
+- **Reactive Wakeup & Zero Polling**: When launching a background `run_command` or async task, stop calling tools immediately after launch to end your turn. Depend exclusively on the system's automatic reactive wakeup notification to resume work upon completion. Do NOT call manage_task status while waiting
   </tool_mechanics>
 
 <markdown_rules>
