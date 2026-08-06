@@ -13,7 +13,7 @@ Do not re-explore alternative designs. Enforce literal interface boundaries (`cl
 
 ## 1. User Outcome & Risk Assessment
 
-- Copy the exact **User Outcomes** block finalized and approved during `propose-plan`.
+- Copy the exact **User Outcomes** block finalized and approved during alignment (`propose-plan` or `confirm`).
 - Use GitHub-style alerts strictly to flag architectural boundaries and risks:
   - `> [!CAUTION]` for architecture shifts or data loss risks.
   - `> [!WARNING]` for breaking changes to public APIs or schemas.
