@@ -40,10 +40,13 @@ Translate approved requirements strictly into EARS syntax structures:
 
 List all files that will be created, modified, or deleted by this plan in a structured file tree format inside a text block.
 
-```text
-├── [NEW] path/to/new_file.py
-├── [MODIFY] path/to/modified_file.py
-└── [DELETE] path/to/deleted_file.py
+```tree
+.
+├── src/
+│   ├── [NEW] api/routes.py
+│   └── [MODIFY] main.py
+└── tests/
+    └── [DELETE] test_old.py
 ```
 
 ---
