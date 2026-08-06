@@ -1,7 +1,7 @@
 ---
 name: audit-spec-alignment
+description: Audit change against SPEC.md.
 disable-model-invocation: true
-description: Cross-references code against a spec to strictly categorize matches, deviations, fabrications, and ambiguities into a structured audit report artifact.
 ---
 
 # audit-spec-alignment

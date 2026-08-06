@@ -1,6 +1,6 @@
 ---
 name: stress-test
-description: Audit agent-produced work across operating regimes with zero-regression fixes.
+description: stress test anything
 disable-model-invocation: true
 ---
 

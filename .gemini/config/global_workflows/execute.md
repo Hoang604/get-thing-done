@@ -1,6 +1,6 @@
 ---
 name: execute
-description: Execute an approved Alignment Contract.
+description: Execute an Alignment Contract.
 disable-model-invocation: true
 ---
 

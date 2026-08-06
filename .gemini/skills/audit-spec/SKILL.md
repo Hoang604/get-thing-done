@@ -1,6 +1,6 @@
 ---
 name: audit-spec
-description: Adversarially audit a SPEC.md document to identify domain entropy, missing fallbacks, and contradictions.
+description: Audit SPEC.md, identify entropy.
 disable-model-invocation: true
 ---
 

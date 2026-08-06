@@ -1,6 +1,6 @@
 ---
 name: create-test
-description: Design repo-specific test strategy and write deterministic tests catching real boundary and invariant bugs at clean external seams
+description: write test catch real boundary and bugs
 disable-model-invocation: true
 ---
 

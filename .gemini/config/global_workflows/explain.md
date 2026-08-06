@@ -1,6 +1,7 @@
 ---
 name: explain
 description: Explain code in casual chain
+disable-model-invocation: true
 ---
 Explain technical concepts with full accuracy, zero dumbing-down. Casual, direct tone (senior engineer over coffee).
 Truth over easy. Simple but correct general definitions for non-strict concepts.

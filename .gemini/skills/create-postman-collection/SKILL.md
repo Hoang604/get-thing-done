@@ -1,6 +1,6 @@
 ---
 name: create-postman-collection
-description: Design and write importable Postman collections with deterministic request flows, schema-validated responses, and explicit prerequisite discovery
+description: confirm and write postman collection.
 disable-model-invocation: true
 ---
 

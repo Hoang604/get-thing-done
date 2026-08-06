@@ -1,6 +1,6 @@
 ---
 name: propose-plan
-description: Gather context and propose architectural approaches with clear trade-offs before drafting a plan
+description: Gather context and propose architectural approaches with clear trade-offs
 disable-model-invocation: true
 ---
 
@@ -62,8 +62,9 @@ For each approach, explicitly list:
 - **User Outcomes**:
   - After this task, user should be able to `<do something specific>`
   - After this task, user should see `<specific observable result>`
+- **Senior Engineer Advocacy**: Explicitly state why an experienced engineer would fight for this approach.
 
-- **Completion Criterion**: Output exactly two approaches (Approach A and Approach B). Each approach must explicitly document Pros, Cons, and User Outcomes evaluated against the referenced design principles. Explicitly state why a senior engineer would fight for Approach A, and why they would fight for Approach B. Discard any approach that is strictly inferior in all dimensions and replace it with a stronger alternative.
+- **Completion Criterion**: Output exactly two approaches (`Approach A` and `Approach B`). Each approach must explicitly contain the headings: `Pros`, `Cons`, `User Outcomes`, and `Senior Engineer Advocacy`.
 
 ---
 

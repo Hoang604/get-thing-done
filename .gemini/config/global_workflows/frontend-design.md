@@ -1,6 +1,6 @@
 ---
 name: frontend-design
-description: anthropic frontend design skill
+description: Write good frontend
 disable-model-invocation: true
 ---
 

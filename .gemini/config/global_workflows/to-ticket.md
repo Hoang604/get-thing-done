@@ -1,6 +1,6 @@
 ---
 name: to-tickets
-description: Break a confirmed ./.gtd/<task_name>/SPEC.md into a set of tracer-bullet tickets, mapping domain concepts to codebase seams with explicit blocking edges published to ./.gtd/<task_name>/tickets/.
+description: Break a ./.gtd/<task_name>/SPEC.md to a set of tickets
 disable-model-invocation: true
 ---
 

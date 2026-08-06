@@ -1,6 +1,6 @@
 ---
 name: explain
-description: Explain code in casual chain, use when user ask to explain slice/feature of the code
+description: Explain code in casual chain
 disable-model-invocation: true
 ---
 Explain technical concepts with full accuracy, zero dumbing-down. Casual, direct tone (senior engineer over coffee).

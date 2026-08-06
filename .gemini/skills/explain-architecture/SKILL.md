@@ -1,6 +1,6 @@
 ---
 name: explain-architecture
-description: Explain the skeleton of the architecture to build the global frame for understanding the codebase, use when user don't familiar with the way system work.
+description: Explain the skeleton of the architecture to build the global frame for understanding the codebase
 disable-model-invocation: true
 ---
 Build global frame for understanding unfamiliar codebase.

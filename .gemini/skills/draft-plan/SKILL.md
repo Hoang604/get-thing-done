@@ -1,6 +1,6 @@
 ---
 name: draft-plan
-description: Draft formal implementation_plan.md artifact using EARS syntax with zero-prose literal contracts and seam test matrix
+description: Draft plan after confirm approach
 disable-model-invocation: true
 ---
 

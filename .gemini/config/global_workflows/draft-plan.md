@@ -1,6 +1,6 @@
 ---
 name: draft-plan
-description: Draft formal implementation_plan.md artifact using EARS syntax with zero-prose literal contracts and seam test matrix
+description: Draft plan after confirm approach
 disable-model-invocation: true
 ---
 
@@ -13,7 +13,7 @@ Do not re-explore alternative designs. Enforce literal interface boundaries (`cl
 
 ## 1. User Outcome & Risk Assessment
 
-- Copy the exact **User Outcomes** block finalized and approved during alignment (`propose-plan` or `confirm`).
+- Copy the exact **User Outcomes** block finalized and approved during `propose-plan`.
 - Use GitHub-style alerts strictly to flag architectural boundaries and risks:
   - `> [!CAUTION]` for architecture shifts or data loss risks.
   - `> [!WARNING]` for breaking changes to public APIs or schemas.

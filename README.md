@@ -30,7 +30,8 @@ Systematic sequence of skills for rigorous development, auditing, and delivery:
 > Every skill listed below has an identical corresponding slash command available in global workflows (`.gemini/config/global_workflows/`). For example, invoking `/propose-plan` runs the exact same logic as the `propose-plan` skill.
 
 ### 1. Core Execution
-- **[confirm](.gemini/skills/confirm/SKILL.md)**: Relentless interview to rigorously synchronize language, context, and system topology from top to bottom before execution.
+- **[interview](.gemini/skills/interview/SKILL.md)**: Interview before making change to share understanding.
+- **[confirm](.gemini/skills/confirm/SKILL.md)**: Draft the contract after interview.
 - **[execute](.gemini/skills/execute/SKILL.md)**: Execute an approved Alignment Contract.
 - **[propose-commit](.gemini/skills/propose-commit/SKILL.md)**: Propose a conventional commit message for the current changes.
 
@@ -45,8 +46,7 @@ Systematic sequence of skills for rigorous development, auditing, and delivery:
 - **[code-review](.gemini/skills/code-review/SKILL.md)**: Take scope, review code, and return a structured architectural report.
 - **[verify-issue](.gemini/skills/verify-issue/SKILL.md)**: Trace codebase to verify whether issues flagged in code review are false positives.
 
-### 5. Analysis & Rule Improvement
-- **[propose-rules](.gemini/skills/propose-rules/SKILL.md)**: Analyze agent trajectory or codebase artifacts for decision flaws and propose global or project-scoped rule improvements without editing files.
+### 5. Explain codebase
 - **[explain](.gemini/skills/explain/SKILL.md)**: Explain code in a causal chain when analyzing a slice or feature.
 - **[explain-architecture](.gemini/skills/explain-architecture/SKILL.md)**: Explain the skeleton of the architecture to build the global frame for understanding the codebase.
 
