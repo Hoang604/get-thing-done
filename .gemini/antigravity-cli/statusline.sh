@@ -152,6 +152,11 @@ if [ -n "$CONV_ID" ]; then
             PRICE_CACHE=0.15
             PRICE_OUT=9.00
             ;;
+        *"3.6 Flash"*)
+            PRICE_IN=1.50
+            PRICE_CACHE=0.15
+            PRICE_OUT=7.00
+            ;;
         *"Claude Sonnet 4.6"*)
             PRICE_IN=3.00
             PRICE_CACHE=0.30
