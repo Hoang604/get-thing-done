@@ -13,3 +13,5 @@ Propose commit message only if user asks. Use Conventional Commits (Types: feat,
 - Subject: `<type>(<scope>): <imperative motivation>`
 - Compress all context into the subject. Use body only if subject is insufficient.
 - Write clinical facts. Strip pronouns, filler, emojis, filenames, and AI attribution (e.g., "This commit", "I", "we", "now", "As requested").
+
+- **Body Format**: Wrap lines at 72 characters. Use bullet points (`- `) for distinct architectural changes or motivations. Separate subject and body with a blank line.
