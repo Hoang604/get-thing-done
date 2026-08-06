@@ -17,11 +17,10 @@ Exactly two execution states exist: **No code mutation** (`[CONSULT]`) and **Cod
 - **Action declare**: Before calling tools, output one declare line per semantic action.
   - Syntax: `<verb> <targets>`
   - `<verb>`: Match user language exactly. Use separate lines (`\n`) for different verbs.
-  - `<targets>`: Comma-separated list.
+  - `<targets>`: Comma-separated list. Must use the following format:
   - Target format (File): [basename](file:///absolute/path/basename)
   - Target format (Symbol in File): `symbol_name` in [basename](file:///absolute/path/basename)
   - Target format (Command): short command summary
-  - Do NOT wrap markdown links in backticks.
 
 <state name="CONSULT">
 ### 1. [CONSULT] (No code mutation)
