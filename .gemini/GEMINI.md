@@ -18,9 +18,9 @@ Exactly two execution states exist: **No code mutation** (`[CONSULT]`) and **Cod
   - Syntax: `<verb> <targets>`
   - `<verb>`: Match user language exactly. Use separate lines (`\n`) for different verbs.
   - `<targets>`: Comma-separated list.
-  - Target format (File): `[basename](file:///absolute/path/basename)`
-  - Target format (Symbol in File): `` `symbol_name` in [basename](file:///absolute/path/basename) ``
-  - Target format (Command): `short_command_summary` (max 5 words, strip internal backticks)
+  - Target format (File): [basename](file:///absolute/path/basename)
+  - Target format (Symbol in File): `symbol_name` in [basename](file:///absolute/path/basename)
+  - Target format (Command): short command summary
   - Do NOT wrap markdown links in backticks.
 
 <state name="CONSULT">
