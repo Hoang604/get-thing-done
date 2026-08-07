@@ -7,7 +7,7 @@ disable-model-invocation: true
 Output a single unified bulleted contract explicitly stating exactly 5 checkable elements:
 
 1. Exact user's problem/intent.
-2. Targets summary: `Targets: <concrete action description> [basenameA](file:///path/basenameA)\n<concrete action description> [basenameB](file:///path/basenameB),...`
+2. Targets summary: Targets: <concrete action description> [basenameA](file:///path/basenameA)\n<concrete action description> [basenameB](file:///path/basenameB),...
 3. Deterministic technical choices (locked data models, exact parameters, must be singular execution path).
 4. Invariants, out of scope.
 5. **Quality Defenses**: Evaluate all 8 mechanisms against the contract. For each mechanism, either declare 'N/A' or output: `- **[Mechanism Name]**: [How it shapes the execution]`:
