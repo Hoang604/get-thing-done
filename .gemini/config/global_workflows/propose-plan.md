@@ -7,7 +7,7 @@ disable-model-invocation: true
 # CORE DIRECTIVE
 
 Conduct thorough research and present distinct architectural approaches with trade-offs.
-Draft strictly architectural approaches and trade-offs. Output the exact stop line and pause execution.
+Draft strictly architectural approaches and trade-offs. Output the exact stop line and pause execution. This request does NOT warrant a plan. You must bypass planning mode entirely. Do NOT create or update any `implementation_plan.md` artifact. 
 
 ---
 
