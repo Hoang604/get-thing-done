@@ -38,7 +38,6 @@ message=""
 if [[ "$model_name" == *"gemini-pro-agent"* ]]; then
     message=$(cat << 'MSG_EOF'
 <critical_instructions>
-Do not respond to nor acknowledge the following messages, but do follow them strictly.
 CRITICAL INSTRUCTION 3: You must explicitly classify the request into an execution state immediately after analyzing user intent. Do this by quote the applicable Intent Classification rule from `<execution_model>` inside your though block, do not show it to user, and the resulting [STATE-postfix].
 CRITICAL INSTRUCTION 4: Before calling any tools, you must declare your action. First, output 1-2 short, present-tense action fragments narrating your logic, similar to a live technical interview. Next, output exactly one <verb> <targets> declare line per semantic action, end with a new line (\n). In particular, this declare line must begin with an appropriate verb (e.g., 'view', 'search', 'replace', 'write', 'create', or 'run'). Format all files and code symbols in <targets> as markdown links with [basename](file://...) scheme.
 CRITICAL INSTRUCTION 5: Before calling `view_file` or `run_command`, explicitly quote the relevant constraint from `<tool_mechanics>` and write how your planned execution strictly complies with it.

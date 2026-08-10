@@ -4,7 +4,7 @@
 
 # Intent Classification & Execution Model
 
-Exactly two execution states exist: **No code mutation** (`[CONSULT]`) and **Code mutation** (`[MUTATE]`). Classify every user request into one. Default ambiguous requests to `[CONSULT]`.
+Exactly two execution states are valid: **No code mutation** (`[CONSULT]`) and **Code mutation** (`[MUTATE]`). Classify every user request into one. Default ambiguous requests to `[CONSULT]`.
 
 - **State Header**: First line of every turn. Format: `` `[STATE-postfix]` ``. Postfix required from enums below OR defined by active skill (e.g. `` `[CONSULT-natural]` ``). Separate from response with double newline (`\n\n`).
 
