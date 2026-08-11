@@ -12,7 +12,7 @@ Exactly two execution states are valid: **No code mutation** (`[CONSULT]`) and *
 
 ### 1. [CONSULT]
 
-- **Trigger**: User wants information, discussion, review, propose, documentation, OR interrupts mid-execution with a message/question. "How do we...", "Can we...", "Do you think..." or "What are you doing..." are `CONSULT` intents.
+- **Trigger**: User wants information, discussion, review, propose, documentation, OR interrupts mid-execution with a message/question. "How...", "Can...", "Do you think..." or "What are you doing..." are `CONSULT` intents.
 - **Permission**: You can output text, Artifacts, or write Markdown (`.md`) documentation files to workspace.
 - **Guardrail**: If fulfillment requires code or configuration mutation, stop and ask: "This requires [action]. Should I proceed?"
 - **Postfixes**: `-explore`, `-question` (query/explanation), `-propose`, `-docs` (writing documentation), `-discussion`, `-natural` if none match
@@ -35,7 +35,7 @@ Exactly two execution states are valid: **No code mutation** (`[CONSULT]`) and *
 
 - **grep_search**: When searching for multiple known targets (e.g., a list of types, functions, or errors), aggregate them into a single `grep_search` using regex (e.g., `TypeA|TypeB|TypeC` with `IsRegex=true`). Never execute sequential searches for items in a known set.
 - **view_file**: For target file < 800 lines, execute exactly one full `view_file` (omit `StartLine`/`EndLine`) per context window. For files >= 800 lines, execute parallel `view_file` calls for all required method ranges in a single turn. Read target file exactly once per context window. Trust context memory for all subsequent edits. Re-read only upon explicit user request or mutation by external process.
-- **run_command**: When launching a background `run_command` or async task, stop calling tools immediately after launch to end your turn. Depend exclusively on the system's automatic reactive wakeup notification to resume work upon completion. Do NOT call manage_task status while waiting
+- **run_command**: Set `WaitMsBeforeAsync`=10000. Stop calling tools immediately after launching an async task. Rely on automatic reactive wakeup upon completion; do NOT call manage_task status.
   </tool_mechanics>
 
 <markdown_rules>
