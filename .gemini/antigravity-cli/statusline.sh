@@ -136,11 +136,11 @@ if [ -n "$CONV_ID" ]; then
       CUMULATIVE_IN=$((CUMULATIVE_IN + DISPLAY_IN_TOKENS))
       CUMULATIVE_CACHE=$((CUMULATIVE_CACHE + CACHE_TOKENS))
       CUMULATIVE_OUT=$((CUMULATIVE_OUT + OUT_TOKENS))
-      
+
       PRICE_IN=0
       PRICE_CACHE=0
       PRICE_OUT=0
-      
+
       case "$MODEL" in
         *"3.1 Pro"*)
             PRICE_IN=2.00
@@ -156,6 +156,11 @@ if [ -n "$CONV_ID" ]; then
             PRICE_IN=1.50
             PRICE_CACHE=0.15
             PRICE_OUT=7.00
+            ;;
+        *"3.7 Flash"*)
+            PRICE_IN=0.75
+            PRICE_CACHE=0.075
+            PRICE_OUT=3.5
             ;;
         *"Claude Sonnet 4.6"*)
             PRICE_IN=3.00
