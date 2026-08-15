@@ -32,6 +32,8 @@ chmod +x "$TARGET_DIR/antigravity-cli/statusline.sh"
 chmod +x "$TARGET_DIR/config/scripts/track_turn.sh"
 chmod +x "$TARGET_DIR/config/scripts/critical_instructions.sh"
 chmod +x "$TARGET_DIR/config/scripts/init-python-agent.sh"
+chmod +x "$TARGET_DIR/config/scripts/verify_recorder.py"
+chmod +x "$TARGET_DIR/config/scripts/verify_injector.py"
 
 mkdir -p "$HOME/.local/bin"
 ln -sf "$TARGET_DIR/config/scripts/init-python-agent.sh" "$HOME/.local/bin/init-python-agent"

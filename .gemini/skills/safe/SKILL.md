@@ -1,18 +1,19 @@
 ---
 name: safe
-description: Safeguard execution for costly or irreversible operations, speculative domain mutations, and semantic git conflicts by presenting rationale, blast radius, assumptions, and contingency before proceeding.
+description: Safeguard execution for costly or irreversible operations, speculative domain mutations, semantic git conflicts, and structural/modify-delete collisions by presenting rationale, blast radius, assumptions, and contingency before proceeding.
 disable-model-invocation: true
 ---
 
 # Safe Protocol
 
-A safeguard protocol triggered prior to executing operations with high **Rollback Cost**, irreversible side effects, unverified domain assumptions, or semantic conflicts.
+A safeguard protocol triggered prior to executing operations with high **Rollback Cost**, irreversible side effects, unverified domain assumptions, semantic conflicts, or structural / modify-delete collisions.
 
 ## Trigger Classes
 
 1. **Destructive / Irreversible Operations**: Schema drop, branch force-push, bulk data mutation, production configuration changes, file deletion/overwrite without backup.
 2. **Speculative Domain Mutation**: Writing business logic when requirements are ambiguous, unverified, or missing from codebase and documentation.
 3. **Semantic Git Conflict**: Merging or resolving conflicts where competing branches implement divergent domain rules or intent.
+4. **Structural & Modify/Delete Collision**: Merging conflicts involving directory renames, moved files, or modify/delete states where branch changes risk being silently lost upon file deletion.
 
 ## Information Hierarchy
 
@@ -36,7 +37,13 @@ Clarify the necessity and surface latent uncertainty:
   - *Theirs Intent*: Domain rule and behavior of incoming branch.
   - *Divergence*: Specific point of business logic collision.
 
-*Completion Criterion*: Causal link established, alternatives evaluated, and all assumptions/divergences explicitly detailed.
+### 2.1 Mandatory Checks for Modify/Delete & Rename Conflicts
+Before staging any `git rm` or discarding a file during conflict resolution:
+- **Zero Bulk Deletion**: Strictly prohibit bulk `git rm` without individual file inspection.
+- **Content Parity Audit**: Diff the deleted path against the counterpart file at the new path to detect branch-specific domain rules, interfaces, or logic enhancements.
+- **Explicit Logic Porting**: If divergence exists, plan and execute the porting of logic to the new path before removing the obsolete file.
+
+*Completion Criterion*: Every modify/delete or moved file audited for content divergence with a verified logic porting plan prior to removal.
 
 ### 3. Define Contingency
 Establish the recovery or abort procedure:
@@ -52,7 +59,7 @@ Output format:
 ```markdown
 ### 🛡️ Safe Guard: [Action Summary]
 
-- **Trigger Class**: [Destructive / Irreversible | Speculative Domain Mutation | Semantic Git Conflict]
+- **Trigger Class**: [Destructive / Irreversible | Speculative Domain Mutation | Semantic Git Conflict | Structural / Modify-Delete Collision]
 - **Rollback Cost**: [Low | High | Irreversible]
 - **Target / Blast Radius**:
   - [Target 1]: [Direct impact]
