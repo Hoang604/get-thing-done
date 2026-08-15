@@ -14,7 +14,16 @@
       "cypress",
       "playwright",
       "turbo",
-      "ts-node"
+      "ts-node",
+      "graphql-codegen",
+      "openapi-typescript",
+      "openapi-ts",
+      "orval",
+      "prisma",
+      "typechain",
+      "swagger-codegen",
+      "buf",
+      "protoc"
     ],
     "python": [
       "pytest",
@@ -25,19 +34,29 @@
       "flake8",
       "pylint",
       "coverage",
-      "nosetests"
+      "nosetests",
+      "tox",
+      "nox",
+      "alembic"
     ],
     "rust": [
       "cargo test",
       "cargo check",
       "cargo clippy",
-      "cargo build"
+      "cargo build",
+      "sqlx",
+      "diesel",
+      "bindgen"
     ],
     "go": [
       "go test",
       "go vet",
       "golangci-lint",
-      "go build"
+      "go build",
+      "sqlc",
+      "buf",
+      "mockgen",
+      "templ generate"
     ],
     "java": [
       "mvn test",
@@ -52,7 +71,7 @@
     ]
   },
   "failure_signatures": {
-    "node": ["ELIFECYCLE", "ERR!", "Command failed", "FAIL", "exit status", "error TS", "TypeScript error"],
+    "node": ["ELIFECYCLE", "ERR!", "Command failed", "FAIL", "exit status", "error TS", "TypeScript error", "Generation failed", "Schema error"],
     "python": ["FAILED", "ERROR", "AssertionError", "exit status", "Traceback"],
     "rust": ["FAILED", "error[E", "error:", "exit status"],
     "go": ["FAIL", "exit status", "build failed"],

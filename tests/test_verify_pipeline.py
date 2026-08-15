@@ -45,8 +45,7 @@ class TestVerifyPipelineMultiLanguage(unittest.TestCase):
             res = self.recorder.record_if_failed(payload)
             self.assertIsNone(res, f"Should ignore: {cmd}")
 
-    def test_manifest_introspection_node(self):
-        # Create a mock package.json with custom script names
+    def test_manifest_introspection_node_and_generators(self):
         pkg_dir = os.path.join(self.temp_dir, "my-app")
         os.makedirs(pkg_dir, exist_ok=True)
         pkg_json = {
@@ -55,6 +54,9 @@ class TestVerifyPipelineMultiLanguage(unittest.TestCase):
                 "type-check": "tsc --noEmit",
                 "ci-verify": "vitest run --coverage",
                 "style-audit": "eslint . --max-warnings 0",
+                "codegen": "turbo run codegen",
+                "gen:api": "openapi-typescript src/schema.yaml -o src/api.ts",
+                "db:generate": "prisma generate",
                 "start-server": "node server.js"
             }
         }
@@ -75,18 +77,34 @@ class TestVerifyPipelineMultiLanguage(unittest.TestCase):
         self.assertIn("type-check", data["runnerName"])
         self.assertIn("tsc", data["runnerName"])
 
-        # 2. Custom script 'ci-verify' resolving to 'vitest'
+        # 2. 'codegen' resolving to 'turbo'
         payload = {
-            "conversationId": "conv-node-2",
-            "toolCall": {"name": "run_command", "args": {"CommandLine": "npm run ci-verify", "Cwd": pkg_dir}},
+            "conversationId": "conv-node-codegen",
+            "toolCall": {"name": "run_command", "args": {"CommandLine": "pnpm run codegen", "Cwd": pkg_dir}},
             "error": "exit status 1"
         }
         res = self.recorder.record_if_failed(payload)
         self.assertIsNotNone(res)
+        with open(res, "r") as f:
+            data = json.load(f)
+        self.assertEqual(data["ecosystem"], "node")
+        self.assertIn("turbo", data["runnerName"])
 
-        # 3. Non-test script 'start-server' ignored
+        # 3. 'gen:api' resolving to 'openapi-typescript'
         payload = {
-            "conversationId": "conv-node-3",
+            "conversationId": "conv-node-genapi",
+            "toolCall": {"name": "run_command", "args": {"CommandLine": "pnpm run gen:api", "Cwd": pkg_dir}},
+            "error": "exit status 1"
+        }
+        res = self.recorder.record_if_failed(payload)
+        self.assertIsNotNone(res)
+        with open(res, "r") as f:
+            data = json.load(f)
+        self.assertEqual(data["ecosystem"], "node")
+
+        # 4. Non-test script 'start-server' ignored
+        payload = {
+            "conversationId": "conv-node-server",
             "toolCall": {"name": "run_command", "args": {"CommandLine": "pnpm run start-server", "Cwd": pkg_dir}},
             "error": "exit status 1"
         }
@@ -94,7 +112,6 @@ class TestVerifyPipelineMultiLanguage(unittest.TestCase):
         self.assertIsNone(res)
 
     def test_monorepo_filter_resolution(self):
-        # Create monorepo package structure
         monorepo_dir = os.path.join(self.temp_dir, "monorepo")
         pkg_sub = os.path.join(monorepo_dir, "packages", "fe-store")
         os.makedirs(pkg_sub, exist_ok=True)
@@ -127,7 +144,7 @@ class TestVerifyPipelineMultiLanguage(unittest.TestCase):
         self.assertIn("type-check", data["runnerName"])
         self.assertIn("tsc", data["runnerName"])
 
-    def test_multi_language_support(self):
+    def test_multi_language_and_generators(self):
         test_cases = [
             # Python
             ("uv run pytest tests/", "python"),
@@ -135,24 +152,32 @@ class TestVerifyPipelineMultiLanguage(unittest.TestCase):
             ("python3 -m unittest discover", "python"),
             ("mypy src/", "python"),
             ("ruff check .", "python"),
+            ("alembic upgrade head", "python"),
             # Rust
             ("cargo test --all", "rust"),
             ("cargo check", "rust"),
             ("cargo clippy --all-targets", "rust"),
+            ("sqlx migrate run", "rust"),
             # Go
             ("go test ./...", "go"),
             ("go vet ./...", "go"),
             ("golangci-lint run", "go"),
+            ("sqlc generate", "go"),
+            ("buf generate", "go"),
             # Java
             ("mvn test", "java"),
             ("mvn verify", "java"),
             ("./gradlew check", "java"),
             ("gradle test", "java"),
+            # Node / Generators direct
+            ("prisma generate", "node"),
+            ("npx openapi-typescript schema.yaml -o api.ts", "node"),
+            ("turbo run codegen", "node"),
         ]
 
         for cmd, expected_eco in test_cases:
             payload = {
-                "conversationId": f"conv-{expected_eco}",
+                "conversationId": f"conv-{expected_eco}-{hash(cmd)}",
                 "toolCall": {"name": "run_command", "args": {"CommandLine": cmd}},
                 "error": "exit status 1"
             }

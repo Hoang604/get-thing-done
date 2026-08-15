@@ -134,7 +134,7 @@ class VerifyRecorder:
 
     def match_command(self, command: str, cwd: str = "") -> Optional[Tuple[str, str]]:
         """
-        Determines if a command is a verification command across Node, Python, Rust, Go, Java.
+        Determines if a command is a verification / codegen command across Node, Python, Rust, Go, Java.
         Returns Tuple of (ecosystem/language, description) or None.
         """
         if not command:
@@ -143,41 +143,48 @@ class VerifyRecorder:
 
         core_binaries = self.config.get("core_binaries", {})
 
-        # 1. Direct Python verifiers
-        python_binaries = core_binaries.get("python", ["pytest", "unittest", "mypy", "pyright", "ruff", "flake8"])
+        # 1. Direct Python verifiers & tools
+        python_binaries = core_binaries.get("python", ["pytest", "unittest", "mypy", "pyright", "ruff", "flake8", "alembic", "tox", "nox"])
         for py_bin in python_binaries:
             if re.search(rf"\b{re.escape(py_bin)}\b", cmd, re.IGNORECASE):
                 if re.search(rf"(^|/|\s|run\s+|-m\s+){re.escape(py_bin)}(\s+|$)", cmd, re.IGNORECASE):
-                    return ("python", f"Python verifier ({py_bin})")
+                    return ("python", f"Python tool ({py_bin})")
 
-        # 2. Direct Rust verifiers
-        rust_binaries = core_binaries.get("rust", ["cargo test", "cargo check", "cargo clippy", "cargo build"])
+        # 2. Direct Rust verifiers & tools
+        rust_binaries = core_binaries.get("rust", ["cargo test", "cargo check", "cargo clippy", "cargo build", "sqlx", "diesel"])
         for r_bin in rust_binaries:
-            sub = r_bin.replace("cargo ", "")
-            if re.search(rf"\bcargo(\s+.*)?\s+{re.escape(sub)}(\s+.*)?$", cmd, re.IGNORECASE):
-                return ("rust", f"Rust verifier ({r_bin})")
-
-        # 3. Direct Go verifiers
-        go_binaries = core_binaries.get("go", ["go test", "go vet", "golangci-lint", "go build"])
-        for g_bin in go_binaries:
-            if g_bin == "golangci-lint":
-                if re.search(r"\bgolangci-lint(\s+.*)?$", cmd, re.IGNORECASE):
-                    return ("go", "Go linter (golangci-lint)")
+            if r_bin.startswith("cargo "):
+                sub = r_bin.replace("cargo ", "")
+                if re.search(rf"\bcargo(\s+.*)?\s+{re.escape(sub)}(\s+.*)?$", cmd, re.IGNORECASE):
+                    return ("rust", f"Rust tool ({r_bin})")
             else:
+                if re.search(rf"\b{re.escape(r_bin)}\b", cmd, re.IGNORECASE):
+                    return ("rust", f"Rust tool ({r_bin})")
+
+        # 3. Direct Go verifiers & tools
+        go_binaries = core_binaries.get("go", ["go test", "go vet", "golangci-lint", "go build", "sqlc", "buf", "mockgen"])
+        for g_bin in go_binaries:
+            if g_bin.startswith("go "):
                 sub = g_bin.replace("go ", "")
                 if re.search(rf"\bgo(\s+.*)?\s+{re.escape(sub)}(\s+.*)?$", cmd, re.IGNORECASE):
-                    return ("go", f"Go verifier ({g_bin})")
+                    return ("go", f"Go tool ({g_bin})")
+            else:
+                if re.search(rf"\b{re.escape(g_bin)}\b", cmd, re.IGNORECASE):
+                    return ("go", f"Go tool ({g_bin})")
 
-        # 4. Direct Java verifiers
+        # 4. Direct Java verifiers & tools
         if re.search(r"\b(mvn|gradle|\./gradlew|gradlew)\b", cmd, re.IGNORECASE):
-            if re.search(r"\b(test|verify|check|compile)\b", cmd, re.IGNORECASE):
+            if re.search(r"\b(test|verify|check|compile|build)\b", cmd, re.IGNORECASE):
                 return ("java", "Java build/test tool")
 
-        # 5. Direct Node standalone binaries
-        node_binaries = core_binaries.get("node", ["tsc", "vitest", "jest", "mocha", "eslint", "biome", "cypress", "playwright"])
+        # 5. Direct Node standalone binaries & generators
+        node_binaries = core_binaries.get("node", [
+            "tsc", "vitest", "jest", "mocha", "eslint", "biome", "cypress", "playwright",
+            "turbo", "graphql-codegen", "openapi-typescript", "openapi-ts", "prisma", "buf", "protoc"
+        ])
         for n_bin in node_binaries:
             if re.search(rf"(^|/|\s|npx\s+){re.escape(n_bin)}(\s+|$)", cmd, re.IGNORECASE):
-                return ("node", f"Node verifier ({n_bin})")
+                return ("node", f"Node tool ({n_bin})")
 
         # 6. Node Package Manager Wrappers (npm, pnpm, yarn, bun, turbo) -> Manifest Introspection
         pm_match = re.search(r"^(npx\s+)?(npm|pnpm|yarn|bun|turbo)\b(?P<args>.*)$", cmd, re.IGNORECASE)
@@ -195,15 +202,18 @@ class VerifyRecorder:
                         if re.search(rf"\b{re.escape(n_bin)}\b", expanded_cmd, re.IGNORECASE):
                             return ("node", f"Node script '{script_name}' -> ({n_bin})")
 
-                # Fallback heuristic on script name or expanded string if it contains verify keywords
-                keywords = ["test", "build", "check", "lint", "verify", "validate", "type"]
+                # Fallback heuristic on script name or expanded string if it contains verify/codegen keywords
+                keywords = [
+                    "test", "build", "check", "lint", "verify", "validate", "type",
+                    "codegen", "generate", "gen", "schema", "compile", "audit"
+                ]
                 check_target = f"{script_name} {expanded_cmd or ''}".lower()
                 if any(kw in check_target for kw in keywords):
-                    return ("node", f"Node verification script ({script_name})")
+                    return ("node", f"Node verification/generator script ({script_name})")
 
-        # 7. Generic script check (e.g. ./scripts/verify.sh, make test)
-        if re.search(r"(^|/)((verify|validate|test|check|lint|build)[a-zA-Z0-9_-]*\.(sh|py|js|ts)|make\s+(test|check|verify))", cmd, re.IGNORECASE):
-            return ("generic", "Generic verification runner")
+        # 7. Generic script check (e.g. ./scripts/verify.sh, make test, make generate)
+        if re.search(r"(^|/)((verify|validate|test|check|lint|build|codegen|gen)[a-zA-Z0-9_-]*\.(sh|py|js|ts)|make\s+(test|check|verify|generate|codegen))", cmd, re.IGNORECASE):
+            return ("generic", "Generic verification/generator runner")
 
         return None
 
