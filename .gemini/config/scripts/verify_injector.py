@@ -59,18 +59,16 @@ class VerifyInjector:
                 pass
 
         command = incident.get("command", "verification command")
-        runner_name = incident.get("runnerName", "test runner")
-        error = incident.get("error", "")
+        error = incident.get("error", "failed")
 
         message = (
             "<critical_instructions>\n"
-            f"CRITICAL VERIFICATION FAILURE DETECTED (Runner: {runner_name})\n"
-            f"Failed Command: `{command}`\n"
-            f"Error Status: {error}\n\n"
-            "MANDATORY PROTOCOL BEFORE MUTATING CODE:\n"
-            "1. You MUST explicitly state what failed (failing tests, assertions, or syntax/type errors).\n"
-            "2. You MUST provide the causal root-cause analysis explaining WHY it failed before applying fixes.\n"
-            "3. Do NOT execute speculative code modifications without presenting this breakdown.\n"
+            f"Command `{command}` failed ({error}).\n\n"
+            "In your visible response before mutating code, report:\n"
+            "1. What failed (test name, assertion, or error output).\n"
+            "2. Root cause explaining why it failed.\n"
+            "3. Proposed fix.\n\n"
+            "Then proceed with the fix.\n"
             "</critical_instructions>"
         )
 
