@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple
 LOG_FILE = "/tmp/agy_verify_hooks.log"
 
 
-def log_debug(tag: str, msg: str, data: Any = None) -> None:
+def log_event(tag: str, msg: str, data: Any = None) -> None:
     try:
         ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         with open(LOG_FILE, "a", encoding="utf-8") as f:
@@ -43,14 +43,13 @@ class ManifestResolver:
                     data = json.load(f)
                     self._pkg_cache[str_path] = data
                     return data
-        except Exception as e:
-            log_debug("MANIFEST_READ_ERR", f"Error reading {file_path}: {e}")
+        except Exception:
+            pass
         return None
 
     def find_package_json(self, cwd: str, filter_target: Optional[str] = None) -> Optional[Dict[str, Any]]:
         cwd_path = Path(cwd)
 
-        # 1. If explicit filter or prefix target given
         if filter_target:
             clean_target = filter_target.strip().strip("'\"")
             target_path = (cwd_path / clean_target).resolve()
@@ -60,7 +59,6 @@ class ManifestResolver:
                 if data:
                     return data
 
-            # If target is a package name (e.g. @vas/fe-store), search workspace packages
             search_roots = [cwd_path, Path(self.root_dir)]
             for s_root in search_roots:
                 for cand in s_root.glob("**/package.json"):
@@ -70,14 +68,12 @@ class ManifestResolver:
                     if data and data.get("name") == clean_target:
                         return data
 
-        # 2. Check cwd package.json
         direct_pkg = cwd_path / "package.json"
         if direct_pkg.is_file():
             data = self._read_json(direct_pkg)
             if data:
                 return data
 
-        # 3. Walk upwards to git or workspace root
         curr = cwd_path
         while curr != curr.parent:
             pkg = curr / "package.json"
@@ -118,8 +114,8 @@ class VerifyRecorder:
             if os.path.exists(self.patterns_file_path):
                 with open(self.patterns_file_path, "r", encoding="utf-8") as f:
                     return json.load(f)
-        except Exception as e:
-            log_debug("CONFIG_LOAD_ERR", f"Failed loading config: {e}")
+        except Exception:
+            pass
         return {"core_binaries": {}, "failure_signatures": {}}
 
     def _parse_pm_tokens(self, args_str: str) -> Tuple[Optional[str], str]:
@@ -257,8 +253,8 @@ class VerifyRecorder:
                                             break
                             except Exception:
                                 continue
-                except Exception as e:
-                    log_debug("TRANSCRIPT_READ_ERR", f"Error reading transcript: {e}")
+                except Exception:
+                    pass
         return cmd, cwd
 
     def _is_failed(self, payload: Dict[str, Any], ecosystem: str) -> bool:
@@ -284,35 +280,26 @@ class VerifyRecorder:
                                     return True
                         except Exception:
                             continue
-            except Exception as e:
-                log_debug("TRANSCRIPT_SIG_ERR", f"Error checking failure signatures: {e}")
+            except Exception:
+                pass
         return False
 
     def record_if_failed(self, payload: Dict[str, Any]) -> Optional[str]:
         conv_id = payload.get("conversationId")
         if not conv_id:
-            log_debug("SKIP", "No conversationId in payload")
             return None
 
         command, cwd = self._extract_command_and_cwd(payload)
         if not command:
-            log_debug("SKIP", "No command found in payload or transcript")
             return None
 
         matched = self.match_command(command, cwd=cwd)
         if not matched:
-            log_debug("NON_VERIFY", f"Command not matched as verifier: '{command}'")
             return None
 
         ecosystem, runner_desc = matched
-        log_debug("MATCHED", f"Command matched ({ecosystem}): '{command}' -> {runner_desc}")
-
-        is_failed = self._is_failed(payload, ecosystem)
-        if not is_failed:
-            log_debug("SUCCESS", f"Verification command succeeded: '{command}'")
+        if not self._is_failed(payload, ecosystem):
             return None
-
-        log_debug("FAILED", f"Verification command failed: '{command}'")
 
         incident = {
             "conversationId": conv_id,
@@ -329,24 +316,22 @@ class VerifyRecorder:
         try:
             with open(incident_path, "w", encoding="utf-8") as f:
                 json.dump(incident, f, indent=2)
-            log_debug("INCIDENT_SAVED", f"Saved incident to {incident_path}", incident)
+            log_event("INCIDENT_CAPTURED", f"Captured failure: '{command}' (Runner: {runner_desc})", incident)
             return incident_path
         except Exception as e:
-            log_debug("INCIDENT_SAVE_ERR", f"Failed saving incident to {incident_path}: {e}")
+            log_event("INCIDENT_SAVE_ERR", f"Failed saving incident to {incident_path}: {e}")
             return None
 
 
 def main() -> None:
     try:
         raw_input = sys.stdin.read()
-        log_debug("INVOCATION", f"PostToolUse triggered with {len(raw_input)} bytes")
         if raw_input.strip():
             payload = json.loads(raw_input)
-            log_debug("PAYLOAD_RECV", "Received PostToolUse payload", payload)
             recorder = VerifyRecorder()
             recorder.record_if_failed(payload)
     except Exception as e:
-        log_debug("FATAL_ERR", f"Unhandled error: {e}\n{traceback.format_exc()}")
+        log_event("FATAL_ERR", f"Unhandled error: {e}\n{traceback.format_exc()}")
     print("{}")
 
 

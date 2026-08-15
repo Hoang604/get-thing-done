@@ -197,14 +197,14 @@ class TestVerifyPipelineMultiLanguage(unittest.TestCase):
         }
         self.recorder.record_if_failed(payload)
 
-        # 1. First invocation -> injects instruction
+        # 1. First invocation -> injects instruction & consumes incident file
         steps = self.injector.generate_instruction(conv_id)
         self.assertEqual(len(steps), 1)
         msg = steps[0]["ephemeralMessage"]
         self.assertIn("CRITICAL VERIFICATION FAILURE DETECTED", msg)
         self.assertIn("cargo test", msg)
 
-        # 2. Second invocation -> deduplicated (empty)
+        # 2. Second invocation -> deduplicated (empty, no incident file remaining)
         steps_2 = self.injector.generate_instruction(conv_id)
         self.assertEqual(len(steps_2), 0)
 
