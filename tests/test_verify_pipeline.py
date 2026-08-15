@@ -22,7 +22,7 @@ class TestVerifyPipelineDeterministic(unittest.TestCase):
         shutil.copyfile(patterns_source, self.patterns_path)
 
         self.recorder = VerifyRecorder(patterns_file_path=self.patterns_path, cache_dir=self.temp_dir)
-        self.injector = VerifyInjector(cache_dir=self.temp_dir)
+        self.injector = VerifyInjector(cache_dir=self.temp_dir, patterns_file_path=self.patterns_path)
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
@@ -117,13 +117,50 @@ class TestVerifyPipelineDeterministic(unittest.TestCase):
         self.assertIsNotNone(incident_file)
         self.assertTrue(os.path.exists(incident_file))
 
-        steps = self.injector.generate_instruction(conv_id)
+        steps = self.injector.generate_instruction({"conversationId": conv_id})
         self.assertEqual(len(steps), 1)
         self.assertIn("Command `pnpm run type-check` failed (exit status 2)", steps[0]["ephemeralMessage"])
         self.assertIn("Confidence: High/Low", steps[0]["ephemeralMessage"])
         self.assertFalse(os.path.exists(incident_file))
 
-        steps_2 = self.injector.generate_instruction(conv_id)
+        steps_2 = self.injector.generate_instruction({"conversationId": conv_id})
+        self.assertEqual(len(steps_2), 0)
+
+    def test_async_background_task_failure_captured_in_pre_invocation(self):
+        conv_id = "conv-async-bg-test"
+        transcript_file = os.path.join(self.temp_dir, "transcript_async_bg.jsonl")
+
+        step_launch = {
+            "step_index": 50,
+            "type": "RUN_COMMAND",
+            "status": "RUNNING",
+            "content": "Tool is running as a background task with task id: conv-async-bg-test/task-50\nTask Description: pnpm --filter @vas/fe-admin type-check"
+        }
+        step_finish = {
+            "step_index": 52,
+            "type": "SYSTEM_MESSAGE",
+            "status": "DONE",
+            "content": 'Task id "conv-async-bg-test/task-50" finished with result:\n\nThe command exited with code 1.\nOutput:\nType error in admin.ts'
+        }
+
+        with open(transcript_file, "w", encoding="utf-8") as f:
+            f.write(json.dumps(step_launch) + "\n")
+            f.write(json.dumps(step_finish) + "\n")
+
+        pre_payload = {
+            "conversationId": conv_id,
+            "transcriptPath": transcript_file
+        }
+
+        # 1. PreInvocation must capture the completed background task failure
+        steps = self.injector.generate_instruction(pre_payload)
+        self.assertEqual(len(steps), 1)
+        msg = steps[0]["ephemeralMessage"]
+        self.assertIn("pnpm --filter @vas/fe-admin type-check", msg)
+        self.assertIn("exit status 1", msg)
+
+        # 2. Subsequent turn must not re-inject (idempotency)
+        steps_2 = self.injector.generate_instruction(pre_payload)
         self.assertEqual(len(steps_2), 0)
 
 

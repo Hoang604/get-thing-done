@@ -6,7 +6,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 LOG_FILE = "/tmp/agy_verify_hooks.log"
 
@@ -93,16 +93,15 @@ class ManifestResolver:
         return None
 
 
-class VerifyRecorder:
-    """Evaluates executed tool output from PostToolUse via Manifest Introspection and Deterministic Exit Code checks."""
+class VerifyMatcher:
+    """Matches commands against recognized verification tools and manifests."""
 
-    def __init__(self, patterns_file_path: Optional[str] = None, cache_dir: str = "/tmp") -> None:
+    def __init__(self, patterns_file_path: Optional[str] = None) -> None:
         if patterns_file_path is None:
             patterns_file_path = os.path.join(
                 os.path.dirname(os.path.abspath(__file__)), "verify_patterns.json"
             )
         self.patterns_file_path = patterns_file_path
-        self.cache_dir = cache_dir
         self.config = self._load_config()
         self.resolver = ManifestResolver()
 
@@ -149,14 +148,14 @@ class VerifyRecorder:
 
         core_binaries = self.config.get("core_binaries", {})
 
-        # 1. Direct Python verifiers & tools
+        # 1. Python verifiers & tools
         python_binaries = core_binaries.get("python", ["pytest", "unittest", "mypy", "pyright", "ruff", "flake8", "alembic", "tox", "nox"])
         for py_bin in python_binaries:
             if re.search(rf"\b{re.escape(py_bin)}\b", cmd, re.IGNORECASE):
                 if re.search(rf"(^|/|\s|run\s+|-m\s+){re.escape(py_bin)}(\s+|$)", cmd, re.IGNORECASE):
                     return ("python", f"Python tool ({py_bin})")
 
-        # 2. Direct Rust verifiers & tools
+        # 2. Rust verifiers & tools
         rust_binaries = core_binaries.get("rust", ["cargo test", "cargo check", "cargo clippy", "cargo build", "sqlx", "diesel"])
         for r_bin in rust_binaries:
             if r_bin.startswith("cargo "):
@@ -167,7 +166,7 @@ class VerifyRecorder:
                 if re.search(rf"\b{re.escape(r_bin)}\b", cmd, re.IGNORECASE):
                     return ("rust", f"Rust tool ({r_bin})")
 
-        # 3. Direct Go verifiers & tools
+        # 3. Go verifiers & tools
         go_binaries = core_binaries.get("go", ["go test", "go vet", "golangci-lint", "go build", "sqlc", "buf", "mockgen"])
         for g_bin in go_binaries:
             if g_bin.startswith("go "):
@@ -178,7 +177,7 @@ class VerifyRecorder:
                 if re.search(rf"\b{re.escape(g_bin)}\b", cmd, re.IGNORECASE):
                     return ("go", f"Go tool ({g_bin})")
 
-        # 4. Direct Java verifiers & tools
+        # 4. Java verifiers & tools
         if re.search(r"\b(mvn|gradle|\./gradlew|gradlew)\b", cmd, re.IGNORECASE):
             if re.search(r"\b(test|verify|check|compile|build)\b", cmd, re.IGNORECASE):
                 return ("java", "Java build/test tool")
@@ -209,7 +208,7 @@ class VerifyRecorder:
 
                 keywords = [
                     "test", "build", "check", "lint", "verify", "validate", "type",
-                    "codegen", "generate", "gen", "schema", "compile", "audit"
+                    "codegen", "generate", "gen", "schema", "compile", "audit", "type-check"
                 ]
                 check_target = f"{script_name} {expanded_cmd or ''}".lower()
                 if any(kw in check_target for kw in keywords):
@@ -220,6 +219,14 @@ class VerifyRecorder:
             return ("generic", "Generic verification/generator runner")
 
         return None
+
+
+class VerifyRecorder:
+    """Evaluates executed tool output from PostToolUse via Manifest Introspection and Deterministic Exit Code checks."""
+
+    def __init__(self, patterns_file_path: Optional[str] = None, cache_dir: str = "/tmp") -> None:
+        self.cache_dir = cache_dir
+        self.matcher = VerifyMatcher(patterns_file_path)
 
     def _extract_command_and_cwd(self, payload: Dict[str, Any]) -> Tuple[str, str]:
         cmd = ""
@@ -254,10 +261,6 @@ class VerifyRecorder:
         return cmd, cwd
 
     def _evaluate_status(self, payload: Dict[str, Any]) -> Tuple[str, int, str]:
-        """
-        Returns (state, exit_code, detail_msg)
-        state in ('PASS', 'FAIL', 'ASYNC', 'UNKNOWN')
-        """
         raw_error = payload.get("error")
         if raw_error is not None and str(raw_error).strip():
             err_str = str(raw_error).strip().lower()
@@ -308,7 +311,7 @@ class VerifyRecorder:
         if not command:
             return None
 
-        matched = self.match_command(command, cwd=cwd)
+        matched = self.matcher.match_command(command, cwd=cwd)
         if not matched:
             return None
 
@@ -323,7 +326,6 @@ class VerifyRecorder:
             log_line("PASS", command, f"{detail} -> Thành công, không chặn")
             return None
 
-        # State is FAIL
         log_line("FAIL", command, f"{detail} -> Đã bắt lỗi & kích hoạt hook")
 
         incident = {
