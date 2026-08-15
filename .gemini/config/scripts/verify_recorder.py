@@ -4,8 +4,26 @@ import os
 import re
 import sys
 import time
+import traceback
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+
+LOG_FILE = "/tmp/agy_verify_hooks.log"
+
+
+def log_debug(tag: str, msg: str, data: Any = None) -> None:
+    try:
+        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(f"[{ts}] [verify_recorder:{os.getpid()}] [{tag}] {msg}\n")
+            if data is not None:
+                if isinstance(data, (dict, list)):
+                    f.write(f"  DATA: {json.dumps(data, ensure_ascii=False)}\n")
+                else:
+                    f.write(f"  DATA: {str(data)}\n")
+    except Exception:
+        pass
 
 
 class ManifestResolver:
@@ -25,8 +43,8 @@ class ManifestResolver:
                     data = json.load(f)
                     self._pkg_cache[str_path] = data
                     return data
-        except Exception:
-            pass
+        except Exception as e:
+            log_debug("MANIFEST_READ_ERR", f"Error reading {file_path}: {e}")
         return None
 
     def find_package_json(self, cwd: str, filter_target: Optional[str] = None) -> Optional[Dict[str, Any]]:
@@ -35,7 +53,6 @@ class ManifestResolver:
         # 1. If explicit filter or prefix target given
         if filter_target:
             clean_target = filter_target.strip().strip("'\"")
-            # If target looks like a relative/absolute path
             target_path = (cwd_path / clean_target).resolve()
             target_pkg = target_path / "package.json"
             if target_pkg.is_file():
@@ -101,8 +118,8 @@ class VerifyRecorder:
             if os.path.exists(self.patterns_file_path):
                 with open(self.patterns_file_path, "r", encoding="utf-8") as f:
                     return json.load(f)
-        except Exception:
-            pass
+        except Exception as e:
+            log_debug("CONFIG_LOAD_ERR", f"Failed loading config: {e}")
         return {"core_binaries": {}, "failure_signatures": {}}
 
     def _parse_pm_tokens(self, args_str: str) -> Tuple[Optional[str], str]:
@@ -133,10 +150,6 @@ class VerifyRecorder:
         return filter_target, script_name
 
     def match_command(self, command: str, cwd: str = "") -> Optional[Tuple[str, str]]:
-        """
-        Determines if a command is a verification / codegen command across Node, Python, Rust, Go, Java.
-        Returns Tuple of (ecosystem/language, description) or None.
-        """
         if not command:
             return None
         cmd = command.strip()
@@ -193,7 +206,6 @@ class VerifyRecorder:
             filter_target, script_name = self._parse_pm_tokens(args_str)
 
             if script_name:
-                # Resolve via Manifest Introspection (package.json)
                 expanded_cmd = self.resolver.resolve_script_command(
                     script_name, cwd=cwd or os.getcwd(), filter_target=filter_target
                 )
@@ -202,7 +214,6 @@ class VerifyRecorder:
                         if re.search(rf"\b{re.escape(n_bin)}\b", expanded_cmd, re.IGNORECASE):
                             return ("node", f"Node script '{script_name}' -> ({n_bin})")
 
-                # Fallback heuristic on script name or expanded string if it contains verify/codegen keywords
                 keywords = [
                     "test", "build", "check", "lint", "verify", "validate", "type",
                     "codegen", "generate", "gen", "schema", "compile", "audit"
@@ -211,7 +222,7 @@ class VerifyRecorder:
                 if any(kw in check_target for kw in keywords):
                     return ("node", f"Node verification/generator script ({script_name})")
 
-        # 7. Generic script check (e.g. ./scripts/verify.sh, make test, make generate)
+        # 7. Generic script check
         if re.search(r"(^|/)((verify|validate|test|check|lint|build|codegen|gen)[a-zA-Z0-9_-]*\.(sh|py|js|ts)|make\s+(test|check|verify|generate|codegen))", cmd, re.IGNORECASE):
             return ("generic", "Generic verification/generator runner")
 
@@ -246,8 +257,8 @@ class VerifyRecorder:
                                             break
                             except Exception:
                                 continue
-                except Exception:
-                    pass
+                except Exception as e:
+                    log_debug("TRANSCRIPT_READ_ERR", f"Error reading transcript: {e}")
         return cmd, cwd
 
     def _is_failed(self, payload: Dict[str, Any], ecosystem: str) -> bool:
@@ -273,26 +284,35 @@ class VerifyRecorder:
                                     return True
                         except Exception:
                             continue
-            except Exception:
-                pass
+            except Exception as e:
+                log_debug("TRANSCRIPT_SIG_ERR", f"Error checking failure signatures: {e}")
         return False
 
     def record_if_failed(self, payload: Dict[str, Any]) -> Optional[str]:
         conv_id = payload.get("conversationId")
         if not conv_id:
+            log_debug("SKIP", "No conversationId in payload")
             return None
 
         command, cwd = self._extract_command_and_cwd(payload)
         if not command:
+            log_debug("SKIP", "No command found in payload or transcript")
             return None
 
         matched = self.match_command(command, cwd=cwd)
         if not matched:
+            log_debug("NON_VERIFY", f"Command not matched as verifier: '{command}'")
             return None
 
         ecosystem, runner_desc = matched
-        if not self._is_failed(payload, ecosystem):
+        log_debug("MATCHED", f"Command matched ({ecosystem}): '{command}' -> {runner_desc}")
+
+        is_failed = self._is_failed(payload, ecosystem)
+        if not is_failed:
+            log_debug("SUCCESS", f"Verification command succeeded: '{command}'")
             return None
+
+        log_debug("FAILED", f"Verification command failed: '{command}'")
 
         incident = {
             "conversationId": conv_id,
@@ -309,20 +329,24 @@ class VerifyRecorder:
         try:
             with open(incident_path, "w", encoding="utf-8") as f:
                 json.dump(incident, f, indent=2)
+            log_debug("INCIDENT_SAVED", f"Saved incident to {incident_path}", incident)
             return incident_path
-        except Exception:
+        except Exception as e:
+            log_debug("INCIDENT_SAVE_ERR", f"Failed saving incident to {incident_path}: {e}")
             return None
 
 
 def main() -> None:
     try:
         raw_input = sys.stdin.read()
+        log_debug("INVOCATION", f"PostToolUse triggered with {len(raw_input)} bytes")
         if raw_input.strip():
             payload = json.loads(raw_input)
+            log_debug("PAYLOAD_RECV", "Received PostToolUse payload", payload)
             recorder = VerifyRecorder()
             recorder.record_if_failed(payload)
-    except Exception:
-        pass
+    except Exception as e:
+        log_debug("FATAL_ERR", f"Unhandled error: {e}\n{traceback.format_exc()}")
     print("{}")
 
 
