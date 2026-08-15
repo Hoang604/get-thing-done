@@ -69,12 +69,5 @@
       "gradlew check",
       "gradlew build"
     ]
-  },
-  "failure_signatures": {
-    "node": ["ELIFECYCLE", "ERR!", "Command failed", "FAIL", "exit status", "error TS", "TypeScript error", "Generation failed", "Schema error"],
-    "python": ["FAILED", "ERROR", "AssertionError", "exit status", "Traceback"],
-    "rust": ["FAILED", "error[E", "error:", "exit status"],
-    "go": ["FAIL", "exit status", "build failed"],
-    "java": ["BUILD FAILURE", "FAILURE:", "There are test failures", "exit status"]
   }
 }

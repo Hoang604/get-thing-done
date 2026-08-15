@@ -97,7 +97,7 @@ class ManifestResolver:
 
 
 class VerifyRecorder:
-    """Evaluates executed tool output from PostToolUse via Manifest Introspection and Binary matching."""
+    """Evaluates executed tool output from PostToolUse via Manifest Introspection and Deterministic Exit Code checks."""
 
     def __init__(self, patterns_file_path: Optional[str] = None, cache_dir: str = "/tmp") -> None:
         if patterns_file_path is None:
@@ -116,7 +116,7 @@ class VerifyRecorder:
                     return json.load(f)
         except Exception:
             pass
-        return {"core_binaries": {}, "failure_signatures": {}}
+        return {"core_binaries": {}}
 
     def _parse_pm_tokens(self, args_str: str) -> Tuple[Optional[str], str]:
         tokens = args_str.strip().split()
@@ -236,20 +236,19 @@ class VerifyRecorder:
 
         if not cmd:
             transcript_path = payload.get("transcriptPath")
+            step_idx = payload.get("stepIdx")
             if transcript_path and os.path.exists(transcript_path):
                 try:
                     with open(transcript_path, "r", encoding="utf-8") as f:
-                        lines = f.readlines()
-                        for line in reversed(lines[-10:]):
+                        for line in f:
                             try:
                                 entry = json.loads(line)
-                                tool_calls = entry.get("tool_calls", [])
-                                for tc in tool_calls:
-                                    if tc.get("name") == "run_command":
-                                        t_args = tc.get("args", {})
-                                        cmd = str(t_args.get("CommandLine") or "")
-                                        cwd = str(t_args.get("Cwd") or "")
-                                        if cmd:
+                                if step_idx is not None and entry.get("step_index") == step_idx:
+                                    for tc in entry.get("tool_calls", []):
+                                        if tc.get("name") == "run_command":
+                                            t_args = tc.get("args", {})
+                                            cmd = str(t_args.get("CommandLine") or "")
+                                            cwd = str(t_args.get("Cwd") or "")
                                             break
                             except Exception:
                                 continue
@@ -257,31 +256,55 @@ class VerifyRecorder:
                     pass
         return cmd, cwd
 
-    def _is_failed(self, payload: Dict[str, Any], ecosystem: str) -> bool:
-        error_msg = str(payload.get("error") or "")
-        if error_msg:
+    def _is_failed(self, payload: Dict[str, Any]) -> bool:
+        """
+        Deterministic failure evaluation:
+        1. Checks payload.error for non-zero exit code or tool error.
+        2. Evaluates specific transcript step:
+           - Explicit 'The command exited with code 0' -> False (Success).
+           - Explicit 'The command exited with code [1-9]' -> True (Failure).
+           - Task running in background ('status: RUNNING' or 'is running as a background task') -> False (In-progress).
+           - Explicit error status -> True.
+        """
+        raw_error = payload.get("error")
+        if raw_error is not None and str(raw_error).strip():
+            err_str = str(raw_error).strip().lower()
+            if "exit status 0" in err_str:
+                return False
             return True
 
-        signatures = self.config.get("failure_signatures", {}).get(ecosystem, ["FAILED", "ERROR", "exit status"])
-
         transcript_path = payload.get("transcriptPath")
-        if transcript_path and os.path.exists(transcript_path):
+        step_idx = payload.get("stepIdx")
+
+        if transcript_path and os.path.exists(transcript_path) and step_idx is not None:
             try:
                 with open(transcript_path, "r", encoding="utf-8") as f:
-                    lines = f.readlines()
-                    for line in reversed(lines[-10:]):
+                    for line in f:
                         try:
                             entry = json.loads(line)
-                            if entry.get("status") == "ERROR":
-                                return True
-                            content = str(entry.get("content") or "")
-                            for sig in signatures:
-                                if sig in content:
+                            if entry.get("step_index") == step_idx:
+                                content = str(entry.get("content") or "")
+
+                                # Background task in-progress is not a failure
+                                if "Tool is running as a background task" in content or entry.get("status") == "RUNNING":
+                                    return False
+
+                                # Explicit exit code 0 is success
+                                if re.search(r"The command exited with code 0\b", content):
+                                    return False
+
+                                # Explicit non-zero exit code is failure
+                                match_nonzero = re.search(r"The command exited with code ([1-9][0-9]*)", content)
+                                if match_nonzero:
+                                    return True
+
+                                if entry.get("status") == "ERROR":
                                     return True
                         except Exception:
                             continue
             except Exception:
                 pass
+
         return False
 
     def record_if_failed(self, payload: Dict[str, Any]) -> Optional[str]:
@@ -298,7 +321,7 @@ class VerifyRecorder:
             return None
 
         ecosystem, runner_desc = matched
-        if not self._is_failed(payload, ecosystem):
+        if not self._is_failed(payload):
             return None
 
         incident = {
