@@ -17,7 +17,7 @@ except ImportError:
 class VerifyInjector:
     """
     Inspects pending sync incidents and completed async background tasks in PreInvocation.
-    Emits ephemeral instructions with hypothesis and confidence level criteria.
+    Emits ephemeral instructions with hypothesis and confidence level criteria across all failure types.
     """
 
     def __init__(self, cache_dir: str = "/tmp", patterns_file_path: Optional[str] = None) -> None:
@@ -47,14 +47,18 @@ class VerifyInjector:
     def _build_instruction_message(self, command: str, error: str) -> str:
         return (
             "<critical_instructions>\n"
-            f"Command `{command}` failed ({error}).\n\n"
-            "In your visible response before mutating code, report:\n"
-            "1. What failed (test name, assertion, or error output).\n"
-            "2. Root cause or Hypothesis (Confidence: High/Low):\n"
-            "   - If straightforward (e.g. syntax, typo, missing import): state exact root cause directly (Confidence: High).\n"
-            "   - If complex or non-obvious: state hypothesis with confidence level (High/Low) and explore before applying fixes.\n"
-            "3. Proposed fix / next action.\n\n"
-            "Then proceed with the fix or exploration.\n"
+            f"VERIFICATION FAILURE: Command `{command}` failed ({error}).\n\n"
+            "MANDATORY REPORTING PROTOCOL:\n"
+            "Regardless of whether this is a TEST, TYPE-CHECK, BUILD, LINT, or CODEGEN failure, "
+            "you MUST output a report in your VISIBLE RESPONSE before making any file changes:\n\n"
+            "1. **Failure Scope**:\n"
+            "   - For Type/Lint/Build: Exact file, line number, and compiler error message (e.g. TS error, ESLint rule, build error).\n"
+            "   - For Test: Failing test case, assertion, or runtime exception.\n"
+            "2. **Root Cause or Hypothesis** (Confidence: High/Low):\n"
+            "   - Obvious errors (type mismatch, missing import, syntax, typo): State exact root cause directly (Confidence: High).\n"
+            "   - Non-obvious/complex errors: State hypothesis with confidence level (High/Low) and plan to explore.\n"
+            "3. **Proposed Fix / Next Action**.\n\n"
+            "After outputting this breakdown, proceed with the fix or exploration.\n"
             "</critical_instructions>"
         )
 
@@ -75,20 +79,17 @@ class VerifyInjector:
         try:
             with open(transcript_path, "r", encoding="utf-8") as f:
                 lines = f.readlines()
-                # Scan backwards through recent entries
                 for line in lines[-30:]:
                     try:
                         entry = json.loads(line)
                         content = str(entry.get("content") or "")
 
-                        # Extract Task ID and Description when task was launched
                         task_launch = re.search(r"Task id:\s*([^\s\n]+)", content, re.IGNORECASE)
                         task_desc = re.search(r"Task Description:\s*([^\n]+)", content, re.IGNORECASE)
                         if task_launch and task_desc:
                             t_id = task_launch.group(1).strip()
                             task_descriptions[t_id] = task_desc.group(1).strip()
 
-                        # Extract Task ID and Exit code when task finished
                         task_finish = re.search(r'Task id "([^"]+)" finished with result:', content)
                         if task_finish:
                             finished_id = task_finish.group(1).strip()
@@ -102,7 +103,6 @@ class VerifyInjector:
         except Exception:
             return None
 
-        # Process any newly completed tasks
         for t_id, exit_code in completed_tasks:
             processed_tasks.add(t_id)
             self._save_processed_tasks(conv_id, processed_tasks)

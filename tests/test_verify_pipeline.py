@@ -119,8 +119,8 @@ class TestVerifyPipelineDeterministic(unittest.TestCase):
 
         steps = self.injector.generate_instruction({"conversationId": conv_id})
         self.assertEqual(len(steps), 1)
-        self.assertIn("Command `pnpm run type-check` failed (exit status 2)", steps[0]["ephemeralMessage"])
-        self.assertIn("Confidence: High/Low", steps[0]["ephemeralMessage"])
+        self.assertIn("VERIFICATION FAILURE: Command `pnpm run type-check` failed (exit status 2)", steps[0]["ephemeralMessage"])
+        self.assertIn("Regardless of whether this is a TEST, TYPE-CHECK, BUILD, LINT, or CODEGEN failure", steps[0]["ephemeralMessage"])
         self.assertFalse(os.path.exists(incident_file))
 
         steps_2 = self.injector.generate_instruction({"conversationId": conv_id})
@@ -152,14 +152,13 @@ class TestVerifyPipelineDeterministic(unittest.TestCase):
             "transcriptPath": transcript_file
         }
 
-        # 1. PreInvocation must capture the completed background task failure
         steps = self.injector.generate_instruction(pre_payload)
         self.assertEqual(len(steps), 1)
         msg = steps[0]["ephemeralMessage"]
         self.assertIn("pnpm --filter @vas/fe-admin type-check", msg)
         self.assertIn("exit status 1", msg)
+        self.assertIn("Regardless of whether this is a TEST, TYPE-CHECK, BUILD, LINT, or CODEGEN failure", msg)
 
-        # 2. Subsequent turn must not re-inject (idempotency)
         steps_2 = self.injector.generate_instruction(pre_payload)
         self.assertEqual(len(steps_2), 0)
 
