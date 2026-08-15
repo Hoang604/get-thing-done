@@ -2,23 +2,20 @@
 import json
 import os
 import sys
-import traceback
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 LOG_FILE = "/tmp/agy_verify_hooks.log"
 
 
-def log_event(tag: str, msg: str, data: Any = None) -> None:
+def log_line(status: str, command: str, detail: str = "") -> None:
     try:
-        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        ts = datetime.now().strftime("%H:%M:%S")
+        cmd_clean = command.strip().replace("\n", " ")
+        cmd_short = (cmd_clean[:65] + "...") if len(cmd_clean) > 65 else cmd_clean
+        line = f"[{ts}] [{status:<5}] {cmd_short} {detail}".rstrip() + "\n"
         with open(LOG_FILE, "a", encoding="utf-8") as f:
-            f.write(f"[{ts}] [verify_injector:{os.getpid()}] [{tag}] {msg}\n")
-            if data is not None:
-                if isinstance(data, (dict, list)):
-                    f.write(f"  DATA: {json.dumps(data, ensure_ascii=False)}\n")
-                else:
-                    f.write(f"  DATA: {str(data)}\n")
+            f.write(line)
     except Exception:
         pass
 
@@ -44,7 +41,6 @@ class VerifyInjector:
             return []
 
         if incident.get("acknowledged", False):
-            # Clean up acknowledged incident file to prevent redundant reads
             try:
                 os.remove(incident_path)
             except Exception:
@@ -78,7 +74,7 @@ class VerifyInjector:
             "</critical_instructions>"
         )
 
-        log_event("INSTRUCTION_INJECTED", f"Injected guardrail for conv '{conversation_id}' (Command: '{command}')")
+        log_line("GUARD", command, "-> Đã tiêm chỉ thị yêu cầu Agent giải trình lỗi")
         return [{"ephemeralMessage": message}]
 
 
@@ -91,8 +87,7 @@ def main() -> None:
             conv_id = payload.get("conversationId", "")
             injector = VerifyInjector()
             inject_steps = injector.generate_instruction(conv_id)
-    except Exception as e:
-        log_event("FATAL_ERR", f"Unhandled error: {e}\n{traceback.format_exc()}")
+    except Exception:
         inject_steps = []
 
     print(json.dumps({"injectSteps": inject_steps}))

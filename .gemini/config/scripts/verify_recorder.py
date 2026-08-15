@@ -4,7 +4,6 @@ import os
 import re
 import sys
 import time
-import traceback
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -12,16 +11,14 @@ from typing import Any, Dict, List, Optional, Tuple
 LOG_FILE = "/tmp/agy_verify_hooks.log"
 
 
-def log_event(tag: str, msg: str, data: Any = None) -> None:
+def log_line(status: str, command: str, detail: str = "") -> None:
     try:
-        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        ts = datetime.now().strftime("%H:%M:%S")
+        cmd_clean = command.strip().replace("\n", " ")
+        cmd_short = (cmd_clean[:65] + "...") if len(cmd_clean) > 65 else cmd_clean
+        line = f"[{ts}] [{status:<5}] {cmd_short} {detail}".rstrip() + "\n"
         with open(LOG_FILE, "a", encoding="utf-8") as f:
-            f.write(f"[{ts}] [verify_recorder:{os.getpid()}] [{tag}] {msg}\n")
-            if data is not None:
-                if isinstance(data, (dict, list)):
-                    f.write(f"  DATA: {json.dumps(data, ensure_ascii=False)}\n")
-                else:
-                    f.write(f"  DATA: {str(data)}\n")
+            f.write(line)
     except Exception:
         pass
 
@@ -256,22 +253,19 @@ class VerifyRecorder:
                     pass
         return cmd, cwd
 
-    def _is_failed(self, payload: Dict[str, Any]) -> bool:
+    def _evaluate_status(self, payload: Dict[str, Any]) -> Tuple[str, int, str]:
         """
-        Deterministic failure evaluation:
-        1. Checks payload.error for non-zero exit code or tool error.
-        2. Evaluates specific transcript step:
-           - Explicit 'The command exited with code 0' -> False (Success).
-           - Explicit 'The command exited with code [1-9]' -> True (Failure).
-           - Task running in background ('status: RUNNING' or 'is running as a background task') -> False (In-progress).
-           - Explicit error status -> True.
+        Returns (state, exit_code, detail_msg)
+        state in ('PASS', 'FAIL', 'ASYNC', 'UNKNOWN')
         """
         raw_error = payload.get("error")
         if raw_error is not None and str(raw_error).strip():
             err_str = str(raw_error).strip().lower()
             if "exit status 0" in err_str:
-                return False
-            return True
+                return "PASS", 0, "(exit: 0)"
+            match_err_code = re.search(r"exit status ([0-9]+)", err_str)
+            code = int(match_err_code.group(1)) if match_err_code else 1
+            return "FAIL", code, f"(exit: {code})"
 
         transcript_path = payload.get("transcriptPath")
         step_idx = payload.get("stepIdx")
@@ -285,27 +279,25 @@ class VerifyRecorder:
                             if entry.get("step_index") == step_idx:
                                 content = str(entry.get("content") or "")
 
-                                # Background task in-progress is not a failure
                                 if "Tool is running as a background task" in content or entry.get("status") == "RUNNING":
-                                    return False
+                                    return "ASYNC", 0, "-> Đang chạy ngầm, chờ kết quả"
 
-                                # Explicit exit code 0 is success
                                 if re.search(r"The command exited with code 0\b", content):
-                                    return False
+                                    return "PASS", 0, "(exit: 0)"
 
-                                # Explicit non-zero exit code is failure
                                 match_nonzero = re.search(r"The command exited with code ([1-9][0-9]*)", content)
                                 if match_nonzero:
-                                    return True
+                                    code = int(match_nonzero.group(1))
+                                    return "FAIL", code, f"(exit: {code})"
 
                                 if entry.get("status") == "ERROR":
-                                    return True
+                                    return "FAIL", 1, "(status: ERROR)"
                         except Exception:
                             continue
             except Exception:
                 pass
 
-        return False
+        return "PASS", 0, "(exit: 0)"
 
     def record_if_failed(self, payload: Dict[str, Any]) -> Optional[str]:
         conv_id = payload.get("conversationId")
@@ -321,8 +313,18 @@ class VerifyRecorder:
             return None
 
         ecosystem, runner_desc = matched
-        if not self._is_failed(payload):
+        state, exit_code, detail = self._evaluate_status(payload)
+
+        if state == "ASYNC":
+            log_line("ASYNC", command, detail)
             return None
+
+        if state == "PASS":
+            log_line("PASS", command, f"{detail} -> Thành công, không chặn")
+            return None
+
+        # State is FAIL
+        log_line("FAIL", command, f"{detail} -> Đã bắt lỗi & kích hoạt hook")
 
         incident = {
             "conversationId": conv_id,
@@ -330,7 +332,7 @@ class VerifyRecorder:
             "command": command,
             "runnerName": runner_desc,
             "ecosystem": ecosystem,
-            "error": str(payload.get("error") or "Verification command failed"),
+            "error": f"exit status {exit_code}",
             "acknowledged": False,
             "timestamp": time.time(),
         }
@@ -339,10 +341,8 @@ class VerifyRecorder:
         try:
             with open(incident_path, "w", encoding="utf-8") as f:
                 json.dump(incident, f, indent=2)
-            log_event("INCIDENT_CAPTURED", f"Captured failure: '{command}' (Runner: {runner_desc})", incident)
             return incident_path
-        except Exception as e:
-            log_event("INCIDENT_SAVE_ERR", f"Failed saving incident to {incident_path}: {e}")
+        except Exception:
             return None
 
 
@@ -353,8 +353,8 @@ def main() -> None:
             payload = json.loads(raw_input)
             recorder = VerifyRecorder()
             recorder.record_if_failed(payload)
-    except Exception as e:
-        log_event("FATAL_ERR", f"Unhandled error: {e}\n{traceback.format_exc()}")
+    except Exception:
+        pass
     print("{}")
 
 
