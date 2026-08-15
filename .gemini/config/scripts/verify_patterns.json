@@ -2,27 +2,32 @@
   "runners": [
     {
       "name": "pytest",
-      "command_regex": "^(uv\\s+run\\s+)?(pytest|python3?\\s+(-m\\s+)?pytest)(\\s+.*)?$",
+      "command_regex": "^(uv(\\s+.*)?\\s+run(\\s+.*)?\\s+)?(pytest|python3?(\\s+.*)?\\s+(-m\\s+)?pytest)(\\s+.*)?$",
       "failure_signatures": ["FAILED", "ERROR", "AssertionError", "exit status", "Traceback"]
     },
     {
       "name": "python_unittest",
-      "command_regex": "^(python3?\\s+-m\\s+unittest)(\\s+.*)?$",
+      "command_regex": "^(python3?(\\s+.*)?\\s+-m\\s+unittest)(\\s+.*)?$",
       "failure_signatures": ["FAILED", "ERROR", "Traceback", "exit status"]
     },
     {
       "name": "node_test_runners",
-      "command_regex": "^(npm|pnpm|yarn|bun)(\\s+run)?\\s+(test|build|typecheck|lint|check)(:.*)?(\\s+.*)?$",
+      "command_regex": "^(npx\\s+)?(npm|pnpm|yarn|bun)(\\s+.*)?\\s+(run\\s+)?(test|build|typecheck|lint|check)(:.*)?(\\s+.*)?$",
       "failure_signatures": ["ELIFECYCLE", "ERR!", "Command failed", "FAIL", "exit status", "error TS"]
     },
     {
+      "name": "tsc",
+      "command_regex": "^(npx\\s+)?tsc(\\s+.*)?$",
+      "failure_signatures": ["error TS", "exit status", "Found"]
+    },
+    {
       "name": "cargo",
-      "command_regex": "^cargo\\s+(test|check|build)(\\s+.*)?$",
+      "command_regex": "^cargo(\\s+.*)?\\s+(test|check|build)(\\s+.*)?$",
       "failure_signatures": ["FAILED", "error[E", "error:", "exit status"]
     },
     {
       "name": "go",
-      "command_regex": "^go\\s+(test|build|vet)(\\s+.*)?$",
+      "command_regex": "^go(\\s+.*)?\\s+(test|build|vet)(\\s+.*)?$",
       "failure_signatures": ["FAIL", "exit status", "build failed"]
     },
     {

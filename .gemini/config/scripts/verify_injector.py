@@ -42,7 +42,7 @@ class VerifyInjector:
 
         message = (
             "<critical_instructions>\n"
-            f"CRITICAL VERIFICATION FAILURE DETECTED (Runner: {runner_name})\n"
+            f"VERIFICATION FAILURE DETECTED (Runner: {runner_name})\n"
             f"Failed Command: `{command}`\n"
             f"Error Status: {error}\n\n"
             "MANDATORY PROTOCOL BEFORE MUTATING CODE:\n"
