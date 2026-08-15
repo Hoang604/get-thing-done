@@ -1,3 +1,9 @@
-# architecture
-.gitnexus
-GitNexus
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+node_modules/
+dist/
+.DS_Store

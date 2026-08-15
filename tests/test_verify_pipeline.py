@@ -14,7 +14,7 @@ from verify_recorder import VerifyRecorder
 from verify_injector import VerifyInjector
 
 
-class TestVerifyPipeline(unittest.TestCase):
+class TestVerifyPipelineMultiLanguage(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp()
         patterns_source = SCRIPT_DIR / "verify_patterns.json"
@@ -27,84 +27,161 @@ class TestVerifyPipeline(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
 
-    def test_recorder_ignores_non_verify_command(self):
-        payload = {
-            "conversationId": "conv-1",
-            "toolCall": {"name": "run_command", "args": {"CommandLine": "git status"}},
-            "error": "some error"
-        }
-        res = self.recorder.record_if_failed(payload)
-        self.assertIsNone(res)
-        incident_file = os.path.join(self.temp_dir, "agy_incident_conv-1.json")
-        self.assertFalse(os.path.exists(incident_file))
-
-    def test_recorder_ignores_successful_verify_command(self):
-        payload = {
-            "conversationId": "conv-2",
-            "toolCall": {"name": "run_command", "args": {"CommandLine": "pytest tests/"}},
-            "error": None
-        }
-        res = self.recorder.record_if_failed(payload)
-        self.assertIsNone(res)
-        incident_file = os.path.join(self.temp_dir, "agy_incident_conv-2.json")
-        self.assertFalse(os.path.exists(incident_file))
-
-    def test_recorder_matches_monorepo_commands(self):
-        test_commands = [
-            ("pnpm --filter @vas/fe-store run build", "node_test_runners"),
-            ("pnpm -F @vas/fe-store build", "node_test_runners"),
-            ("yarn workspace @vas/fe-store test:ci", "node_test_runners"),
-            ("npm --prefix apps/web run test", "node_test_runners"),
-            ("uv run --package core pytest tests/", "pytest"),
-            ("cargo test --package auth", "cargo"),
-            ("npx tsc --noEmit", "tsc"),
+    def test_non_verify_commands_ignored(self):
+        ignored = [
+            "git status",
+            "git commit -m 'fix: test'",
+            "cat package.json",
+            "ls -la",
+            "curl http://localhost:3000",
+            "echo 'running tests'",
         ]
-        for cmd, expected_runner in test_commands:
+        for cmd in ignored:
             payload = {
-                "conversationId": f"conv-{expected_runner}",
-                "stepIdx": 1,
+                "conversationId": "conv-test",
+                "toolCall": {"name": "run_command", "args": {"CommandLine": cmd}},
+                "error": "some exit status 1"
+            }
+            res = self.recorder.record_if_failed(payload)
+            self.assertIsNone(res, f"Should ignore: {cmd}")
+
+    def test_manifest_introspection_node(self):
+        # Create a mock package.json with custom script names
+        pkg_dir = os.path.join(self.temp_dir, "my-app")
+        os.makedirs(pkg_dir, exist_ok=True)
+        pkg_json = {
+            "name": "my-app",
+            "scripts": {
+                "type-check": "tsc --noEmit",
+                "ci-verify": "vitest run --coverage",
+                "style-audit": "eslint . --max-warnings 0",
+                "start-server": "node server.js"
+            }
+        }
+        with open(os.path.join(pkg_dir, "package.json"), "w", encoding="utf-8") as f:
+            json.dump(pkg_json, f)
+
+        # 1. Custom script 'type-check' resolving to 'tsc'
+        payload = {
+            "conversationId": "conv-node-1",
+            "toolCall": {"name": "run_command", "args": {"CommandLine": "pnpm run type-check", "Cwd": pkg_dir}},
+            "error": "exit status 1"
+        }
+        res = self.recorder.record_if_failed(payload)
+        self.assertIsNotNone(res)
+        with open(res, "r") as f:
+            data = json.load(f)
+        self.assertEqual(data["ecosystem"], "node")
+        self.assertIn("type-check", data["runnerName"])
+        self.assertIn("tsc", data["runnerName"])
+
+        # 2. Custom script 'ci-verify' resolving to 'vitest'
+        payload = {
+            "conversationId": "conv-node-2",
+            "toolCall": {"name": "run_command", "args": {"CommandLine": "npm run ci-verify", "Cwd": pkg_dir}},
+            "error": "exit status 1"
+        }
+        res = self.recorder.record_if_failed(payload)
+        self.assertIsNotNone(res)
+
+        # 3. Non-test script 'start-server' ignored
+        payload = {
+            "conversationId": "conv-node-3",
+            "toolCall": {"name": "run_command", "args": {"CommandLine": "pnpm run start-server", "Cwd": pkg_dir}},
+            "error": "exit status 1"
+        }
+        res = self.recorder.record_if_failed(payload)
+        self.assertIsNone(res)
+
+    def test_monorepo_filter_resolution(self):
+        # Create monorepo package structure
+        monorepo_dir = os.path.join(self.temp_dir, "monorepo")
+        pkg_sub = os.path.join(monorepo_dir, "packages", "fe-store")
+        os.makedirs(pkg_sub, exist_ok=True)
+        pkg_json = {
+            "name": "@vas/fe-store",
+            "scripts": {
+                "build": "next build",
+                "type-check": "tsc --noEmit"
+            }
+        }
+        with open(os.path.join(pkg_sub, "package.json"), "w", encoding="utf-8") as f:
+            json.dump(pkg_json, f)
+
+        payload = {
+            "conversationId": "conv-monorepo",
+            "toolCall": {
+                "name": "run_command",
+                "args": {
+                    "CommandLine": "pnpm --filter @vas/fe-store run type-check",
+                    "Cwd": monorepo_dir
+                }
+            },
+            "error": "exit status 1"
+        }
+        res = self.recorder.record_if_failed(payload)
+        self.assertIsNotNone(res)
+        with open(res, "r") as f:
+            data = json.load(f)
+        self.assertEqual(data["ecosystem"], "node")
+        self.assertIn("type-check", data["runnerName"])
+        self.assertIn("tsc", data["runnerName"])
+
+    def test_multi_language_support(self):
+        test_cases = [
+            # Python
+            ("uv run pytest tests/", "python"),
+            ("pytest -v", "python"),
+            ("python3 -m unittest discover", "python"),
+            ("mypy src/", "python"),
+            ("ruff check .", "python"),
+            # Rust
+            ("cargo test --all", "rust"),
+            ("cargo check", "rust"),
+            ("cargo clippy --all-targets", "rust"),
+            # Go
+            ("go test ./...", "go"),
+            ("go vet ./...", "go"),
+            ("golangci-lint run", "go"),
+            # Java
+            ("mvn test", "java"),
+            ("mvn verify", "java"),
+            ("./gradlew check", "java"),
+            ("gradle test", "java"),
+        ]
+
+        for cmd, expected_eco in test_cases:
+            payload = {
+                "conversationId": f"conv-{expected_eco}",
                 "toolCall": {"name": "run_command", "args": {"CommandLine": cmd}},
                 "error": "exit status 1"
             }
-            incident_file = self.recorder.record_if_failed(payload)
-            self.assertIsNotNone(incident_file, f"Failed to match command: {cmd}")
-            with open(incident_file, "r") as f:
+            res = self.recorder.record_if_failed(payload)
+            self.assertIsNotNone(res, f"Failed to match command: {cmd}")
+            with open(res, "r") as f:
                 data = json.load(f)
-            self.assertEqual(data["runnerName"], expected_runner, f"Runner mismatch for: {cmd}")
+            self.assertEqual(data["ecosystem"], expected_eco, f"Ecosystem mismatch for: {cmd}")
 
-    def test_recorder_and_injector_pipeline_flow(self):
-        conv_id = "conv-test-3"
-        # 1. Failed pytest command recorded
+    def test_pipeline_injector_acknowledgement_flow(self):
+        conv_id = "conv-ack-flow"
         payload = {
             "conversationId": conv_id,
-            "stepIdx": 12,
-            "toolCall": {"name": "run_command", "args": {"CommandLine": "pnpm --filter @vas/fe-store run build"}},
-            "error": "exit status 1"
+            "stepIdx": 5,
+            "toolCall": {"name": "run_command", "args": {"CommandLine": "cargo test"}},
+            "error": "exit status 101"
         }
-        incident_file = self.recorder.record_if_failed(payload)
-        self.assertIsNotNone(incident_file)
-        self.assertTrue(os.path.exists(incident_file))
+        self.recorder.record_if_failed(payload)
 
-        with open(incident_file, "r") as f:
-            data = json.load(f)
-        self.assertEqual(data["runnerName"], "node_test_runners")
-        self.assertFalse(data["acknowledged"])
-
-        # 2. Injector generates instruction on next PreInvocation
+        # 1. First invocation -> injects instruction
         steps = self.injector.generate_instruction(conv_id)
         self.assertEqual(len(steps), 1)
         msg = steps[0]["ephemeralMessage"]
         self.assertIn("CRITICAL VERIFICATION FAILURE DETECTED", msg)
-        self.assertIn("pnpm --filter @vas/fe-store run build", msg)
+        self.assertIn("cargo test", msg)
 
-        # 3. Cache marked as acknowledged
-        with open(incident_file, "r") as f:
-            data = json.load(f)
-        self.assertTrue(data["acknowledged"])
-
-        # 4. Subsequent PreInvocation yields empty injectSteps (no duplication)
-        subsequent_steps = self.injector.generate_instruction(conv_id)
-        self.assertEqual(len(subsequent_steps), 0)
+        # 2. Second invocation -> deduplicated (empty)
+        steps_2 = self.injector.generate_instruction(conv_id)
+        self.assertEqual(len(steps_2), 0)
 
 
 if __name__ == "__main__":

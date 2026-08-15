@@ -1,39 +1,61 @@
 {
-  "runners": [
-    {
-      "name": "pytest",
-      "command_regex": "^(uv(\\s+.*)?\\s+run(\\s+.*)?\\s+)?(pytest|python3?(\\s+.*)?\\s+(-m\\s+)?pytest)(\\s+.*)?$",
-      "failure_signatures": ["FAILED", "ERROR", "AssertionError", "exit status", "Traceback"]
-    },
-    {
-      "name": "python_unittest",
-      "command_regex": "^(python3?(\\s+.*)?\\s+-m\\s+unittest)(\\s+.*)?$",
-      "failure_signatures": ["FAILED", "ERROR", "Traceback", "exit status"]
-    },
-    {
-      "name": "node_test_runners",
-      "command_regex": "^(npx\\s+)?(npm|pnpm|yarn|bun)(\\s+.*)?\\s+(run\\s+)?(test|build|typecheck|lint|check)(:.*)?(\\s+.*)?$",
-      "failure_signatures": ["ELIFECYCLE", "ERR!", "Command failed", "FAIL", "exit status", "error TS"]
-    },
-    {
-      "name": "tsc",
-      "command_regex": "^(npx\\s+)?tsc(\\s+.*)?$",
-      "failure_signatures": ["error TS", "exit status", "Found"]
-    },
-    {
-      "name": "cargo",
-      "command_regex": "^cargo(\\s+.*)?\\s+(test|check|build)(\\s+.*)?$",
-      "failure_signatures": ["FAILED", "error[E", "error:", "exit status"]
-    },
-    {
-      "name": "go",
-      "command_regex": "^go(\\s+.*)?\\s+(test|build|vet)(\\s+.*)?$",
-      "failure_signatures": ["FAIL", "exit status", "build failed"]
-    },
-    {
-      "name": "generic_verifier",
-      "command_regex": "(^|/)((verify|validate|test|check|lint|build)[a-zA-Z0-9_-]*\\.(sh|py|js|ts)|gradlew?\\s+test|mvn\\s+test)",
-      "failure_signatures": ["FAIL", "FAILED", "ERROR", "exit status"]
-    }
-  ]
+  "core_binaries": {
+    "node": [
+      "tsc",
+      "vitest",
+      "jest",
+      "mocha",
+      "eslint",
+      "prettier",
+      "next build",
+      "vite build",
+      "webpack",
+      "biome",
+      "cypress",
+      "playwright",
+      "turbo",
+      "ts-node"
+    ],
+    "python": [
+      "pytest",
+      "unittest",
+      "mypy",
+      "pyright",
+      "ruff",
+      "flake8",
+      "pylint",
+      "coverage",
+      "nosetests"
+    ],
+    "rust": [
+      "cargo test",
+      "cargo check",
+      "cargo clippy",
+      "cargo build"
+    ],
+    "go": [
+      "go test",
+      "go vet",
+      "golangci-lint",
+      "go build"
+    ],
+    "java": [
+      "mvn test",
+      "mvn verify",
+      "mvn compile",
+      "gradle test",
+      "gradle check",
+      "gradle build",
+      "gradlew test",
+      "gradlew check",
+      "gradlew build"
+    ]
+  },
+  "failure_signatures": {
+    "node": ["ELIFECYCLE", "ERR!", "Command failed", "FAIL", "exit status", "error TS", "TypeScript error"],
+    "python": ["FAILED", "ERROR", "AssertionError", "exit status", "Traceback"],
+    "rust": ["FAILED", "error[E", "error:", "exit status"],
+    "go": ["FAIL", "exit status", "build failed"],
+    "java": ["BUILD FAILURE", "FAILURE:", "There are test failures", "exit status"]
+  }
 }
