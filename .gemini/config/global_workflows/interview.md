@@ -19,11 +19,14 @@ If the request contains multiple stages, evaluate each independently. Declare `[
 
 ## Step 2: Relentless Interview
 
-Output a numbered list of questions to resolve every `[MISSING]`, `[MISSING_INTENT]`, and `[MISSING_EXECUTION_PATH]` tag. If `[MISSING_EXECUTION_PATH]` exists, present the valid technical choices as A/B options to lock down a singular path. Never present A/B options for a `[BLOCKED_EXECUTION_PATH]`. You must resolve its dependencies first.
+Use the `ask_question` tool to interactively resolve every `[MISSING]`, `[MISSING_INTENT]`, and `[MISSING_EXECUTION_PATH]` tag instead of asking in plain text.
 
-**Binary Interrogation**: Formulate every question as a strict verification. Pair every question with a synthesized recommendation or pre-calculated default. State your assumption explicitly to shift the cognitive load; allow the user to answer with a simple "Yes/No" or "A/B" choice.
+- If `[MISSING_EXECUTION_PATH]` exists, supply valid technical choices as concrete options in `ask_question` to lock down a singular path.
+- Never present options for a `[BLOCKED_EXECUTION_PATH]`. You must resolve its dependencies first.
+- **Binary / Structured Options**: Pair every question with a synthesized recommendation or pre-calculated default. Prefix recommended options with `(Recommended)` and list them first. Format options as the user's direct response.
+- Use `is_multi_select: true` when multiple independent choices or constraints can be selected simultaneously.
 
-Stop and wait for the user to answer the list. Assume every user reply is incomplete. You MUST recursively execute Step 1 on the user's new text to actively hunt for newly introduced unprovided paths, schemas, or edge cases. Output a new numbered list for every new `[MISSING]` tag found.
+Stop and wait for the user's submission via `ask_question`. Assume every user reply is incomplete. You MUST recursively execute Step 1 on the user's response to actively hunt for newly introduced unprovided paths, schemas, or edge cases. Trigger a new `ask_question` call for every new `[MISSING]` tag found.
 You may only exit this loop when you explicitly declare `[ZERO_NEW_MISSING]`, proving no new variables exist. Your exclusive next action is to confirm to user there is nothing left to ask. Stop and wait for their next request. You must not write any implementation plan or make any code change.
 
 ## Postfixes
