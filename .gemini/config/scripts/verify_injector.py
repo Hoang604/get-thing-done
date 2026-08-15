@@ -66,9 +66,11 @@ class VerifyInjector:
             f"Command `{command}` failed ({error}).\n\n"
             "In your visible response before mutating code, report:\n"
             "1. What failed (test name, assertion, or error output).\n"
-            "2. Root cause explaining why it failed.\n"
-            "3. Proposed fix.\n\n"
-            "Then proceed with the fix.\n"
+            "2. Root cause or Hypothesis (Confidence: High/Low):\n"
+            "   - If straightforward (e.g. syntax, typo, missing import): state exact root cause directly (Confidence: High).\n"
+            "   - If complex or non-obvious: state hypothesis with confidence level (High/Low) and explore before applying fixes.\n"
+            "3. Proposed fix / next action.\n\n"
+            "Then proceed with the fix or exploration.\n"
             "</critical_instructions>"
         )
 

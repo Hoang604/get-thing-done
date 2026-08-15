@@ -120,6 +120,7 @@ class TestVerifyPipelineDeterministic(unittest.TestCase):
         steps = self.injector.generate_instruction(conv_id)
         self.assertEqual(len(steps), 1)
         self.assertIn("Command `pnpm run type-check` failed (exit status 2)", steps[0]["ephemeralMessage"])
+        self.assertIn("Confidence: High/Low", steps[0]["ephemeralMessage"])
         self.assertFalse(os.path.exists(incident_file))
 
         steps_2 = self.injector.generate_instruction(conv_id)
