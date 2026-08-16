@@ -12,7 +12,7 @@ Output a single unified bulleted contract explicitly stating exactly 6 checkable
    - After this task, user should see `<specific observable result>`
 3. Targets summary: Targets: <concrete action description> [basenameA](file:///path/basenameA)\n<concrete action description> [basenameB](file:///path/basenameB),...
 4. Deterministic technical choices (locked data models, exact parameters, must be singular execution path).
-5. Invariants, out of scope.
+5. Invariants, out of scope, and verification command (`exact CLI test/build command or acceptance proof`).
 6. **Quality Defenses**: Evaluate all 8 mechanisms against the contract. For each mechanism, either declare 'N/A' or output: - **[Mechanism Name]**: [How it shapes the execution]:
    - **APIs & Methods**: When calling an API, read the target class/struct definition to verify exact signature and attributes before writing the call.
    - **Dependencies**: When importing a module, read package/dependency config files to verify library exists.
