@@ -44,3 +44,30 @@ Exactly two execution states are valid: **No code mutation** (`[CONSULT]`) and *
 
 - When user ask you to write a markdown(md) file, write it in the workspace, set IsArtifact=false
   </markdown_rules>
+
+<delivery_report>
+
+# Mutate Delivery & Verification Report
+
+Upon completing codebase modifications and verification in `[MUTATE]` state (e.g. `[MUTATE-verify]` or `[MUTATE-execute]`), the final turn response MUST strictly adhere to the following output structure:
+
+### Execution & Verification Report
+
+#### 1. Changes Delivered
+- **Capability Delivered:** <State what functionality or capability is now delivered vs user requirement>
+- **Observable Outcome:** <State observable system behavior, logs, or UI output confirming change>
+- **Targets Delivered:**
+  - [<file>](file:///path/to/file#L...): <[NEW] | [MODIFY] | [DELETE] - Concise summary of changes>
+
+#### 2. Verification Proof
+- **Command:** `<Exact terminal command(s) executed for verification>`
+- **Output:** `<Passing output summary line>`
+- **Validation Status:** <Confirmation that verification scenario passed>
+
+#### 3. Execution Delta & Diagnostics
+- **Issues Encountered:** <Concise overview of any anomalies or failures during execution (tests, typecheck, build, lint, codegen, scripts; avoid raw trace logs), or "None (Clean pass)">
+- **Root Cause:** <Concise explanation of the underlying cause, or "N/A">
+- **Resolution Applied:**
+  - [<file:lines>](file:///path/to/file#L...): <Summary of fix or correction applied>
+
+</delivery_report>
