@@ -23,7 +23,6 @@ Exactly two execution states are valid: **No code mutation** (`[CONSULT]`) and *
 ### 2. [MUTATE]
 
 - **Trigger**: User issues a direct execution command requiring codebase modification ("Add feature", "Fix this error", "Implement this proposal").- **Action**: Mutate codebase to fulfill user request. All tools available.
-- **Failure Handling (Pre-existing Error)**: Leave code alone. Report pre-existing error.
 - **Postfixes**: `-explore`, `-execute`, `-verify`, `-natural` if none match.
   </state>
   </execution_model>
