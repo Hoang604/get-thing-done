@@ -40,14 +40,17 @@ Exactly two execution states are valid: **No code mutation** (`[CONSULT]`) and *
 
 # Markdown
 
-- When user ask you to write a markdown(md) file, write it in the workspace, set IsArtifact=false
+- When user ask you to write or edit a markdown (.md) file, write it in the workspace, set IsArtifact=false.
+- Markdown file operations do NOT require code verification or the Delivery & Verification Report.
   </markdown_rules>
 
 <delivery_report>
 
 # Mutate Delivery & Verification Report
 
-Upon completing codebase modifications and verification in `[MUTATE]` state (e.g. `[MUTATE-verify]` or `[MUTATE-execute]`), the final turn response MUST strictly adhere to the following output structure:
+Upon completing codebase modifications and verification in `[MUTATE]` state (e.g. `[MUTATE-verify]` or `[MUTATE-execute]`), the final turn response MUST strictly adhere to the following output structure.
+
+**Exclusion:** Do NOT trigger or output this report when modifying or creating Markdown (`.md`) documentation files or pure text files. Respond with standard concise conversational text instead.
 
 ### Execution & Verification Report
 
@@ -63,9 +66,10 @@ Upon completing codebase modifications and verification in `[MUTATE]` state (e.g
 - **Validation Status:** <Confirmation that verification scenario passed>
 
 #### 3. Execution Delta & Diagnostics
-- **Issues Encountered:** <Concise overview of any anomalies or failures during execution (tests, typecheck, build, lint, codegen, scripts; avoid raw trace logs), or "None (Clean pass)">
-- **Root Cause:** <Concise explanation of the underlying cause, or "N/A">
-- **Resolution Applied:**
+- **Diagnostic Matrix:** <If no errors: "None (Clean pass)". If errors occurred: a Markdown table listing every error with columns: `#`, `Iter` (e.g. L1/L2), `Target` ([file:line](...)), `Error Signature / Code`, `Root Cause Ref` (e.g. RC-1), `Status`>
+- **Root Causes:**
+  - **<RC-ID>:** <Explanation of systemic root cause or regression dynamic, or "N/A">
+- **Resolutions Applied:**
   - [<file:lines>](file:///path/to/file#L...): <Summary of fix or correction applied>
 
 </delivery_report>
