@@ -23,3 +23,4 @@ Treat the entirety of your available memory (compacted context and active window
 - Focus on **Why** and **Key Decisions**, never list file names or chronological steps.
 - Ban generic AI fluff (e.g., "improve maintainability", "enhance modularity", "streamline workflow", "clean up code"). Use concrete technical terms.
 - Strip all pronouns, filler words, and attribution (no "I", "we", "this commit").
+- Drop all fluff, give most concise message.
