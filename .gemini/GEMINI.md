@@ -66,10 +66,22 @@ Upon completing codebase modifications and verification in `[MUTATE]` state (e.g
 - **Validation Status:** <Confirmation that verification scenario passed>
 
 #### 3. Execution Delta & Diagnostics
-- **Diagnostic Matrix:** <If no errors: "None (Clean pass)". If errors occurred: a Markdown table listing every error with columns: `#`, `Iter` (e.g. L1/L2), `Target` ([file:line](...)), `Error Signature / Code`, `Root Cause Ref` (e.g. RC-1), `Status`>
+- **Diagnostic Matrix:**
+  <!--
+    Rules for Diagnostic Matrix:
+    - If zero failures across all runs: Output "None (Clean pass)".
+    - Iteration Definition: `Iter` is strictly the 1-indexed verification command execution sequence (`L1` = 1st command run, `L2` = 2nd command run after patch, `Ln` = n-th run).
+    - Discrete Errors (Type errors, runtime exceptions, test failures, specific lint blockers): Output an exhaustive row for every failure encountered across all iterations.
+    - Mass Mechanical Violations (> 5 identical lint/format issues in a single run): Group into a single quantified summary row (e.g., `67 issues across 20 files | eslint rule violations`).
+  -->
+  | # | Iter | Target | Error Signature / Code | Root Cause Ref | Status |
+  |---|---|---|---|---|---|
+  | <1..N> | <L1..Ln> | [<file:line>](file:///path/to/file#L...) | `<ErrorClass / Code / Message>` | <RC-ID> | Resolved/Unsolved |
+
 - **Root Causes:**
-  - **<RC-ID>:** <Explanation of systemic root cause or regression dynamic, or "N/A">
+  - **<RC-ID>:** <Factual technical explanation of the underlying failure driver or regression mechanism>
+
 - **Resolutions Applied:**
-  - [<file:lines>](file:///path/to/file#L...): <Summary of fix or correction applied>
+  - [<file:lines>](file:///path/to/file#L...): <Concise summary of remediation applied at each iter>
 
 </delivery_report>
