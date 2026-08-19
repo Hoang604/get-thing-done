@@ -162,6 +162,23 @@ class TestVerifyPipelineDeterministic(unittest.TestCase):
         steps_2 = self.injector.generate_instruction(pre_payload)
         self.assertEqual(len(steps_2), 0)
 
+    def test_uv_run_basedpyright_failure_captured(self):
+        conv_id = "conv-basedpyright-fail"
+        payload = {
+            "conversationId": conv_id,
+            "stepIdx": 300,
+            "toolCall": {"name": "run_command", "args": {"CommandLine": "uv run basedpyright"}},
+            "error": "exit status 1"
+        }
+        incident_file = self.recorder.record_if_failed(payload)
+        self.assertIsNotNone(incident_file)
+        self.assertTrue(os.path.exists(incident_file))
+
+        steps = self.injector.generate_instruction({"conversationId": conv_id})
+        self.assertEqual(len(steps), 1)
+        self.assertIn("VERIFICATION FAILURE: Command `uv run basedpyright` failed (exit status 1)", steps[0]["ephemeralMessage"])
+
 
 if __name__ == "__main__":
     unittest.main()
+

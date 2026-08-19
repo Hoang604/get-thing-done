@@ -30,6 +30,7 @@
       "unittest",
       "mypy",
       "pyright",
+      "basedpyright",
       "ruff",
       "flake8",
       "pylint",

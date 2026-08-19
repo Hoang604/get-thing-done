@@ -149,7 +149,7 @@ class VerifyMatcher:
         core_binaries = self.config.get("core_binaries", {})
 
         # 1. Python verifiers & tools
-        python_binaries = core_binaries.get("python", ["pytest", "unittest", "mypy", "pyright", "ruff", "flake8", "alembic", "tox", "nox"])
+        python_binaries = core_binaries.get("python", ["pytest", "unittest", "mypy", "pyright", "basedpyright", "ruff", "flake8", "alembic", "tox", "nox"])
         for py_bin in python_binaries:
             if re.search(rf"\b{re.escape(py_bin)}\b", cmd, re.IGNORECASE):
                 if re.search(rf"(^|/|\s|run\s+|-m\s+){re.escape(py_bin)}(\s+|$)", cmd, re.IGNORECASE):
