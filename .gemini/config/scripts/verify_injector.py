@@ -47,18 +47,17 @@ class VerifyInjector:
     def _build_instruction_message(self, command: str, error: str) -> str:
         return (
             "<critical_instructions>\n"
-            f"VERIFICATION FAILURE: Command `{command}` failed ({error}).\n\n"
+            f"Command `{command}` failed ({error}).\n\n"
             "MANDATORY REPORTING PROTOCOL:\n"
             "Regardless of whether this is a TEST, TYPE-CHECK, BUILD, LINT, or CODEGEN failure, "
             "you MUST output a report in your VISIBLE RESPONSE before making any file changes:\n\n"
-            "1. **Failure Scope**:\n"
-            "   - For Type/Lint/Build: Exact file, line number, and compiler error message (e.g. TS error, ESLint rule, build error).\n"
-            "   - For Test: Failing test case, assertion, or runtime exception.\n"
-            "2. **Root Cause or Hypothesis** (Confidence: High/Low):\n"
-            "   - Obvious errors (type mismatch, missing import, syntax, typo): State exact root cause directly (Confidence: High).\n"
-            "   - Non-obvious/complex errors: State hypothesis with confidence level (High/Low) and plan to explore.\n"
-            "3. **Proposed Fix / Next Action**.\n\n"
-            "After outputting this breakdown, proceed with the fix or exploration.\n"
+            "1. Trace upstream: Find where the invalid data/state originated (Origin Site), not just where it broke (Error Site).\n"
+            "2. Output brief report:\n"
+            "   - **Root Cause**: What upstream logic/contract failed?\n"
+            "   - **Target File**: File to fix (Origin Site).\n"
+            "   - **Fix Strategy**: How to fix properly like an engineer without shortcuts.\n"
+            "3. FORBIDDEN FIXES: No type casting (`any`/`ignore`), no altering valid test assertions, no swallowing errors with null-checks/try-catch.\n\n"
+            "Read upstream files first if not inspected yet, then apply fix to the origin.\n"
             "</critical_instructions>"
         )
 

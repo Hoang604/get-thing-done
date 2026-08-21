@@ -40,14 +40,17 @@ Exactly two execution states are valid: **No code mutation** (`[CONSULT]`) and *
 
 # Markdown
 
-- When user ask you to write a markdown(md) file, write it in the workspace, set IsArtifact=false
+- When user ask you to write or edit a markdown (.md) file, write it in the workspace, set IsArtifact=false.
+- Markdown file operations do NOT require code verification or the Delivery & Verification Report.
   </markdown_rules>
 
 <delivery_report>
 
 # Mutate Delivery & Verification Report
 
-Upon completing codebase modifications and verification in `[MUTATE]` state (e.g. `[MUTATE-verify]` or `[MUTATE-execute]`), the final turn response MUST strictly adhere to the following output structure:
+Upon completing codebase modifications and verification in `[MUTATE]` state (e.g. `[MUTATE-verify]` or `[MUTATE-execute]`), the final turn response MUST strictly adhere to the following output structure.
+
+**Exclusion:** Do NOT trigger or output this report when modifying or creating Markdown (`.md`) documentation files or pure text files. Respond with standard concise conversational text instead.
 
 ### Execution & Verification Report
 
@@ -63,9 +66,22 @@ Upon completing codebase modifications and verification in `[MUTATE]` state (e.g
 - **Validation Status:** <Confirmation that verification scenario passed>
 
 #### 3. Execution Delta & Diagnostics
-- **Issues Encountered:** <Concise overview of any anomalies or failures during execution (tests, typecheck, build, lint, codegen, scripts; avoid raw trace logs), or "None (Clean pass)">
-- **Root Cause:** <Concise explanation of the underlying cause, or "N/A">
-- **Resolution Applied:**
-  - [<file:lines>](file:///path/to/file#L...): <Summary of fix or correction applied>
+- **Diagnostic Matrix:**
+  <!--
+    Rules for Diagnostic Matrix:
+    - If zero failures across all runs: Output "None (Clean pass)".
+    - Iteration Definition: `Iter` is strictly the 1-indexed verification command execution sequence (`L1` = 1st command run, `L2` = 2nd command run after patch, `Ln` = n-th run).
+    - Discrete Errors (Type errors, runtime exceptions, test failures, specific lint blockers): Output an exhaustive row for every failure encountered across all iterations.
+    - Mass Mechanical Violations (> 5 identical lint/format issues in a single run): Group into a single quantified summary row (e.g., `67 issues across 20 files | eslint rule violations`).
+  -->
+  | # | Iter | Target | Error Signature / Code | Root Cause Ref | Status |
+  |---|---|---|---|---|---|
+  | <1..N> | <L1..Ln> | [<file:line>](file:///path/to/file#L...) | `<ErrorClass / Code / Message>` | <RC-ID> | Resolved/Unsolved |
+
+- **Root Causes:**
+  - **<RC-ID>:** <Factual technical explanation of the underlying failure driver or regression mechanism>
+
+- **Resolutions Applied:**
+  - [<file:lines>](file:///path/to/file#L...): <Concise summary of remediation applied at each iter>
 
 </delivery_report>
