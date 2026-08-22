@@ -63,7 +63,7 @@ Applies to EVERY `[MUTATE]` task — features, refactors, and fixes alike. A pro
 When fixing bugs (any `[MUTATE]` task involving errors, failures, or unexpected behavior):
 
 1. **Instrument first, never speculate.** Do NOT reason about root cause from static code reading alone. Immediately add debug logs (log statements) along the suspected code path capturing entry/exit points, branch conditions, and relevant variable states.
-2. **Ask for evidence.** Ask the user to reproduce the issue with the debug logs enabled and paste/provide the resulting log output BEFORE applying any fix or committing to a hypothesis.
+2. **Ask for evidence.** Ask the user to reproduce the issue with the debug logs enabled and paste/provide the resulting log output BEFORE applying any fix or committing to a hypothesis. If the problem is not clear after add logs, add more logs until everything is clear.
 3. **Diagnose from logs only.** Form the root cause conclusion strictly from the provided log results, then apply the minimal targeted fix.
 4. **Cleanup is mandatory.** After ALL fixes are applied and verified, remove every debug log added during the investigation before delivering the final response/report. Delivering with leftover debug logs is an incomplete fix.
   </bug_fixing_protocol>
