@@ -55,6 +55,7 @@ When fixing bugs (any `[MUTATE]` task involving errors, failures, or unexpected 
 
 - When user ask you to write or edit a markdown (.md) file, write it in the workspace, set IsArtifact=false.
 - Markdown file operations do NOT require code verification or the Delivery & Verification Report.
+- Always use elk rendering style in mermaid with %%{init: {"flowchart": {"defaultRenderer": "elk"}}}%%
   </markdown_rules>
 
 <delivery_report>
