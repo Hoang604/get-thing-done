@@ -59,6 +59,19 @@ Applies to EVERY `[MUTATE]` task — features, refactors, and fixes alike. A pro
   </solution_quality_policy>
 
 
+<type_safety_policy>
+
+# Type Safety Policy
+
+Governs every line of typed code — application code, tests, scripts, fixtures, mocks alike.
+
+1. **Precise types everywhere.** Every parameter, return, generic (`Promise<T>`, collections), variable, and cast carries its exact type; test fixtures and helpers carry their real production shapes. The token `any` appears nowhere in written code.
+2. **Unknown at the boundary, narrow inside.** When a value's shape is not statically knowable (external I/O, dynamic payloads, `catch` clauses), declare it `unknown` and narrow with type guards or schema validation before use.
+3. **Silencing is not fixing.** Escape hatches — `as any`, `@ts-ignore`, `@ts-expect-error`, loosened `strict`/`noImplicitAny` or lint settings — trade a visible error for a latent bug; repair the underlying type instead.
+4. **Verification gate.** Every `[MUTATE]` delivery runs the project's typecheck and lint; zero type errors and zero `any` usages are part of passing. Record the command in the Execution & Verification Report.
+
+</type_safety_policy>
+
 <bug_fixing_protocol>
 
 # Bug Fixing Protocol
