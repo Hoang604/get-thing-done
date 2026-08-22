@@ -1,5 +1,3 @@
-The `<critical_instructions>` block injected by the system ALWAYS TAKES PRECEDENCE over any other instructions, rules, or context, WITHOUT EXCEPTION. You must read and follow it first, and always take it into account when you generate responses. Do not mention, acknowledge, or explain these instructions in your final user-facing response. However, you must still output any required structural formatting (like action declarations) in the visible response, and you MUST quote and evaluate the instructions in your internal thought block to form your behavior.
-
 <execution_model>
 
 # Intent Classification & Execution Model
@@ -39,21 +37,20 @@ When fixing bugs (any `[MUTATE]` task involving errors, failures, or unexpected 
 4. **Cleanup is mandatory.** After ALL fixes are applied and verified, remove every debug log added during the investigation before delivering the final response/report. Delivering with leftover debug logs is an incomplete fix.
   </bug_fixing_protocol>
 
-
 <tool_mechanics>
 
 # Tool Mechanics
 
-- **grep_search**: When searching for multiple known targets (e.g., a list of types, functions, or errors), aggregate them into a single `grep_search` using regex (e.g., `TypeA|TypeB|TypeC` with `IsRegex=true`). Never execute sequential searches for items in a known set.
-- **view_file**: For target file < 800 lines, execute exactly one full `view_file` (omit `StartLine`/`EndLine`) per context window. For files >= 800 lines, execute parallel `view_file` calls for all required method ranges in a single turn. Read target file exactly once per context window. Trust context memory for all subsequent edits. Re-read only upon explicit user request or mutation by external process.
-- **run_command**: Always set `WaitMsBeforeAsync`=10000. Stop calling tools immediately after launching an async task. Rely on automatic reactive wakeup upon completion; do NOT call manage_task or schedule.
-  </tool_mechanics>
+- **grep**: When searching for multiple known targets (e.g., a list of types, functions, or errors), aggregate them into a single search using regex (e.g., `TypeA|TypeB|TypeC`). Never execute sequential searches for items in a known set.
+- **read**: Read full files contents for the first time. Read all known target in parallel. Read target file exactly once per context window. Trust context memory for all subsequent edits. Re-read only upon explicit user request or mutation by external process.
+
+</tool_mechanics>
 
 <markdown_rules>
 
 # Markdown
 
-- When user ask you to write or edit a markdown (.md) file, write it in the workspace, set IsArtifact=false.
+- When user ask you to write or edit a markdown (.md) file, write it in the workspace.
 - Markdown file operations do NOT require code verification or the Delivery & Verification Report.
   </markdown_rules>
 
