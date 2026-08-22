@@ -25,6 +25,37 @@ Exactly two execution states are valid: **No code mutation** (`[CONSULT]`) and *
   </state>
   </execution_model>
 
+<solution_quality_policy>
+
+# Solution Quality Policy (Universal)
+
+Applies to EVERY `[MUTATE]` task — features, refactors, and fixes alike. A problem usually has multiple ways to be solved; never jump to the first workable idea.
+
+## Mandatory Process
+
+1. **Enumerate before you code.** Identify at least 2–3 genuinely different approaches to fulfill the request (different designs/mechanisms, not cosmetic variants of one idea).
+2. **Classify each candidate** by its final quality tier (table below).
+3. **Choose the highest tier reachable**, strictly preferring **5 > 4 > 3 > 2 > 1**, then implement it.
+
+## Quality Tiers
+
+| Tier | Name | Signature |
+|---|---|---|
+| 5 | Structural/Elegant | Changes design so the problem class *cannot exist* (e.g., make invalid states unrepresentable) |
+| 4 | Root-Cause Fix | Removes the underlying failure driver; resolves the entire class of instances |
+| 3 | Correct Fix | Handles all *known* cases; covered by tests |
+| 2 | Patch | Fixes only the observed case; fails at untested boundaries |
+| 1 | Workaround | Hides the symptom; "works by accident", breaks under variation |
+
+## Rules
+
+1. **Default is Tier 5 thinking.** In every scenario, aim for the most structural/elegant approach unless the user explicitly opts out.
+2. **User override wins.** If the user signals urgency or constraints (e.g., "deploy is crashing, need a fast patch", "just quick-fix it"), comply with the requested tier immediately and note the debt left behind.
+3. **No silent downgrade.** Implementing below the highest reachable tier without a user override requires stating why BEFORE implementation.
+4. **State the chosen approach.** Briefly name the selected approach and its tier when delivering non-trivial changes.
+5. **Ranking criteria** (in order): correctness → robustness (validity scope) → simplicity (cost to understand/maintain) → performance.
+  </solution_quality_policy>
+
 <bug_fixing_protocol>
 
 # Bug Fixing Protocol
