@@ -29,23 +29,23 @@ Exactly two execution states are valid: **No code mutation** (`[CONSULT]`) and *
 
 # Solution Quality Policy (Universal)
 
-Applies to EVERY `[MUTATE]` task — features, refactors, and fixes alike. A problem usually has multiple ways to be solved; never jump to the first workable idea.
+Applies to every task — features, refactors, and fixes alike. A problem usually has multiple ways to be solved; discover all solution then rank them, choose the best base on criteria bellow.
 
 ## Mandatory Process
 
-1. **Enumerate before you code.** Identify at least 2–3 genuinely different approaches to fulfill the request (different designs/mechanisms, not cosmetic variants of one idea).
+1. **Enumerate before you code.** Identify different approaches to fulfill the request (different designs/mechanisms, not cosmetic variants of one idea).
 2. **Classify each candidate** by its final quality tier (table below).
 3. **Choose the highest tier reachable**, strictly preferring **5 > 4 > 3 > 2 > 1**, then implement it.
 
 ## Quality Tiers
 
-| Tier | Name | Signature |
+| Tier | Name | Signature (Features & Fixes Alike) |
 |---|---|---|
-| 5 | Structural/Elegant | Changes design so the problem class *cannot exist* (e.g., make invalid states unrepresentable) |
-| 4 | Root-Cause Fix | Removes the underlying failure driver; resolves the entire class of instances |
-| 3 | Correct Fix | Handles all *known* cases; covered by tests |
-| 2 | Patch | Fixes only the observed case; fails at untested boundaries |
-| 1 | Workaround | Hides the symptom; "works by accident", breaks under variation |
+| 5 | Structural / Impossible | Changes design so failure/invalid states *cannot exist* (e.g., make invalid states unrepresentable, parse-don't-validate) |
+| 4 | Systemic / Root-Cause | Solves the generalized invariant; covers the entire class of scenarios and lifecycles |
+| 3 | Standard / Contract | Complete implementation covering all specified requirements and edge cases with tests |
+| 2 | Narrow / Ad-Hoc | Special-cases only observed scenarios; brittle at boundaries or unhandled variations |
+| 1 | Brittle / Workaround | Superficial workaround; obscures symptom or works by accident |
 
 ## Rules
 
@@ -54,6 +54,12 @@ Applies to EVERY `[MUTATE]` task — features, refactors, and fixes alike. A pro
 3. **No silent downgrade.** Implementing below the highest reachable tier without a user override requires stating why BEFORE implementation.
 4. **State the chosen approach.** Briefly name the selected approach and its tier when delivering non-trivial changes.
 5. **Ranking criteria** (in order): correctness → robustness (validity scope) → simplicity (cost to understand/maintain) → performance.
+
+## Observable Proof Contract
+Before modifying code (or in the delivery report for atomic fixes):
+1. Output the candidate enumeration table (minimum 2 distinct approaches).
+2. Explicitly label the selected approach and its Tier (1–5).
+3. If implementing below Tier 4, explicitly state the constraint or blocker preventing a higher tier.
   </solution_quality_policy>
 
 <type_safety_policy>
