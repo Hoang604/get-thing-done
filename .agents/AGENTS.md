@@ -25,43 +25,6 @@ Exactly two execution states are valid: **No code mutation** (`[CONSULT]`) and *
   </state>
   </execution_model>
 
-<solution_quality_policy>
-
-# Solution Quality Policy (Universal)
-
-Applies to every task — features, refactors, and fixes alike. A problem usually has multiple ways to be solved; discover all solution then rank them, choose the best base on criteria bellow.
-
-## Mandatory Process
-
-1. **Enumerate before you code.** Identify different approaches to fulfill the request (different designs/mechanisms, not cosmetic variants of one idea).
-2. **Classify each candidate** by its final quality tier (table below).
-3. **Choose the highest tier reachable**, strictly preferring **5 > 4 > 3 > 2 > 1**, then implement it.
-
-## Quality Tiers
-
-| Tier | Name | Signature (Features & Fixes Alike) |
-|---|---|---|
-| 5 | Structural / Impossible | Changes design so failure/invalid states *cannot exist* (e.g., make invalid states unrepresentable, parse-don't-validate) |
-| 4 | Systemic / Root-Cause | Solves the generalized invariant; covers the entire class of scenarios and lifecycles |
-| 3 | Standard / Contract | Complete implementation covering all specified requirements and edge cases with tests |
-| 2 | Narrow / Ad-Hoc | Special-cases only observed scenarios; brittle at boundaries or unhandled variations |
-| 1 | Brittle / Workaround | Superficial workaround; obscures symptom or works by accident |
-
-## Rules
-
-1. **Default is Tier 5 thinking.** In every scenario, aim for the most structural/elegant approach unless the user explicitly opts out.
-2. **User override wins.** If the user signals urgency or constraints (e.g., "deploy is crashing, need a fast patch", "just quick-fix it"), comply with the requested tier immediately and note the debt left behind.
-3. **No silent downgrade.** Implementing below the highest reachable tier without a user override requires stating why BEFORE implementation.
-4. **State the chosen approach.** Briefly name the selected approach and its tier when delivering non-trivial changes.
-5. **Ranking criteria** (in order): correctness → robustness (validity scope) → simplicity (cost to understand/maintain) → performance.
-
-## Observable Proof Contract
-Before modifying code (or in the delivery report for atomic fixes):
-1. Output the candidate enumeration table (minimum 2 distinct approaches).
-2. Explicitly label the selected approach and its Tier (1–5).
-3. If implementing below Tier 4, explicitly state the constraint or blocker preventing a higher tier.
-  </solution_quality_policy>
-
 <type_safety_policy>
 
 # Type Safety Policy
@@ -74,18 +37,6 @@ Governs every line of typed code — application code, tests, scripts, fixtures,
 4. **Verification gate.** Every `[MUTATE]` delivery runs the project's typecheck and lint; zero type errors and zero `any` usages are part of passing. Record the command in the Execution & Verification Report.
 
 </type_safety_policy>
-
-<bug_fixing_protocol>
-
-# Bug Fixing Protocol
-
-When fixing bugs (any `[MUTATE]` task involving errors, failures, or unexpected behavior):
-
-1. **Instrument first, never speculate.** Do NOT reason about root cause from static code reading alone. Immediately add debug logs (log statements) along the suspected code path capturing entry/exit points, branch conditions, and relevant variable states.
-2. **Ask for evidence.** Ask the user to reproduce the issue with the debug logs enabled and paste/provide the resulting log output BEFORE applying any fix or committing to a hypothesis. If the problem is not clear after add logs, add more logs until everything is clear.
-3. **Diagnose from logs only.** Form the root cause conclusion strictly from the provided log results, then apply the minimal targeted fix.
-4. **Cleanup is mandatory.** After ALL fixes are applied and verified, remove every debug log added during the investigation before delivering the final response/report. Delivering with leftover debug logs is an incomplete fix.
-  </bug_fixing_protocol>
 
 <tool_mechanics>
 

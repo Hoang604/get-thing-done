@@ -36,10 +36,12 @@ Systematic sequence of skills for rigorous development, auditing, and delivery:
 - **[propose-commit](.gemini/skills/propose-commit/SKILL.md)**: Propose a conventional commit message for the current changes.
 
 ### 2. Planning & Architecture
-- **[propose-plan](.gemini/skills/propose-plan/SKILL.md)**: Gather context and propose architectural approaches with clear trade-offs before drafting a plan.
+- **[propose-plan](.gemini/skills/propose-plan/SKILL.md)**: Gather context, classify quality tiers (Tier 1-5), and propose architectural approaches with clear trade-offs before drafting a plan.
 - **[draft-plan](.gemini/skills/draft-plan/SKILL.md)**: Draft formal `implementation_plan.md` artifact using EARS syntax with zero-prose literal contracts and seam test matrix.
 
 ### 3. Auditing & Stress Testing
+- **[fix-bug](.gemini/skills/fix-bug/SKILL.md)**: Evidence-driven bug diagnosis and remediation loop using probe instrumentation, log-only diagnosis, and mandatory probe cleanup.
+- **[bug-hunt](.gemini/skills/bug-hunt/SKILL.md)**: Autonomous iterative red/green bug hunt and repair loop driven by blind fresh-context audit subagents and resolution proofs.
 - **[stress-test](.gemini/skills/stress-test/SKILL.md)**: Audit agent-produced work across operating regimes with zero-regression fixes.
 
 ### 4. Code Review & Verification

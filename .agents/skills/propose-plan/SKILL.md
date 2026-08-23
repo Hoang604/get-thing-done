@@ -36,6 +36,18 @@ Provide exactly two distinct, viable approaches (`Approach A` vs `Approach B`) s
 - **Approach A (Pragmatic / Minimalist)**: The simplest, fastest implementation path that completely fulfills the requirements with minimal moving parts or surface-area modification.
 - **Approach B (Architectural / Robust)**: The cleanest, most extensible and scalable architecture, optimized for long-term maintenance, clean seams, and modularity.
 
+### Quality Tiers (Universal)
+
+Classify each candidate against the Quality Tiers (Tier 1–5), strictly preferring **5 > 4 > 3 > 2 > 1**. Default is Tier 5 thinking:
+
+| Tier | Name | Signature (Features & Fixes Alike) |
+|---|---|---|
+| **5** | **Structural / Impossible** | Changes design so failure/invalid states *cannot exist* (e.g., make invalid states unrepresentable, parse-don't-validate) |
+| **4** | **Systemic / Root-Cause** | Solves the generalized invariant; covers the entire class of scenarios and lifecycles |
+| **3** | **Standard / Contract** | Complete implementation covering all specified requirements and edge cases with tests |
+| **2** | **Narrow / Ad-Hoc** | Special-cases only observed scenarios; brittle at boundaries or unhandled variations |
+| **1** | **Brittle / Workaround** | Superficial workaround; obscures symptom or works by accident |
+
 Evaluate both valid trade-off paths against these self-contained design principles:
 
 - **Module Depth & Deletion Test (`Deep vs Shallow`):**
@@ -57,6 +69,7 @@ Evaluate both valid trade-off paths against these self-contained design principl
 
 For each approach, explicitly list:
 
+- **Quality Tier**: Label as Tier 1–5 with rationale. If implementing below Tier 4, explicitly state the constraint or blocker preventing a higher tier.
 - **Pros**: Evaluate advantages in module depth, seam complexity, and performance.
 - **Cons**: Evaluate disadvantages in module depth, seam complexity, and performance.
 - **User Outcomes**:
@@ -64,7 +77,7 @@ For each approach, explicitly list:
   - After this task, user should see `<specific observable result>`
 - **Senior Engineer Advocacy**: Explicitly state why an experienced engineer would fight for this approach.
 
-- **Completion Criterion**: Output exactly two approaches (`Approach A` and `Approach B`). Each approach must explicitly contain the headings: `Pros`, `Cons`, `User Outcomes`, and `Senior Engineer Advocacy`.
+- **Completion Criterion**: Output exactly two approaches (`Approach A` and `Approach B`). Each approach must explicitly contain the headings: `Quality Tier`, `Pros`, `Cons`, `User Outcomes`, and `Senior Engineer Advocacy`.
 
 ---
 
