@@ -16,11 +16,10 @@ Treat the entirety of your available memory (compacted context and active window
 ### 2. Body Strategy
 - **Simple Changes**: Output ONLY the subject line.
 - **Complex / Architectural Changes**: Include a body with two parts separated by a blank line:
-  1. **Context & Motivation (Why)**: 1–2 direct sentences describing the previous state, limitation, or problem that prompted the change.
-  2. **Key Technical Decisions (How/What)**: 2–3 concise bullet points (`- `) highlighting structural changes, interfaces, error-handling rules, or non-obvious trade-offs.
+  1. **Context**: 1 direct sentence sythesize why the change is required
+  2. **Key achievement**: concise bullet points (`- `) highlighting what final result achieved in the commit, drop all internal process, only cite the result.
 
 ### 3. Constraints & Tone
-- Focus on **Why** and **Key Decisions**, never list file names or chronological steps.
 - Ban generic AI fluff (e.g., "improve maintainability", "enhance modularity", "streamline workflow", "clean up code"). Use concrete technical terms.
 - Strip all pronouns, filler words, and attribution (no "I", "we", "this commit").
 - Drop all fluff, give most concise message.
