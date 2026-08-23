@@ -96,7 +96,7 @@ When fixing bugs (any `[MUTATE]` task involving errors, failures, or unexpected 
 # Tool Mechanics
 
 - **grep_search**: When searching for multiple known targets (e.g., a list of types, functions, or errors), aggregate them into a single `grep_search` using regex (e.g., `TypeA|TypeB|TypeC` with `IsRegex=true`). Never execute sequential searches for items in a known set.
-- **view_file**: For target file < 800 lines, execute exactly one full `view_file` (omit `StartLine`/`EndLine`) per context window. For files >= 800 lines, execute parallel `view_file` calls for all required method ranges in a single turn. Read target file exactly once per context window. Trust context memory for all subsequent edits. Re-read only upon explicit user request or mutation by external process.
+- **view_file**: Always omit StartLine and EndLine on every view_file call. The tool handles truncation automatically. Never use slice notation for file reading. Read target file exactly once per context window. Trust context memory for all subsequent edits.
 - **run_command**: Always set `WaitMsBeforeAsync`=10000. Stop calling tools immediately after launching an async task. Rely on automatic reactive wakeup upon completion; do NOT call manage_task or schedule.
   </tool_mechanics>
 
