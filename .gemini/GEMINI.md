@@ -98,13 +98,14 @@ When fixing bugs (any `[MUTATE]` task involving errors, failures, or unexpected 
 - **grep_search**: When searching for multiple known targets (e.g., a list of types, functions, or errors), aggregate them into a single `grep_search` using regex (e.g., `TypeA|TypeB|TypeC` with `IsRegex=true`). Never execute sequential searches for items in a known set.
 - **view_file**: Always omit StartLine and EndLine on every view_file call. The tool handles truncation automatically. Never use slice notation for file reading. Read target file exactly once per context window. Trust context memory for all subsequent edits.
 - **run_command**: Always set `WaitMsBeforeAsync`=10000. Stop calling tools immediately after launching an async task. Rely on automatic reactive wakeup upon completion; do NOT call manage_task or schedule.
+- **write_to_file**: Omit `ArtifactMetadata` completely for all workspace target files. Include `ArtifactMetadata` exclusively when creating artifact documents inside the brain directory (`<appDataDir>/brain/...`). 
   </tool_mechanics>
 
 <markdown_rules>
 
 # Markdown
 
-- When user ask you to write or edit a markdown (.md) file, write it in the workspace, set IsArtifact=false.
+- When user ask you to write or edit a markdown (.md) file, write it directly to the workspace without `ArtifactMetadata`.
 - Markdown file operations do NOT require code verification or the Delivery & Verification Report.
 - Always use elk rendering style in mermaid with %%{init: {"flowchart": {"defaultRenderer": "elk"}}}%%
   </markdown_rules>
