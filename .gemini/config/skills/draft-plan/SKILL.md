@@ -61,16 +61,28 @@ For every target file to create (`[NEW]`), modify (`[MODIFY]`), or delete (`[DEL
 - **Exact Caller Audit (`grep_search proof`):** Run `grep_search` across the workspace for this symbol. List every single caller file and exact line range (e.g., [caller.py:L10-L25](file:///path/caller.py#L10-L25)) that must be updated to match the new signature. If 0 callers exist outside tests, state: `"Caller Audit: 0 production callers found via grep_search."`
 - **Invariants, Error Modes & Out-of-Seam State:** State exact invariants (`what must not change`), exact typed exceptions raised (`exceptions/return variants`), AND flag any out-of-seam state accessed directly (`e.g., os.environ keys or config tables read without parameter injection`).
 
-### B. Seam Verification & Test Replacement Matrix (`Replace, Don't Layer`)
+### B. Adversarial Seam & Test Replacement Matrix (`Replace, Don't Layer & Anti-Brittle Defense`)
 
-The interface is the test surface. Enforce a mechanical 4-column mapping table to trace test replacement across seams:
+The interface is the test surface (`Signature + Invariants + Error Modes`). Callers and tests cross the exact same external seam. Strictly reject brittle tests that assert on private methods, internal state, or intermediate call graphs (`e.g., toHaveBeenCalledWith`).
 
-| Target Seam / Module                         | Old Shallow Test to [DELETE]                                   | New Deep Test & Observable Assertion                                                                                                                | Dependency Category & Adapter Strategy                                       |
-| :------------------------------------------- | :------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------- |
-| [SymbolName](file:///path/target.py#L10-L40) | [old_test.py:L12-50](file:///path/old_test.py#L12-L50) or None | [new_seam_test.py:L10-60](file:///path/new_seam_test.py#L10-L60): Asserts exact observable behavior across seam without asserting on internal state | Remote but owned: HTTP Adapter for production, In-Memory Adapter for testing |
+For each affected seam, define deep adversarial test specifications across 4 mandatory categories (`Unit/Logic`, `Integration`, `Adversarial`, `Edge Case`):
 
-- **Seam & Dependency Discipline:** In Column 3, state the exact test file link (`[basename](file:///path#L10-L20)`) and the exact observable behavior asserted (`codebase-design`). In Column 4, classify the dependency (`In-process`, `Local-substitutable`, `Remote but owned`, `True external`) and state exact adapter strategy (`codebase-design/DEPENDING`). Do not wrap table cell text or links inside backticks.
-- **No Interface Leakage for Testing:** Never make private helper methods or internal seams public solely for unit test setup. Tests must assert on observable outcomes strictly through the module's external seam.
+| Test Category | Target Seam / Module | Old Shallow Test to [DELETE] | New Deep Test & Observable Invariant | Dependency Category & Test Stand-in | Breaks-If Mutation (Specific Code Bug That Fails This) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Unit / Logic** | `[Order.calc_total](file:///path#L10)` | `[test_old.py:L10](file:///path#L10)` or None | `[test_order.py:L15](file:///path#L15)`: Total == sum(items) - discount | `In-process direct call` | Omitting discount clamp when total < 0 |
+| **Integration** | `[OrderService.pay](file:///path#L50)` | `[test_old.py:L40](file:///path#L40)` or None | `[test_order_svc.py:L30](file:///path#L30)`: DB rollback on gateway timeout | `Local stand-in (PGLite/SQLite)` | Swallowing timeout exception without rollback |
+| **Adversarial** | `[OrderParser.parse](file:///path#L20)` | None | `[test_parser.py:L10](file:///path#L10)`: Explicit rejection of malformed payload | `In-process direct call` | Accepting malformed payload header |
+| **Edge Case** | `[Pool.acquire](file:///path#L5)` | None | `[test_pool.py:L20](file:///path#L20)`: Graceful failure when pool_size=0 | `In-memory FakePort` | Division by zero or unhandled IndexError |
+
+- **Seam & Dependency Discipline (`DEPENDING discipline`):**
+  1. `In-process` (pure compute, in-memory state): Strictly forbid mocks. Merge modules and test directly through the interface.
+  2. `Local-substitutable` (Postgres, filesystem): Strictly forbid mocks. Use real local stand-ins (`PGLite`, `tmp_path`, in-memory DB).
+  3. `Remote-owned` (Internal microservices): Define a port (`seam`); test via `In-Memory Adapter` (`FakePort`).
+  4. `True-external` (Stripe, Twilio): Mock/stub adapters permitted.
+- **Oracle Declarations & Causal Independence:**
+  - **Ground Truth:** Cite exact source for every claim (`SPEC` or `SOURCE: [file:line]`). Flag unverified claims with `⚠️ ASSUMPTION`.
+  - **Causal Independence:** Explicitly declare variables that must not alter outputs (e.g., list order, cache hits/misses).
+- **No Interface Leakage:** Never expose private helper methods or internal seams solely for unit test setup. Tests must assert on observable outcomes strictly through the module's external seam.
 
 ---
 
