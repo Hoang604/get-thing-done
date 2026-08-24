@@ -68,9 +68,8 @@ scope boundaries.
 
 Questioning rules:
 
-- Pair every question with 2–3 concrete technical choices, each carrying its stated
-  trade-off, plus one pre-calculated `(Recommended)` default listed first. Format
-  options as the user's direct response.
+- Pair every question with 2–3 concrete technical choices, plus one pre-calculated `(Recommended)` default listed first. Format options as the user's direct response.
+- **Decision-Framed Options**: Format every option as: `<User Action / Technical Choice> — Choose this if <condition>` (e.g., *'if you prefer [X] over [Y]'*, *'if [Z] is the most important thing you care about'*, or *'if <relevant context, constraint, or trade-off holds true>'*).
 - Use `is_multi_select: true` when multiple independent choices or constraints can be
   selected simultaneously.
 - Batch related questions into few rounds. Maximize signal per interruption.
@@ -81,8 +80,10 @@ Every new tag triggers a new question round.
 
 ## Step 4: Playback Gate
 
-When no open questions remain, present ONE final playback in chat, composed strictly
-from the Decision Log. Never write files:
+When all dimensions and open questions are resolved, execute the playback gate in a single turn composed of two mandatory parts:
+
+### Part A: Visible Playback Text (Chat Output)
+Always write the complete synthesized markdown block directly into the chat response, composed strictly from the Decision Log. Never write files:
 
 > ## Shared Understanding
 > - **Goal**: <root problem and motivation, one sentence>
@@ -97,11 +98,14 @@ from the Decision Log. Never write files:
 > - **Assumptions**: <every SELF-RESOLVED decision, individually vetoable>
 > - **Unresolved**: <each `[UNRESOLVED]` item with its provisional default>
 
-Then use `ask_question` with `is_multi_select: true`: "Which items are wrong?"
-Options: every Assumption and Unresolved item individually, plus
-`(Recommended) None — exact`.
+### Part B: Confirmation Gate (`ask_question` Tool)
+Accompany the visible text above by invoking `ask_question` with `is_multi_select: true`:
+- **Question**: `"Which items in the Shared Understanding above are wrong or need adjustments?"`
+- **Options**:
+  - `(Recommended) None — exact`
+  - List each individual item from **Assumptions** and **Unresolved** as separate selectable options.
 
-- **None selected** — alignment confirmed.
+- **None selected / (Recommended) None chosen** — alignment confirmed.
 - **Any correction** — convert each corrected item into targeted Step 3 questions,
   produce a revised full playback, and repeat the gate. Loop until exact.
 
