@@ -80,10 +80,13 @@ Every new tag triggers a new question round.
 
 ## Step 4: Playback Gate
 
-When all dimensions and open questions are resolved, execute the playback gate in a single turn composed of two mandatory parts:
+When all dimensions and open questions are resolved, switch state header to `[CONSULT-playback]`.
 
-### Part A: Visible Playback Text (Chat Output)
-Always write the complete synthesized markdown block directly into the chat response, composed strictly from the Decision Log. Never write files:
+**Strict Text-First Invariant:**
+You must NEVER invoke `ask_question` with an empty or truncated chat response. The full `## Shared Understanding` markdown block MUST be generated in the conversational text body of the response BEFORE the confirmation gate.
+
+### Part A: Visible Playback Text (Mandatory Chat Output)
+Output the complete synthesized markdown block directly into the chat response, composed strictly from the Decision Log. Never write files:
 
 > ## Shared Understanding
 > - **Goal**: <root problem and motivation, one sentence>
@@ -100,7 +103,7 @@ Always write the complete synthesized markdown block directly into the chat resp
 
 ### Part B: Confirmation Gate (`ask_question` Tool)
 Accompany the visible text above by invoking `ask_question` with `is_multi_select: true`:
-- **Question**: `"Which items in the Shared Understanding above are wrong or need adjustments?"`
+- **Question**: `"Please review the ## Shared Understanding presented above in chat. Which items are wrong or need adjustments?"`
 - **Options**:
   - `(Recommended) None — exact`
   - List each individual item from **Assumptions** and **Unresolved** as separate selectable options.
