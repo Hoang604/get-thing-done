@@ -68,11 +68,13 @@ scope boundaries.
 
 Questioning rules:
 
-- Pair every question with 2–3 concrete technical choices, plus one pre-calculated `(Recommended)` default listed first. Format options as the user's direct response.
+- Pair every question with 2–3 concrete choices, plus one pre-calculated `(Recommended)` default listed first. Format options as the user's direct response.
 - **Decision-Framed Options**: Format every option as: `<User Action / Technical Choice> — Choose this if <condition>` (e.g., *'if you prefer [X] over [Y]'*, *'if [Z] is the most important thing you care about'*, or *'if <relevant context, constraint, or trade-off holds true>'*).
+- **Pacing Discipline (Fork vs. Leaf)**:
+  - **Sequential Rounds (Fork)**: When an upstream choice alters what downstream questions make sense, isolate the fork into its own round. Let the user's answer prune the decision tree before probing downstream details.
+  - **Single Round (Leaf)**: When questions are orthogonal, resolve all independent parameters together in a single crisp round.
 - Use `is_multi_select: true` when multiple independent choices or constraints can be
   selected simultaneously.
-- Batch related questions into few rounds. Maximize signal per interruption.
 
 Assume every user reply is incomplete. Recursively execute Steps 1–2 on each response,
 actively hunting for newly introduced unprovided paths, schemas, or edge cases.
