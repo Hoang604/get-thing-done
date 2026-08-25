@@ -23,6 +23,8 @@ FG_BRIGHT_WHITE="\033[97m"
 
 NUM_COLOR="${FG_BRIGHT_WHITE}${B}"
 
+RAW_INPUT=$(cat)
+
 # ─── Parse JSON from stdin ───────────────────────────────────────────────────
 {
   read -r STATE
@@ -36,9 +38,14 @@ NUM_COLOR="${FG_BRIGHT_WHITE}${B}"
   read -r OUT_TOKENS
   read -r CACHE_TOKENS
   read -r CONV_ID
+  read -r Q5H_FRAC
+  read -r Q5H_RESET
+  read -r QWK_FRAC
+  read -r QWK_RESET
+  read -r EMAIL
   read -r DUMMY
 } <<< "$(
-  jq -r '
+  echo "$RAW_INPUT" | jq -r '
     (.agent_state // "idle"),
     (.context_window.used_percentage // 0),
     (.vcs.branch // ""),
@@ -50,9 +57,120 @@ NUM_COLOR="${FG_BRIGHT_WHITE}${B}"
     (.context_window.current_usage.output_tokens // 0),
     (.context_window.current_usage.cache_read_input_tokens // 0),
     (.conversation_id // ""),
+    (.quota["gemini-5h"].remaining_fraction // .quota["3p-5h"].remaining_fraction // .quotas["gemini-5h"].remaining_fraction // ."gemini-5h".remaining_fraction // ""),
+    (.quota["gemini-5h"].reset_in_seconds // .quota["3p-5h"].reset_in_seconds // .quotas["gemini-5h"].reset_in_seconds // ."gemini-5h".reset_in_seconds // ""),
+    (.quota["gemini-weekly"].remaining_fraction // .quota["3p-weekly"].remaining_fraction // .quotas["gemini-weekly"].remaining_fraction // ."gemini-weekly".remaining_fraction // ""),
+    (.quota["gemini-weekly"].reset_in_seconds // .quota["3p-weekly"].reset_in_seconds // .quotas["gemini-weekly"].reset_in_seconds // ."gemini-weekly".reset_in_seconds // ""),
+    (.email // .user.email // ""),
     "EOF"
-  ' 2>/dev/null || printf "idle\n0\n\nfalse\n\n80\n0\n0\n0\n0\n\nEOF\n"
+  ' 2>/dev/null || printf "idle\n0\n\nfalse\n\n80\n0\n0\n0\n0\n\n\n\n\n\n\nEOF\n"
 )"
+
+# ─── Write Raw Input to tmp/conversation_id/turn-<x>/statusline_input.json ───
+if [ -n "$CONV_ID" ]; then
+  TURN_VAL=$(cat "/tmp/agy_turn_${CONV_ID}" 2>/dev/null || echo "0")
+  SAVE_DIR="/tmp/agy_statusline/${CONV_ID}/turn-${TURN_VAL}"
+  mkdir -p "$SAVE_DIR" 2>/dev/null || true
+  printf "%s\n" "$RAW_INPUT" > "${SAVE_DIR}/statusline_input.json" 2>/dev/null || true
+fi
+
+# ─── Helper Formatters ───────────────────────────────────────────────────────
+format_duration() {
+  local s="${1:-}"
+  if [ -z "$s" ] || [ "$s" = "null" ]; then
+    echo ""
+    return
+  fi
+  local sec=${s%.*}
+  if [ "$sec" -le 0 ] 2>/dev/null; then
+    echo ""
+    return
+  fi
+  local d=$((sec / 86400))
+  local rem=$((sec % 86400))
+  local h=$((rem / 3600))
+  local rem2=$((rem % 3600))
+  local m=$((rem2 / 60))
+
+  if [ "$d" -gt 0 ]; then
+    if [ "$h" -gt 0 ]; then
+      echo "${d}d ${h}h"
+    else
+      echo "${d}d"
+    fi
+  elif [ "$h" -gt 0 ]; then
+    if [ "$m" -gt 0 ]; then
+      echo "${h}h ${m}m"
+    else
+      echo "${h}h"
+    fi
+  else
+    echo "${m}m"
+  fi
+}
+
+format_quota() {
+  local name="$1"
+  local frac="$2"
+  local sec="$3"
+  local mode="${4:-medium}"
+  if [ -z "$frac" ] || [ "$frac" = "null" ]; then
+    echo ""
+    return
+  fi
+  local pct_val
+  pct_val=$(awk -v f="$frac" 'BEGIN { printf "%d", (f * 100) + 0.5 }' 2>/dev/null || echo "")
+  if [ -z "$pct_val" ]; then
+    echo ""
+    return
+  fi
+
+  local q_color
+  if [ "$pct_val" -ge 50 ]; then
+    q_color="$FG_BRIGHT_GREEN"
+  elif [ "$pct_val" -ge 20 ]; then
+    q_color="$FG_BRIGHT_YELLOW"
+  else
+    q_color="$FG_BRIGHT_RED"
+  fi
+
+  local label="$name"
+  if [ "$mode" = "large" ]; then
+    if [ "$name" = "5h" ]; then
+      label="5h limit"
+    elif [ "$name" = "wk" ]; then
+      label="week limit"
+    fi
+  fi
+
+  local dur=""
+  if [ "$mode" != "narrow" ]; then
+    dur=$(format_duration "$sec")
+  fi
+
+  if [ -n "$dur" ]; then
+    echo "${FG_WHITE}${label}:${R} ${q_color}${B}${pct_val}%${R} ${FG_GRAY}(${dur})${R}"
+  else
+    echo "${FG_WHITE}${label}:${R} ${q_color}${B}${pct_val}%${R}"
+  fi
+}
+
+format_compact_num() {
+  local n="${1:-0}"
+  awk -v n="$n" 'BEGIN {
+    if (n >= 1000000) {
+      printf "%.2fM", n / 1000000
+    } else if (n >= 1000) {
+      if (n >= 100000) {
+        printf "%.0fk", n / 1000
+      } else {
+        printf "%.1fk", n / 1000
+      }
+    } else {
+      printf "%d", n
+    }
+  }' | sed 's/\.0*k/k/;s/\.00*M/M/'
+}
 
 # ─── Computed Values ─────────────────────────────────────────────────────────
 PCT_FMT=$(LC_NUMERIC=C printf "%.1f" "$USED_PCT")
@@ -80,11 +198,52 @@ fi
 # ─── Model ───────────────────────────────────────────────────────────────────
 M=""
 if [ -n "$MODEL" ]; then
-  M="${FG_GRAY} ╱ ${FG_BRIGHT_MAGENTA}${I}${MODEL}${R}"
+  if [ "$COLS" -lt 85 ]; then
+    SHORT_MODEL=$(echo "$MODEL" | sed 's/^Gemini //;s/ (High)//;s/ (Low)//;s/ (Medium)//')
+    M="${FG_GRAY} ╱ ${FG_BRIGHT_MAGENTA}${I}${SHORT_MODEL}${R}"
+  else
+    M="${FG_GRAY} ╱ ${FG_BRIGHT_MAGENTA}${I}${MODEL}${R}"
+  fi
 fi
 
-# ─── Context Bar (15 segments) ───────────────────────────────────────────────
-BAR_LEN=15
+# ─── Separators ──────────────────────────────────────────────────────────────
+DOT="${FG_GRAY} · ${R}"
+SEP="${FG_GRAY} | ${R}"
+
+# ─── Quotas ──────────────────────────────────────────────────────────────────
+if [ "$COLS" -ge 120 ]; then
+  Q_MODE="large"
+elif [ "$COLS" -ge 85 ]; then
+  Q_MODE="medium"
+else
+  Q_MODE="narrow"
+fi
+
+Q_5H=$(format_quota "5h" "$Q5H_FRAC" "$Q5H_RESET" "$Q_MODE")
+Q_WK=$(format_quota "wk" "$QWK_FRAC" "$QWK_RESET" "$Q_MODE")
+
+QUOTA_BLOCK=""
+if [ -n "$Q_5H" ] && [ -n "$Q_WK" ]; then
+  QUOTA_BLOCK="${DOT}${Q_5H}${SEP}${Q_WK}"
+elif [ -n "$Q_5H" ]; then
+  QUOTA_BLOCK="${DOT}${Q_5H}"
+elif [ -n "$Q_WK" ]; then
+  QUOTA_BLOCK="${DOT}${Q_WK}"
+fi
+
+# ─── Email ───────────────────────────────────────────────────────────────────
+E=""
+if [ -n "$EMAIL" ]; then
+  E="${DOT}${FG_GRAY}email: ${R}${FG_CYAN}${EMAIL}${R}"
+fi
+
+# ─── Context Bar ─────────────────────────────────────────────────────────────
+if [ "$COLS" -lt 85 ]; then
+  BAR_LEN=8
+else
+  BAR_LEN=15
+fi
+
 FILLED=$((PCT_INT * BAR_LEN / 100))
 REMAINDER=$(( (PCT_INT * BAR_LEN) % 100 ))
 
@@ -191,31 +350,38 @@ if [ -n "$CONV_ID" ]; then
   fi
 fi
 
-IN_TOKENS_FMT=$(echo "$CUMULATIVE_IN" | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta')
-CACHE_TOKENS_FMT=$(echo "$CUMULATIVE_CACHE" | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta')
-OUT_TOKENS_FMT=$(echo "$CUMULATIVE_OUT" | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta')
-
-SEP="${FG_GRAY} | ${R}"
-IN_FMT="${FG_GRAY}total input ${NUM_COLOR}${IN_TOKENS_FMT}${R}"
-CACHE_FMT="${FG_GRAY}cache hit ${NUM_COLOR}${CACHE_TOKENS_FMT}${R}"
-OUT_FMT="${FG_GRAY}output ${NUM_COLOR}${OUT_TOKENS_FMT}${R}"
-
-COST_FMT=$(echo "$CUMULATIVE_COST" | sed 's/\([0-9]*\.[0-9]*[1-9]\)0*/\1/;s/\.0*$//')
-COST_STR="${FG_BRIGHT_GREEN}${B}\$${COST_FMT}${R}"
-
-# ─── Separators ──────────────────────────────────────────────────────────────
-DOT="${FG_GRAY} · ${R}"
-
-# ─── Output ──────────────────────────────────────────────────────────────────
-LINE1="${S}${M}${V}"
-LINE2=" ${CTX}${DOT}${IN_FMT}${SEP}${CACHE_FMT}${SEP}${OUT_FMT}${DOT}estimate cost: ${COST_STR}"
+IN_COMPACT=$(format_compact_num "$CUMULATIVE_IN")
+CACHE_COMPACT=$(format_compact_num "$CUMULATIVE_CACHE")
+OUT_COMPACT=$(format_compact_num "$CUMULATIVE_OUT")
 
 if [ "$COLS" -ge 120 ]; then
-  echo -e "${LINE1}${FG_GRAY}  │  ${R}${LINE2}"
-elif [ "$COLS" -ge 80 ]; then
-  echo -e "${FG_GRAY}╭─${R} ${LINE1}"
-  echo -e "${FG_GRAY}╰─${R}${LINE2}"
+  IN_FMT="${FG_GRAY}total input ${NUM_COLOR}${IN_COMPACT}${R}"
+  CACHE_FMT="${FG_GRAY}cache hit ${NUM_COLOR}${CACHE_COMPACT}${R}"
+  OUT_FMT="${FG_GRAY}output ${NUM_COLOR}${OUT_COMPACT}${R}"
+  COST_FMT=$(echo "$CUMULATIVE_COST" | sed 's/\([0-9]*\.[0-9]*[1-9]\)0*/\1/;s/\.0*$//')
+  COST_STR="${FG_GRAY}estimate cost: ${R}${FG_BRIGHT_GREEN}${B}\$${COST_FMT}${R}"
+elif [ "$COLS" -ge 85 ]; then
+  IN_FMT="${NUM_COLOR}${IN_COMPACT}${R} ${FG_GRAY}in${R}"
+  CACHE_FMT="${NUM_COLOR}${CACHE_COMPACT}${R} ${FG_GRAY}cache${R}"
+  OUT_FMT="${NUM_COLOR}${OUT_COMPACT}${R} ${FG_GRAY}out${R}"
+  COST_FMT=$(echo "$CUMULATIVE_COST" | sed 's/\([0-9]*\.[0-9]*[1-9]\)0*/\1/;s/\.0*$//')
+  COST_STR="${FG_GRAY}est: ${R}${FG_BRIGHT_GREEN}${B}\$${COST_FMT}${R}"
 else
-  echo -e "${S}${M}"
-  echo -e "${CTX}${DOT}${IN_FMT}${SEP}${CACHE_FMT}${SEP}${OUT_FMT}${DOT}estimate cost: ${COST_STR}"
+  IN_FMT="${NUM_COLOR}${IN_COMPACT}${R} ${FG_GRAY}in${R}"
+  CACHE_FMT="${NUM_COLOR}${CACHE_COMPACT}${R} ${FG_GRAY}cache${R}"
+  OUT_FMT="${NUM_COLOR}${OUT_COMPACT}${R} ${FG_GRAY}out${R}"
+  COST_ROUND=$(awk -v c="$CUMULATIVE_COST" 'BEGIN { printf "%.2f", c }')
+  COST_STR="${FG_BRIGHT_GREEN}${B}\$${COST_ROUND}${R}"
 fi
+
+# ─── Output (Adaptive 2-Line Layout) ─────────────────────────────────────────
+LINE1="${S}${M}${V}${QUOTA_BLOCK}${E}"
+
+if [ "$COLS" -lt 80 ]; then
+  LINE2=" ${CTX}${DOT}${IN_FMT}${SEP}${CACHE_FMT}${DOT}${COST_STR}"
+else
+  LINE2=" ${CTX}${DOT}${IN_FMT}${SEP}${CACHE_FMT}${SEP}${OUT_FMT}${DOT}${COST_STR}"
+fi
+
+echo -e "${FG_GRAY}╭─${R} ${LINE1}"
+echo -e "${FG_GRAY}╰─${R}${LINE2}"
