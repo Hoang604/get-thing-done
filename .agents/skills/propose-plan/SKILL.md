@@ -77,7 +77,24 @@ For each approach, explicitly list:
   - After this task, user should see `<specific observable result>`
 - **Senior Engineer Advocacy**: Explicitly state why an experienced engineer would fight for this approach.
 
-- **Completion Criterion**: Output exactly two approaches (`Approach A` and `Approach B`). Each approach must explicitly contain the headings: `Quality Tier`, `Pros`, `Cons`, `User Outcomes`, and `Senior Engineer Advocacy`.
+### Comparison Summary Table
+
+Conclude the proposal with an executive comparison table contrasting Approach A and Approach B.
+
+**Table Construction Contract:**
+- **Cell Density:** Single line per cell (1–8 words). Use concrete metrics, tags, and deltas.
+- **Content Focus:** Classify architectural differences without restating prose.
+
+| Dimension / Criterion | Approach A (Pragmatic / Minimalist) | Approach B (Architectural / Robust) |
+|---|---|---|
+| **Quality Tier** | Tier 3 (Standard / Contract) | Tier 5 (Structural / Impossible) |
+| **Module Depth** | Shallow (3 helper classes, leaky params) | Deep (1 facade function, private state) |
+| **Seams & Decoupling** | In-process (tightly coupled to DB driver) | Remote-owned (isolated behind port interface) |
+| **Implementation Scope** | 2 files modified (~40 LOC) | 5 files modified / 1 new module (~180 LOC) |
+| **Long-term Maintenance** | Moderate (callers must handle error states) | High (invalid states unrepresentable) |
+| **Core Trade-off** | Fast delivery, but leaks domain logic | Higher upfront effort, but zero downstream churn |
+
+- **Completion Criterion**: Output exactly two approaches (`Approach A` and `Approach B`). Each approach must explicitly contain the headings: `Quality Tier`, `Pros`, `Cons`, `User Outcomes`, and `Senior Engineer Advocacy`. Conclude with the structured `Comparison Summary Table` contrasting both approaches.
 
 ---
 

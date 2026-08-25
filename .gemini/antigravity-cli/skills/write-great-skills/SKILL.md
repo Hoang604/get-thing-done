@@ -57,6 +57,14 @@ Hunt for opportunities to refactor skills to use leading words. A triad spelled 
 
 You win twice over: fewer tokens, _and_ a sharper hook for the agent to hang its thinking on. Assume every skill is carrying restatements that leading words retire — go find them.
 
+## Constructive contracts
+
+Steering by prohibition (**negation**) is a symptom of underspecification: it names what failed without defining the target grammar. Prefer **constructive contracts** that make the desired shape unambiguous:
+
+- **Physical shape over adjectives** — qualitative requests (_"be concise"_) are no-ops. Define the physical contract positively: exact line budget, word count bounds, or structural syntax (e.g., _single line, 1–8 words, tag-first_).
+- **In-line anchors** — a single concrete, realistic example in the prompt anchors generation density and tone far more reliably than paragraphs of abstract rules.
+- **Boundary repulsion** — use negative guardrails (`Do NOT`) strictly as secondary boundary clips to suppress strong pre-training attractors (e.g., default conversational prose or filler), never as the primary generator.
+
 ## Failure modes
 
 Use these to diagnose issues the user may be having with the skill.
@@ -66,4 +74,4 @@ Use these to diagnose issues the user may be having with the skill.
 - **Sediment** — stale layers that settle because adding feels safe and removing feels risky. Default fate of any skill without a pruning discipline.
 - **Sprawl** — a skill simply too long, even when every line is live and unique. Cure: disclose **reference** behind pointers, and split by **branch** or sequence. **Guardrail**: Inline material required by all branches; only put behind a pointer what some branches reach.
 - **No-op** — a line the model already obeys by default, so you pay load to say nothing. The test: does it change behaviour versus the default? A weak leading word (_be thorough_ when the agent is already thorough-ish) is a no-op; the fix is a stronger word (_relentless_), not a different technique.
-- **Negation** — steering by prohibition backfires: _don't think of an elephant_ names the elephant and makes it more available, not less. Prompt the **positive** — state the target behaviour so the banned one is never spoken; keep a prohibition only as a hard guardrail you can't phrase positively, and even then pair it with what to do instead.
+- **Negation** — steering by prohibition backfires: _don't think of an elephant_ makes the elephant more available. Reframe prohibitions into constructive physical contracts; keep negative rules solely as boundary guardrails.
