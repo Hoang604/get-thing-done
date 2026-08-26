@@ -17,9 +17,10 @@ Treat the entirety of your available memory (compacted context and active window
 - **Simple Changes**: Output ONLY the subject line.
 - **Complex / Architectural Changes**: Include a body with two parts separated by a blank line:
   1. **Context**: 1 direct sentence sythesize why the change is required
-  2. **Key achievement**: concise bullet points (`- `) highlighting what final result achieved in the commit, drop all internal process, only cite the result.
+  2. **Key achievement**: concise bullet points (`- `) highlighting what final result achieved in the commit, drop all internal process, only cite the result. max 2-4 points, should not use 4.
 
 ### 3. Constraints & Tone
 - Ban generic AI fluff (e.g., "improve maintainability", "enhance modularity", "streamline workflow", "clean up code"). Use concrete technical terms.
 - Strip all pronouns, filler words, and attribution (no "I", "we", "this commit").
 - Drop all fluff, give most concise message.
+- No filename mention
