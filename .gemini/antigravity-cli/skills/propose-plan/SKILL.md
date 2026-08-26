@@ -70,6 +70,7 @@ Evaluate both valid trade-off paths against these self-contained design principl
 For each approach, explicitly list:
 
 - **Quality Tier**: Label as Tier 1–5 with rationale. If implementing below Tier 4, explicitly state the constraint or blocker preventing a higher tier.
+- **Suitable If**: State the exact real-world scenario, future feature requirement, or operational priority where this approach wins. Use concrete scenario anchors rather than abstract adjectives (e.g., *"Suitable if shipping an internal MVP this week and payment is strictly PayPal-only"* vs *"Suitable if planning to support Stripe later, or needing to switch LLM providers dynamically at runtime without server restarts"*).
 - **Pros**: Evaluate advantages in module depth, seam complexity, and performance.
 - **Cons**: Evaluate disadvantages in module depth, seam complexity, and performance.
 - **User Outcomes**:
@@ -88,13 +89,14 @@ Conclude the proposal with an executive comparison table contrasting Approach A 
 | Dimension / Criterion | Approach A (Pragmatic / Minimalist) | Approach B (Architectural / Robust) |
 |---|---|---|
 | **Quality Tier** | Tier 3 (Standard / Contract) | Tier 5 (Structural / Impossible) |
+| **Suitable If** | Fixed to 1 provider (e.g. PayPal only), fast internal MVP | Adding 2nd provider (e.g. Stripe), hot-swapping LLMs at runtime |
 | **Module Depth** | Shallow (3 helper classes, leaky params) | Deep (1 facade function, private state) |
 | **Seams & Decoupling** | In-process (tightly coupled to DB driver) | Remote-owned (isolated behind port interface) |
 | **Implementation Scope** | 2 files modified (~40 LOC) | 5 files modified / 1 new module (~180 LOC) |
 | **Long-term Maintenance** | Moderate (callers must handle error states) | High (invalid states unrepresentable) |
 | **Core Trade-off** | Fast delivery, but leaks domain logic | Higher upfront effort, but zero downstream churn |
 
-- **Completion Criterion**: Output exactly two approaches (`Approach A` and `Approach B`). Each approach must explicitly contain the headings: `Quality Tier`, `Pros`, `Cons`, `User Outcomes`, and `Senior Engineer Advocacy`. Conclude with the structured `Comparison Summary Table` contrasting both approaches.
+- **Completion Criterion**: Output exactly two approaches (`Approach A` and `Approach B`). Each approach must explicitly contain the headings: `Quality Tier`, `Suitable If`, `Pros`, `Cons`, `User Outcomes`, and `Senior Engineer Advocacy`. Conclude with the structured `Comparison Summary Table` contrasting both approaches.
 
 ---
 
