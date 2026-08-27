@@ -14,13 +14,10 @@ cd gtd-temp && chmod +x *.sh && ./install.sh
 cd .. && rm -rf gtd-temp
 ```
 
-**Windows (PowerShell):**
+**Windows:**
 
-```powershell
-git clone https://github.com/Hoang604/get-thing-done.git gtd-temp
-cd gtd-temp; .\install.ps1
-cd ..; Remove-Item -Recurse -Force gtd-temp
-```
+> [!NOTE]
+> Windows does not have a default/native install script. On Windows, run the installation inside **WSL (Windows Subsystem for Linux)** or a POSIX-compatible environment using the Linux/macOS command above.
 
 ## Primary Workflows (Daily Use)
 
