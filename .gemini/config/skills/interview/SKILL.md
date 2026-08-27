@@ -80,58 +80,41 @@ Assume every user reply is incomplete. Recursively execute Steps 1–2 on each r
 actively hunting for newly introduced unprovided paths, schemas, or edge cases.
 Every new tag triggers a new question round.
 
-## Step 4: Playback Gate
+## Step 4: Multi-Tab Playback Gate
 
-When all dimensions and open questions are resolved, switch state header to `[CONSULT-playback]`.
+When all dimensions are resolved, switch state header to `[CONSULT-playback]`.
 
-**Strict Text-First Invariant:**
-You must NEVER invoke `ask_question` with an empty or truncated chat response. The full `## Shared Understanding` markdown block MUST be generated in the conversational text body of the response BEFORE the confirmation gate.
+Invoke `ask_question` with 4 self-contained tabs (`questions: [...]`). Format each tab strictly using the markdown anchors below:
 
-### Part A: Visible Playback Text (Mandatory Chat Output)
-Output the complete synthesized markdown block directly into the chat response, composed strictly from the Decision Log. Never write files:
+1. **Goal & Flow** (`is_multi_select: false`):
+   - `question`: "### 1. Goal & Observable Flow\n- **Goal**: <1-2 sentences>\n- **User Flow**: <step-by-step actions and outcomes>\n\nIs the goal and flow accurate?"
+   - `options`: `["(Recommended) Confirmed — exact goal and user flow", "Goal or user flow needs adjustment"]`
+2. **Scope & Acceptance** (`is_multi_select: false`):
+   - `question`: "### 2. Scope & Acceptance\n- **In Scope**: <features to build>\n- **Out of Scope**: <deferred/excluded>\n- **Acceptance Criteria**: <verifiable conditions>\n- **Constraints**: <performance/security/none>\n\nAre scope and acceptance correct?"
+   - `options`: `["(Recommended) Confirmed — scope and acceptance are solid", "Scope or acceptance needs revision"]`
+3. **Technical Contracts** (`is_multi_select: false`):
+   - `question`: "### 3. Technical Contracts\n- **Files Touched**: <exact paths>\n- **API / Schema Changes**: <signatures or None>\n- **Callers & Blast Radius**: <affected modules>\n\nDoes the technical design match?"
+   - `options`: `["(Recommended) Confirmed — technical contracts are correct", "Technical contracts need changes"]`
+4. **Assumptions & Edge Cases** (`is_multi_select: true`):
+   - `question`: "### 4. Assumptions & Edge Cases\n- **Assumption 1**: <first assumption>\n- **Assumption 2**: <second assumption>\n- **Edge Cases**: <error/recovery behaviors>\n\nWhich items need adjustment?"
+   - `options`: `["(Recommended) None — all assumptions confirmed", "Veto Assumption 1", "Veto Assumption 2"]`
 
-> ## Shared Understanding
-> - **Goal**: <root problem and motivation, one sentence>
-> - **User Flow & End-State**: <concrete step-by-step behavior and observable outcome>
-> - **In Scope**: <what will be built>
-> - **Out of Scope**: <explicit exclusions>
-> - **Acceptance Criteria**: <verifiable conditions for "done">
-> - **Technical Contracts**: <schema changes, API signatures, state transitions — or "None">
-> - **Constraints & NFRs**: <or "None stated">
-> - **Codebase Integration**: <files, patterns, modules touched, callers affected>
-> - **Edge Cases & Failure Modes**: <exact recovery/error behaviors — or "None identified">
-> - **Assumptions**: <every SELF-RESOLVED decision, individually vetoable>
-> - **Unresolved**: <each `[UNRESOLVED]` item with its provisional default>
+### Correction Loop
+- **Any Tab Flagged / Assumption Vetoed**: Re-probe only the disputed dimension via Step 3, then re-issue the gate. Loop until exact.
 
-### Part B: Confirmation Gate (`ask_question` Tool)
-Accompany the visible text above by invoking `ask_question` with `is_multi_select: true`:
-- **Question**: `"Please review the ## Shared Understanding presented above in chat. Which items are wrong or need adjustments?"`
-- **Options**:
-  - `(Recommended) None — exact`
-  - List each individual item from **Assumptions** and **Unresolved** as separate selectable options.
+### Exit & Hand-off
+When confirmed, output the template below and halt. Do not re-summarize or mutate code.
 
-- **None selected / (Recommended) None chosen** — alignment confirmed.
-- **Any correction** — convert each corrected item into targeted Step 3 questions,
-  produce a revised full playback, and repeat the gate. Loop until exact.
+**Template (`[ALIGNED]` or `[ALIGNED-PROVISIONAL]`):**
+> **[ALIGNED]** — Shared understanding locked.
+>
+> To evaluate architectural trade-offs before planning, run `/propose-plan` to compare two viable technical approaches (Pragmatic vs. Robust) with Quality Tier analysis.
 
-Exit declarations are exclusive:
+*(Use `[ALIGNED-PROVISIONAL]` if provisional defaults remain).*
 
-- All dimensions resolved: declare `[ALIGNED]`.
-- Any dimension `[UNRESOLVED]`: declare `[ALIGNED-PROVISIONAL]` — confirmation then
-  approves a working direction, not an exact understanding.
-
-After exit: confirm alignment is locked, stop, and wait for the next request.
-You must not write any implementation plan or make any code change.
-
-### Sanctioned Skip Override
-
-If the user explicitly instructs to skip ("skip it", "just build"), declare
-`[ALIGNED-SKIPPED]` with one line: "Playback offered and declined by user." Then stop
-interviewing and proceed per the active execution state. Offer playback once only —
-re-offering or further interrogation is forbidden. The agent may suggest skipping
-when the task appears trivial, but may never self-trigger this override.
+### Skip Override
+If user instructs to skip ("skip it", "just build"), output `[ALIGNED-SKIPPED] — Playback offered and declined by user.` and proceed. Offer once only.
 
 ## Postfixes
-
-- `-interview`: When asking specific questions.
-- `-playback`: When presenting the Shared Understanding for confirmation.
+- `-interview`: Asking specific questions.
+- `-playback`: Presenting the Multi-Tab Playback Gate.
