@@ -81,6 +81,7 @@ flowchart TD
 
 - **[code-review](.gemini/config/skills/code-review/SKILL.md)**: Deep architectural code review across correctness, security, and performance.
 - **[verify-issue](.gemini/config/skills/verify-issue/SKILL.md)**: Trace codepaths to verify whether flagged review findings are real bugs or false positives.
+- **[verify-spec-alignment](.gemini/config/skills/verify-spec-alignment/SKILL.md)**: Audit implemented code against `SPEC.md` to catch rogue fabrications or missed requirements.
 
 ### 🧭 Codebase Exploration & Orientation
 *Use when exploring an unfamiliar codebase or ramping up on architecture.*
@@ -92,6 +93,7 @@ flowchart TD
 *Use upstream of Track 2 for complex enterprise features requiring formal requirement decomposition.*
 
 - **[spec](.gemini/config/skills/spec/SKILL.md)**: Relentlessly interview to extract domain requirements and edge cases in EARS syntax.
+- **[audit-spec](.gemini/config/skills/audit-spec/SKILL.md)**: Adversarially audit `SPEC.md` and interactively repair missing fallbacks and domain entropy.
 - **[to-ticket](.gemini/config/skills/to-ticket/SKILL.md)**: Break a confirmed `SPEC.md` into dependency-ordered tracer-bullet tickets.
 
 ### 🧪 Test Strategy & API Verification

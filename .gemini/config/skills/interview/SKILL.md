@@ -33,28 +33,34 @@ Read the definition of every class, function, and file mentioned in the user pro
 Inspect BOTH directions of the impact surface: direct dependencies (callees) and
 immediate callers of every target symbol, to ground questions in existing conventions
 and blast radius. Never ask a question the codebase can answer.
+
+While exploring call paths and data flows, project the change across **5 Universal Lenses** to surface latent boundaries and failure modes. Evaluate only dimensions physically touched by the change:
+- **Resource & State Lifecycle**: How resources (files, memory, locks, processes, state) are created, and how they tear down or clean up on exception, exit, or interruption.
+- **Input & Scale Extremes**: How boundary extremes (0-byte files, empty inputs, unbounded streams, buffer limits) and malformed inputs alter execution.
+- **Execution Context & Permissions**: Caller privileges, file/resource permissions, environment preconditions, platform/OS constraints, and exact rejection behaviors.
+- **Causality & Recovery**: How the system rolls back, compensates, or cleans up when a multi-step operation fails midway.
+- **Concurrency & Re-entrancy**: How logic behaves under race conditions, parallel processes, lock contention, or duplicate triggers.
+
 For multi-stage requests, probe in dependency order: resolve upstream stages before
 asking dependent technical choices, and record each stage's resolution in the Decision
 Log. Never block or defer a question solely because a later stage is unresolved.
 
-## Step 2: Dimension Scan
+## Step 2: Dimension Scan & Confidence Horizon
 
-Before the first question, silently walk all four dimensions. This scan runs on EVERY
-invocation regardless of size or clarity:
+Before the first question, synthesize your legwork by walking all four dimensions across the projected lenses. This scan runs on EVERY invocation regardless of size or clarity:
 
 1. **Scope** — What is being built? What is explicitly excluded?
 2. **Acceptance** — How will the user verify the result is correct?
 3. **Constraints** — Performance, security, compatibility, migration, deadlines?
 4. **Integration** — Which existing conventions, patterns, and modules must this change align with?
 
-Each dimension closes in exactly one way:
+Each discovered requirement or failure mode closes in exactly one way:
 
-- **ASKED**: Load-bearing unknown that code reading cannot resolve — becomes
+- **ASKED**: Load-bearing unknown that code reading and the lenses cannot resolve — becomes
   question(s) in Step 3.
-- **SELF-RESOLVED**: Closed from code evidence or unambiguous convention — becomes
-  an Assumption listed verbatim in the Playback.
-- **UNRESOLVED**: User cannot know it yet (exploratory/spike work) — marked
-  `[UNRESOLVED]` in the Playback with your chosen provisional default.
+- **SELF-RESOLVED**: Closed from code evidence, lens analysis, or unambiguous convention — becomes
+  an Assumption listed verbatim in Tab 4 of the Playback.
+- **UNRESOLVED (Provisional)**: Unstated or exploratory/spike scope where implementation details are deliberately unconstrained — marked `[UNRESOLVED]` in Tab 4 with your chosen provisional default without blocking interrogation.
 
 Strictness lives here, not at the user: think through everything, interrogate only
 what is load-bearing.

@@ -1,10 +1,10 @@
 ---
-name: audit-spec-alignment
+name: verify-spec-alignment
 description: Audit change against SPEC.md.
 disable-model-invocation: true
 ---
 
-# audit-spec-alignment
+# verify-spec-alignment
 
 ## Core Concepts (Leading Words)
 - **Anchor**: A specific, unambiguous rule, logic, or requirement written in the spec.
