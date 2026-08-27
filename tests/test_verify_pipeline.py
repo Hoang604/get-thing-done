@@ -119,7 +119,7 @@ class TestVerifyPipelineDeterministic(unittest.TestCase):
 
         steps = self.injector.generate_instruction({"conversationId": conv_id})
         self.assertEqual(len(steps), 1)
-        self.assertIn("VERIFICATION FAILURE: Command `pnpm run type-check` failed (exit status 2)", steps[0]["ephemeralMessage"])
+        self.assertIn("Command `pnpm run type-check` failed (exit status 2)", steps[0]["ephemeralMessage"])
         self.assertIn("Regardless of whether this is a TEST, TYPE-CHECK, BUILD, LINT, or CODEGEN failure", steps[0]["ephemeralMessage"])
         self.assertFalse(os.path.exists(incident_file))
 
@@ -176,7 +176,7 @@ class TestVerifyPipelineDeterministic(unittest.TestCase):
 
         steps = self.injector.generate_instruction({"conversationId": conv_id})
         self.assertEqual(len(steps), 1)
-        self.assertIn("VERIFICATION FAILURE: Command `uv run basedpyright` failed (exit status 1)", steps[0]["ephemeralMessage"])
+        self.assertIn("Command `uv run basedpyright` failed (exit status 1)", steps[0]["ephemeralMessage"])
 
 
 if __name__ == "__main__":

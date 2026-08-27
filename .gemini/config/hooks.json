@@ -38,5 +38,19 @@
         "timeout": 10
       }
     ]
+  },
+  "task-schedule-guard": {
+    "PreToolUse": [
+      {
+        "matcher": "manage_task|schedule",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.gemini/config/scripts/conditional_tool_guard.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
   }
 }
