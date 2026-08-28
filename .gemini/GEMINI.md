@@ -44,6 +44,7 @@ Governs every line of typed code — application code, tests, scripts, fixtures,
 
 # Tool Mechanics
 
+- **replace_file_content**: Use strictly for a single contiguous edit block. Synthesize all modifications in working memory before invoking. When a file requires multiple non-adjacent changes, you MUST use `multi_replace_file_content` to apply all hunks in a single atomic call within the current turn.
 - **grep_search**: When searching for multiple known targets (e.g., a list of types, functions, or errors), aggregate them into a single `grep_search` using regex (e.g., `TypeA|TypeB|TypeC` with `IsRegex=true`). Never execute sequential searches for items in a known set.
 - **view_file**: It better to omit StartLine and EndLine on every view_file call, only set this two parameters if user say so. The tool handles truncation automatically. Never use slice notation for file reading. Read target file exactly once per context window. Trust context memory for all subsequent edits.
 - **run_command**: Always set `WaitMsBeforeAsync`=10000. Stop calling tools immediately after launching an async task. Rely on automatic reactive wakeup upon completion; do NOT call manage_task or schedule.

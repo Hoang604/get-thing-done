@@ -66,5 +66,26 @@
         ]
       }
     ]
+  },
+  "mutation-streak-guard": {
+    "PostToolUse": [
+      {
+        "matcher": "replace_file_content|write_to_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.gemini/config/scripts/mutation_guard.py --event post_tool",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "python3 ~/.gemini/config/scripts/mutation_guard.py --event pre_invocation",
+        "timeout": 5
+      }
+    ]
   }
 }
