@@ -54,10 +54,8 @@ class VerifyInjector:
             "1. Trace upstream: Find where the invalid data/state originated (Origin Site), not just where it broke (Error Site).\n"
             "2. Output brief report:\n"
             "   - **Root Cause**: What upstream logic/contract failed?\n"
-            "   - **Target File**: File to fix (Origin Site).\n"
-            "   - **Fix Strategy**: How to fix properly like an engineer without shortcuts.\n"
             "3. FORBIDDEN FIXES: No type casting (`any`/`ignore`), no altering valid test assertions, no swallowing errors with null-checks/try-catch.\n\n"
-            "Read upstream files first if not inspected yet, then apply fix to the origin.\n"
+            "Trace the root cause first: read upstream files if not inspected yet, then apply the fix strategy immediately to the origin without halting.\n"
             "</critical_instructions>"
         )
 
