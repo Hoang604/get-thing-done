@@ -130,6 +130,86 @@ view_file_guard.main()
             self.assertEqual(overwrite.get("StartLine"), 250)
             self.assertEqual(overwrite.get("EndLine"), 650)
 
+    def test_binary_file_never_overwrites(self) -> None:
+        bin_file: str = os.path.join(self.temp_dir, "image.png")
+        with open(bin_file, "wb") as f:
+            f.write(b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR" + b"\n" * 10)
+
+        payload: dict[str, object] = {
+            "conversationId": "conv-test-bin",
+            "toolCall": {
+                "name": "view_file",
+                "args": {
+                    "AbsolutePath": bin_file,
+                },
+            },
+        }
+
+        res = self._run_guard(payload, self.cache_dir)
+        self.assertEqual(res.get("decision"), "allow")
+        self.assertNotIn("overwrite", res)
+
+    def test_non_view_file_tool_ignored(self) -> None:
+        test_file: str = os.path.join(self.temp_dir, "small.py")
+        with open(test_file, "w", encoding="utf-8") as f:
+            f.write("print('hello')\n")
+
+        payload: dict[str, object] = {
+            "conversationId": "conv-test-other",
+            "toolCall": {
+                "name": "run_command",
+                "args": {
+                    "AbsolutePath": test_file,
+                },
+            },
+        }
+
+        res = self._run_guard(payload, self.cache_dir)
+        self.assertEqual(res.get("decision"), "allow")
+        self.assertNotIn("overwrite", res)
+
+    def test_invalid_range_not_expanded(self) -> None:
+        large_file: str = os.path.join(self.temp_dir, "large.py")
+        with open(large_file, "w", encoding="utf-8") as f:
+            f.write("\n".join(f"line {i}" for i in range(1, 1000)))
+
+        payload: dict[str, object] = {
+            "conversationId": "conv-test-invalid-range",
+            "toolCall": {
+                "name": "view_file",
+                "args": {
+                    "AbsolutePath": large_file,
+                    "StartLine": 500,
+                    "EndLine": 200,
+                },
+            },
+        }
+
+        res = self._run_guard(payload, self.cache_dir)
+        self.assertEqual(res.get("decision"), "allow")
+        self.assertNotIn("overwrite", res)
+
+    def test_sanitized_conversation_id_prevents_path_traversal(self) -> None:
+        test_file: str = os.path.join(self.temp_dir, "test.py")
+        with open(test_file, "w", encoding="utf-8") as f:
+            f.write("print(1)\n")
+
+        payload: dict[str, object] = {
+            "conversationId": "../../escaped_session",
+            "toolCall": {
+                "name": "view_file",
+                "args": {
+                    "AbsolutePath": test_file,
+                },
+            },
+        }
+
+        res = self._run_guard(payload, self.cache_dir)
+        self.assertEqual(res.get("decision"), "allow")
+        # Ensure no file was created outside cache_dir
+        self.assertFalse(os.path.exists(os.path.join(self.temp_dir, "escaped_session.txt")))
+        self.assertTrue(os.path.exists(os.path.join(self.cache_dir, "______escaped_session.txt")))
+
 
 if __name__ == "__main__":
     unittest.main()
