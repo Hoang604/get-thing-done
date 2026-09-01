@@ -35,10 +35,10 @@ Read `implementation_plan.md` and any user instructions. Formulate the adversari
 
 | Test Category | Target Seam / Module | Old Shallow Test to [DELETE] | New Deep Test & Observable Invariant | Dependency Category & Test Stand-in | Breaks-If Mutation (Specific Code Bug That Fails This) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Unit / Logic** | `[Order.calc_total](file:///path#L10)` | `[test_old.py:L10](file:///path#L10)` or None | `[test_order.py:L15](file:///path#L15)`: Total == sum(items) - discount | `In-process direct call` | Omitting discount clamp when total < 0 |
-| **Integration** | `[OrderService.pay](file:///path#L50)` | `[test_old.py:L40](file:///path#L40)` or None | `[test_order_svc.py:L30](file:///path#L30)`: DB rollback on gateway timeout | `Local stand-in (PGLite/SQLite)` | Swallowing timeout exception without rollback |
-| **Adversarial** | `[OrderParser.parse](file:///path#L20)` | None | `[test_parser.py:L10](file:///path#L10)`: Explicit rejection of malformed payload | `In-process direct call` | Accepting malformed payload header |
-| **Edge Case** | `[Pool.acquire](file:///path#L5)` | None | `[test_pool.py:L20](file:///path#L20)`: Graceful failure when pool_size=0 | `In-memory FakePort` | Division by zero or unhandled IndexError |
+| **Unit / Logic** | [Order.calc_total](file:///path#L10) | [test_old.py:L10](file:///path#L10) or None | [test_order.py:L15](file:///path#L15): Total == sum(items) - discount | `In-process direct call` | Omitting discount clamp when total < 0 |
+| **Integration** | [OrderService.pay](file:///path#L50) | [test_old.py:L40](file:///path#L40) or None | [test_order_svc.py:L30](file:///path#L30): DB rollback on gateway timeout | `Local stand-in (PGLite/SQLite)` | Swallowing timeout exception without rollback |
+| **Adversarial** | [OrderParser.parse](file:///path#L20) | None | [test_parser.py:L10](file:///path#L10): Explicit rejection of malformed payload | `In-process direct call` | Accepting malformed payload header |
+| **Edge Case** | [Pool.acquire](file:///path#L5) | None | [test_pool.py:L20](file:///path#L20): Graceful failure when pool_size=0 | `In-memory FakePort` | Division by zero or unhandled IndexError |
 
 ### 2. Mutate Implementation Plan Artifact
 Immediately update the active `implementation_plan.md` Artifact:
