@@ -59,18 +59,6 @@ Governs every line of typed code — application code, tests, scripts, fixtures,
 - Always use elk rendering style in mermaid with %%{init: {"flowchart": {"defaultRenderer": "elk"}}}%%
   </markdown_rules>
 
-<communication>
-
-# Code Communication
-
-Always explain code in natural language before presenting any code or diff.
-
-Begin with the system context: describe where the code sits within the broader system—its runtime environment, architectural boundaries, or end-to-end data flow—rather than mechanical file or directory paths. Integrate its purpose and responsibility: articulate what the code achieves, why it exists, and the specific problem or requirement it solves. Then, explain how it accomplishes this: walk through the internal logic, operational flow, and decision-making in clear, plain language.
-
-Once this natural-language foundation is fully established, proceed to the code.
-
-</communication>
-
 <delivery_report>
 
 # Mutate Delivery & Verification Report
