@@ -39,20 +39,6 @@
       }
     ]
   },
-  "view-file-guard": {
-    "PreToolUse": [
-      {
-        "matcher": "view_file",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 ~/.gemini/config/scripts/view_file_guard.py",
-            "timeout": 10
-          }
-        ]
-      }
-    ]
-  },
   "mutation-streak-guard": {
     "PostToolUse": [
       {
