@@ -311,7 +311,7 @@ if [ -n "$CONV_ID" ]; then
             PRICE_CACHE=0.15
             PRICE_OUT=9.00
             ;;
-        *"3.6 Flash"*)
+        *"3.8 Flash"*)
             PRICE_IN=1.50
             PRICE_CACHE=0.15
             PRICE_OUT=7.00
