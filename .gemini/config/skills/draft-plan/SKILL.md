@@ -72,27 +72,58 @@ For every target file to create (`[NEW]`), modify (`[MODIFY]`), or delete (`[DEL
 
 ## 5. Verification & Validation Proof
 
-Define mechanical, checkable proof of completion across the seam:
+In `implementation_plan.md`, define the mechanical, checkable verification steps that the executing agent must perform upon completing code changes:
 
-### A. Baseline Check & Subagent Audit
-- **Baseline Check:** Run exact terminal commands (`e.g.,` typecheck, lints, builds, smoke tests) executing against the target interfaces.
-  - **Pipeline Gate:** When modifying intermediate pipeline stages, verification commands MUST execute the pipeline integration/E2E suite from ingress to terminal sink; isolated unit tests on the intermediate seam alone are strictly insufficient.
-- **Independent Subagent Audit:** After running verification commands, spawn a dedicated verification subagent via `invoke_subagent`:
-  1. **Tool Restriction:** Subagent uses `view_file` only; runs no commands.
-  2. **Subagent Prompt:** Send all EARS requirements verbatim and instruct the subagent to view the codebase to evaluate completeness. It must start from the file cited at `-> Fulfills at [TargetSeam]` for each requirement, but is not bound to only that file.
-  3. **Standardized Subagent Output:** For each requirement, the subagent must output strictly:
-     - `REQ: <verbatim requirement>` -> `PASS | FAIL`
-     - `<Concise rationale citing lines viewed>`
+### A. Baseline Check
+- Specify exact terminal commands (`e.g.,` typecheck, lints, builds, smoke tests) executing against the target interfaces.
 
-### B. Remediation Loop
-- For all requirements marked `FAIL`:
-  1. Form the approach to do it right.
-  2. Apply the fix in the code.
-  3. Spawn the verification subagent again to verify.
-  4. Repeat until all requirements are marked `PASS`.
+### B. Independent Subagent Audit & Exact Spawn Prompt
+The plan MUST define the exact subagent invocation and the literal prompt that the executing agent will use.
+
+> [!IMPORTANT]
+> The plan defines the execution instructions and the literal spawn prompt. Real audit results must come exclusively from the live subagent execution.
+
+The plan must instruct the executing agent to follow these exact steps:
+
+1. **Subagent Invocation Configuration:**
+   - Tool: `invoke_subagent`
+   - `TypeName`: `"research"`
+   - `Role`: `"Requirements Auditor"`
+   - **Tool Restriction:** Subagent uses `view_file` only; runs NO commands.
+
+2. **Literal Spawn Prompt Block:**
+   The plan must write out the exact prompt string for the subagent, embedding all EARS requirements verbatim from Section 2:
+
+   ````markdown
+   **Exact Prompt to Spawn Subagent:**
+   ```text
+   You are an independent requirements auditor. Your sole task is to verify whether the implemented code fulfills all requirements.
+
+   Requirements to verify:
+   <List every EARS requirement verbatim from Section 2 with its -> Fulfills at seam>
+   - [ ] REQ-01: ... -> Fulfills at [file:line](file:///...)
+   - [ ] REQ-02: ... -> Fulfills at [file:line](file:///...)
+
+   Verification Rules:
+   1. Use `view_file` ONLY. Do NOT run any terminal commands.
+   2. Start from the file cited at `-> Fulfills at [TargetSeam]` for each requirement, but inspect any callers or consumers as needed to verify completeness.
+   3. Check whether the requirement implemented correctly in real code.
+   4. Output your evaluation in the following standardized format:
+      | # | EARS Requirement | Subagent Status | Line Citations |
+      |---|---|---|---|
+      | REQ-01 | <Verbatim requirement> | PASS / FAIL | [file:line](file:///...) |
+   ```
+   ````
+
+3. **Remediation Loop:**
+   - If the subagent marks ANY requirement as `FAIL`:
+     - Formulate the approach to do it right.
+     - Apply the fix in the code.
+     - Spawn the verification subagent again with the same audit prompt.
+     - Repeat until 100% of requirements are marked `PASS`.
 
 ### C. Completion Criteria (Mandatory Delivery Gate)
-To finalize execution and declare completion, the agent MUST embed the completed subagent audit table directly inside `#### 2. Verification Proof` of the `Execution & Verification Report`:
+To finalize execution and declare completion, the executing agent MUST embed the real subagent audit table (received from the live subagent response) directly inside `#### 2. Verification Proof` of its final `Execution & Verification Report`:
 
 ```markdown
 #### 2. Verification Proof
@@ -100,7 +131,7 @@ To finalize execution and declare completion, the agent MUST embed the completed
 - **Subagent Audit Proof (Auditor ID: `<Conversation ID>`):**
   | # | EARS Requirement | Subagent Status | Line Citations |
   |---|---|---|---|
-  | REQ-01 | `<Verbatim requirement>` | PASS / FAIL | [file:line](file:///...) |
+  | REQ-01 | `<Verbatim requirement>` | PASS | [file:line](file:///...) |
 ```
 
 Execution is strictly INCOMPLETE if any row in the Audit Table has status `FAIL` or is missing.
