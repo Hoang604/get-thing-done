@@ -38,7 +38,7 @@ Provide exactly two distinct, viable approaches (`Approach A` vs `Approach B`) s
 
 ### Quality Tiers (Universal)
 
-Classify each candidate against the Quality Tiers (Tier 1–5), strictly preferring **5 > 4 > 3 > 2 > 1**. Default is Tier 5 thinking:
+Classify each candidate against the Quality Tiers (Tier 1–5, with a +0.5 bonus for utilizing existing system patterns), strictly preferring **5.5 > 5 > 4.5 > 4 > 3.5 > 3 > 2.5 > 2 > 1.5 > 1**. Default is Tier 5 thinking:
 
 | Tier | Name | Signature (Features & Fixes Alike) |
 |---|---|---|
@@ -47,6 +47,10 @@ Classify each candidate against the Quality Tiers (Tier 1–5), strictly preferr
 | **3** | **Standard / Contract** | Complete implementation covering all specified requirements and edge cases with tests |
 | **2** | **Narrow / Ad-Hoc** | Special-cases only observed scenarios; brittle at boundaries or unhandled variations |
 | **1** | **Brittle / Workaround** | Superficial workaround; obscures symptom or works by accident |
+
+#### Existing Pattern Alignment Modifier (+0.5 Tier Bonus)
+- **Existing Pattern Bonus (+0.5)**: Award a +0.5 tier boost (e.g., Tier 3 → Tier 3.5, Tier 4 → Tier 4.5) to any approach that directly utilizes, conforms to, or extends existing system patterns, idioms, established abstractions, and conventions instead of introducing foreign mechanisms or fragmented paradigms.
+- **Bonus Justification**: When applying the +0.5 boost, explicitly cite the existing codebase pattern, utility, or architectural convention being reused and how it preserves conceptual integrity.
 
 Evaluate both valid trade-off paths against these self-contained design principles:
 
@@ -69,7 +73,7 @@ Evaluate both valid trade-off paths against these self-contained design principl
 
 For each approach, explicitly list:
 
-- **Quality Tier**: Label as Tier 1–5 with rationale. If implementing below Tier 4, explicitly state the constraint or blocker preventing a higher tier.
+- **Quality Tier**: Label as Tier 1–5 (with `+0.5` modifier if utilizing existing system patterns, e.g., `Tier 4.5`) with rationale. If implementing below Tier 4 (base tier), explicitly state the constraint or blocker preventing a higher tier.
 - **Suitable If**: State the exact real-world scenario, future feature requirement, or operational priority where this approach wins. Use concrete scenario anchors rather than abstract adjectives (e.g., *"Suitable if shipping an internal MVP this week and payment is strictly PayPal-only"* vs *"Suitable if planning to support Stripe later, or needing to switch LLM providers dynamically at runtime without server restarts"*).
 - **Pros**: Evaluate advantages in module depth, seam complexity, and performance.
 - **Cons**: Evaluate disadvantages in module depth, seam complexity, and performance.
@@ -88,7 +92,7 @@ Conclude the proposal with an executive comparison table contrasting Approach A 
 
 | Dimension / Criterion | Approach A (Pragmatic / Minimalist) | Approach B (Architectural / Robust) |
 |---|---|---|
-| **Quality Tier** | Tier 3 (Standard / Contract) | Tier 5 (Structural / Impossible) |
+| **Quality Tier** | Tier 3 (Standard + Existing Pattern) | Tier 5.5 (Structural / Impossible) |
 | **Suitable If** | Fixed to 1 provider (e.g. PayPal only), fast internal MVP | Adding 2nd provider (e.g. Stripe), hot-swapping LLMs at runtime |
 | **Module Depth** | Shallow (3 helper classes, leaky params) | Deep (1 facade function, private state) |
 | **Seams & Decoupling** | In-process (tightly coupled to DB driver) | Remote-owned (isolated behind port interface) |
