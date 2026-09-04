@@ -78,10 +78,10 @@ In `implementation_plan.md`, define the mechanical, checkable verification steps
 - Specify exact terminal commands (`e.g.,` typecheck, lints, builds, smoke tests) executing against the target interfaces.
 
 ### B. Independent Subagent Audit & Exact Spawn Prompt
-The plan MUST define the exact subagent invocation and the literal prompt that the executing agent will use.
+The plan MUST define the exact subagent invocation and the literal, fully rendered prompt that the executing agent will use.
 
 > [!IMPORTANT]
-> The plan defines the execution instructions and the literal spawn prompt. Real audit results must come exclusively from the live subagent execution.
+> The plan defines the execution instructions and the literal spawn prompt. The executing agent MUST NOT paraphrase, summarize, or abbreviate this prompt during invocation. Real audit results must come exclusively from the live subagent execution.
 
 The plan must instruct the executing agent to follow these exact steps:
 
@@ -95,14 +95,16 @@ The plan must instruct the executing agent to follow these exact steps:
    The plan must write out the exact prompt string for the subagent, embedding all EARS requirements verbatim from Section 2:
 
    ````markdown
-   **Exact Prompt to Spawn Subagent:**
+   #### Subagent Spawn Directive
+   > [!CAUTION]
+   > **LITERAL INVOCATION REQUIRED**: When invoking the auditor subagent, copy the entire block below character-for-character into the `invoke_subagent` `Prompt` argument. Do not summarize, translate or rephrase.
+
    ```text
    You are an independent requirements auditor. Your sole task is to verify whether the implemented code fulfills all requirements.
 
    Requirements to verify:
-   <List every EARS requirement verbatim from Section 2 with its -> Fulfills at seam>
-   - [ ] REQ-01: ... -> Fulfills at [file:line](file:///...)
-   - [ ] REQ-02: ... -> Fulfills at [file:line](file:///...)
+   - [ ] REQ-01: <Verbatim requirement 1 from Section 2> -> Fulfills at [file:line](file:///...)
+   - [ ] REQ-02: <Verbatim requirement 2 from Section 2> -> Fulfills at [file:line](file:///...)
 
    Verification Rules:
    1. Use `view_file` ONLY. Do NOT run any terminal commands.
@@ -119,7 +121,7 @@ The plan must instruct the executing agent to follow these exact steps:
    - If the subagent marks ANY requirement as `FAIL`:
      - Formulate the approach to do it right.
      - Apply the fix in the code.
-     - Spawn the verification subagent again with the same audit prompt.
+     - Re-spawn the verification subagent using the exact same verbatim prompt block.
      - Repeat until 100% of requirements are marked `PASS`.
 
 ### C. Completion Criteria (Mandatory Delivery Gate)
