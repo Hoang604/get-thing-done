@@ -7,7 +7,7 @@ disable-model-invocation: true
 # CORE DIRECTIVE
 
 Translate an approved alignment contract or propose plan into a deterministic, zero-entropy `implementation_plan.md` Artifact.
-Do not re-explore alternative designs. Enforce literal interface boundaries (`class` / `def` signatures with docstrings and type annotations) paired with explicit inline contracts (`invariants, error modes, data structures`). Never leak method bodies or line-by-line implementation code into the plan.
+Do not re-explore alternative designs. Enforce literal interface boundaries (`class` / `def` signatures with docstrings and type annotations) paired with explicit inline contracts (`invariants, error modes, data structures`). Never leak method bodies or line-by-line implementation code into the plan. Enforce independent subagent code verification to guarantee exhaustive execution without failure-hiding.
 
 ---
 
@@ -24,15 +24,15 @@ Do not re-explore alternative designs. Enforce literal interface boundaries (`cl
 
 ## 2. Requirements (EARS Syntax & Seam Tracing)
 
-Translate approved requirements strictly into EARS syntax structures:
+Translate approved requirements strictly into checkable EARS syntax structures:
 
-- **Ubiquitous:** `The <system/component> shall <Action>.`
-- **Event:** `When <Trigger>, the <system/component> shall <Action>.`
-- **State:** `While <State>, the <system/component> shall <Action>.`
-- **Unwanted:** `If <Condition>, then the <system/component> shall <Action>.`
-- **Optional:** `Where <Feature>, the <system/component> shall <Action>.`
+- [ ] **Ubiquitous:** `The <system/component> shall <Action>.` -> Fulfills at [TargetSeam](file:///path#L10)
+- [ ] **Event:** `When <Trigger>, the <system/component> shall <Action>.` -> Fulfills at [TargetSeam](file:///path#L10)
+- [ ] **State:** `While <State>, the <system/component> shall <Action>.` -> Fulfills at [TargetSeam](file:///path#L10)
+- [ ] **Unwanted:** `If <Condition>, then the <system/component> shall <Action>.` -> Fulfills at [TargetSeam](file:///path#L10)
+- [ ] **Optional:** `Where <Feature>, the <system/component> shall <Action>.` -> Fulfills at [TargetSeam](file:///path#L10)
 
-**Zero Orphan Requirements & Pipeline Tracing:** Every single EARS requirement must explicitly cite the exact clickable markdown link (`file://` with line anchor if modifying, or target path if new) of the target seam/interface that fulfills it (e.g., `-> Fulfills at [OrderService.process_order](file:///path/service.py#L45)`). For changes to intermediate pipeline stages, annotate the upstream ingress and downstream terminal sink (e.g., `-> Ingress: [API.route](file:///path#L10) | Egress: [DB.persist](file:///path#L80)`).
+**Zero Orphan Requirements & Pipeline Tracing:** Every single requirement must explicitly cite the exact clickable markdown link (`file://` with line anchor if modifying, or target path if new) of the target seam/interface that fulfills it (e.g., `-> Fulfills at [OrderService.process_order](file:///path/service.py#L45)`). For changes to intermediate pipeline stages, annotate the upstream ingress and downstream terminal sink (e.g., `-> Ingress: [API.route](file:///path#L10) | Egress: [DB.persist](file:///path#L80)`).
 
 ---
 
@@ -45,15 +45,13 @@ List all files that will be created, modified, or deleted by this plan in a stru
 ├── src/
 │   ├── [NEW] api/routes.py
 │   └── [MODIFY] main.py
-└── tests/
-    └── [DELETE] test_old.py
+└── config/
+    └── [MODIFY] settings.json
 ```
 
 ---
 
 ## 4. Design Definition (`Zero-Prose Literal Contracts & Seam Matrix`)
-
-### A. Literal Interface Contracts (`Signatures, Schemas & Inline Seam Contracts`)
 
 For every target file to create (`[NEW]`), modify (`[MODIFY]`), or delete (`[DELETE]`), pinpoint exact line ranges using clickable [basename](file:///path#L10-L20) links without backticks and declare exact literal contracts:
 
@@ -70,38 +68,39 @@ For every target file to create (`[NEW]`), modify (`[MODIFY]`), or delete (`[DEL
 - **Invariants, Concurrency & Error Modes:**
   - State exact invariants (`what must not change`), exact typed exceptions raised (`exceptions/return variants`), concurrency controls (locks, mutexes, thread safety), AND flag any out-of-seam state accessed directly (`e.g., os.environ keys or config tables read without parameter injection`).
 
-### B. Adversarial Seam & Test Replacement Matrix (`Replace, Don't Layer & Anti-Brittle Defense`) (Optional)
-
-> [!NOTE]
-> **Optional Section:** Only write this section and test matrix if the user explicitly said they want tests. If tests were not explicitly requested by the user, omit this subsection completely from the plan.
-
-The interface is the test surface (`Signature + Invariants + Error Modes`). Callers and tests cross the exact same external seam. Strictly reject brittle tests that assert on private methods, internal state, or intermediate call graphs (`e.g., toHaveBeenCalledWith`).
-
-When tests are explicitly requested, define deep adversarial test specifications across 4 categories (`Unit/Logic`, `Integration`, `Adversarial`, `Edge Case`) for each affected seam:
-
-| Test Category | Target Seam / Module | Old Shallow Test to [DELETE] | New Deep Test & Observable Invariant | Dependency Category & Test Stand-in | Breaks-If Mutation (Specific Code Bug That Fails This) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Unit / Logic** | [Order.calc_total](file:///path#L10) | [test_old.py:L10](file:///path#L10) or None | [test_order.py:L15](file:///path#L15): Total == sum(items) - discount | `In-process direct call` | Omitting discount clamp when total < 0 |
-| **Integration** | [OrderService.pay](file:///path#L50) | [test_old.py:L40](file:///path#L40) or None | [test_order_svc.py:L30](file:///path#L30): DB rollback on gateway timeout | `Local stand-in (PGLite/SQLite)` | Swallowing timeout exception without rollback |
-| **Adversarial** | [OrderParser.parse](file:///path#L20) | None | [test_parser.py:L10](file:///path#L10): Explicit rejection of malformed payload | `In-process direct call` | Accepting malformed payload header |
-| **Edge Case** | [Pool.acquire](file:///path#L5) | None | [test_pool.py:L20](file:///path#L20): Graceful failure when pool_size=0 | `In-memory FakePort` | Division by zero or unhandled IndexError |
-
-- **Seam & Dependency Discipline (`DEPENDING discipline`):**
-  1. `In-process` (pure compute, in-memory state): Strictly forbid mocks. Merge modules and test directly through the interface.
-  2. `Local-substitutable` (Postgres, filesystem): Strictly forbid mocks. Use real local stand-ins (`PGLite`, `tmp_path`, in-memory DB).
-  3. `Remote-owned` (Internal microservices): Define a port (`seam`); test via `In-Memory Adapter` (`FakePort`).
-  4. `True-external` (Stripe, Twilio): Mock/stub adapters permitted.
-- **Oracle Declarations & Causal Independence:**
-  - **Ground Truth:** Cite exact source for every claim (`SPEC` or `SOURCE: [file:line]`). Flag unverified claims with `⚠️ ASSUMPTION`.
-  - **Causal Independence:** Explicitly declare variables that must not alter outputs (e.g., list order, cache hits/misses).
-- **No Interface Leakage:** Never expose private helper methods or internal seams solely for unit test setup. Tests must assert on observable outcomes strictly through the module's external seam.
-
 ---
 
 ## 5. Verification & Validation Proof
 
 Define mechanical, checkable proof of completion across the seam:
 
-- **Verification Commands:** Exact terminal commands (`e.g., uv run pytest <target_test_file>`, `npm test`, lints, builds) executing against the target interfaces.
+### A. Baseline Check & Subagent Audit
+- **Baseline Check:** Run exact terminal commands (`e.g.,` typecheck, lints, builds, smoke tests) executing against the target interfaces.
   - **Pipeline Gate:** When modifying intermediate pipeline stages, verification commands MUST execute the pipeline integration/E2E suite from ingress to terminal sink; isolated unit tests on the intermediate seam alone are strictly insufficient.
-- **Validation Scenarios:** Step-by-step observable acceptance criteria or end-to-end user flows to verify success.
+- **Independent Subagent Audit:** After running verification commands, spawn a dedicated verification subagent via `invoke_subagent`:
+  1. **Tool Restriction:** Subagent uses `view_file` only; runs no commands.
+  2. **Subagent Prompt:** Send all EARS requirements verbatim and instruct the subagent to view the codebase to evaluate completeness. It must start from the file cited at `-> Fulfills at [TargetSeam]` for each requirement, but is not bound to only that file.
+  3. **Standardized Subagent Output:** For each requirement, the subagent must output strictly:
+     - `REQ: <verbatim requirement>` -> `PASS | FAIL`
+     - `<Concise rationale citing lines viewed>`
+
+### B. Remediation Loop
+- For all requirements marked `FAIL`:
+  1. Form the approach to do it right.
+  2. Apply the fix in the code.
+  3. Spawn the verification subagent again to verify.
+  4. Repeat until all requirements are marked `PASS`.
+
+### C. Completion Criteria (Mandatory Delivery Gate)
+To finalize execution and declare completion, the agent MUST embed the completed subagent audit table directly inside `#### 2. Verification Proof` of the `Execution & Verification Report`:
+
+```markdown
+#### 2. Verification Proof
+- **Baseline Check:** `<Exact command(s) executed for verification>` -> `<Passing output summary line / exit code>`
+- **Subagent Audit Proof (Auditor ID: `<Conversation ID>`):**
+  | # | EARS Requirement | Subagent Status | Line Citations |
+  |---|---|---|---|
+  | REQ-01 | `<Verbatim requirement>` | PASS / FAIL | [file:line](file:///...) |
+```
+
+Execution is strictly INCOMPLETE if any row in the Audit Table has status `FAIL` or is missing.

@@ -76,9 +76,11 @@ Upon completing codebase modifications and verification in `[MUTATE]` state (e.g
   - [<file>](file:///path/to/file#L...): <[NEW] | [MODIFY] | [DELETE] - Concise summary of changes>
 
 #### 2. Verification Proof
-- **Command:** `<Exact terminal command(s) executed for verification>`
-- **Output:** `<Passing output summary line>`
-- **Validation Status:** <Confirmation that verification scenario passed>
+- **Baseline Check:** `<Exact command(s) executed for verification>` -> `<Passing output summary line / exit code>`
+- **Subagent Audit Proof (Auditor ID: `<Conversation ID>`):**
+  | # | EARS Requirement | Subagent Status | Line Citations |
+  |---|---|---|---|
+  | REQ-01 | `<Verbatim requirement>` | PASS / FAIL | [file:line](file:///...) |
 
 #### 3. Execution Delta & Diagnostics
 - **Diagnostic Matrix:**
