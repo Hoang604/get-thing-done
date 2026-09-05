@@ -40,6 +40,34 @@ Governs every line of typed code — application code, tests, scripts, fixtures,
 
 </type_safety_policy>
 
+<invariant_policy>
+
+# Invariant Integrity & Root-Cause Engineering
+
+Governs bug fixing, data validation, and state handling across domain, workers, APIs, and UI consumers.
+
+1. **Zero defensive fallbacks in core domain.** Never insert fallback operators (`??`, `||`, `?.`), dummy constants, or silent defaults to mask missing/undefined data at downstream consumers. Missing required state is an **Invariant Violation**, not an optional condition.
+2. **Upstream root-cause tracing.** When a downstream consumer receives invalid, null, or out-of-order data, trace the **Data Lineage** back to the upstream producer (event handler, queue worker, use case, DB query). Fix creation or transition logic at the source; never add downstream conditional bypasses or fallback merging to dodge upstream bugs.
+3. **Fail-Fast over silent corruption.** If state is invalid at any domain boundary or consumer, throw immediately with an explicit, descriptive error. Do not silence, do not swallow clicks/events, do not return dummy rows.
+4. **In-line contract anchor.**
+   ```typescript
+   // Scenario: Downstream consumer receives an Order in 'PAID' state without required 'transactionId'.
+
+   // ❌ REJECTED: Consumer patches symptom with fallbacks or silent bypasses
+   const txId = order.transactionId ?? "UNKNOWN"; // Silently accepts corrupted data
+   if (!order.transactionId) return; // Swallows error; leaves system in inconsistent state
+
+   // ✅ REQUIRED: Consumer fails fast; root cause is fixed upstream at the producer
+   // 1. Downstream Consumer asserts invariant immediately:
+   if (!order.transactionId) {
+     throw new InvariantViolationError(`Order ${order.id} in PAID status requires transactionId`);
+   }
+   // 2. Upstream Producer fix (PaymentHandler/OrderService):
+   // Ensure transactionId is validated and committed before transitioning state to PAID.
+   ```
+
+</invariant_policy>
+
 <tool_mechanics>
 
 # Tool Mechanics
