@@ -46,15 +46,21 @@ Translate approved requirements strictly into checkable EARS syntax structures. 
 
 ## 3. Affected Files
 
-List all files that will be created, modified, or deleted by this plan in a structured file tree format inside a text block.
+### Scope Discovery
+Starting from each UO's Verification Scope and each REQ's Fulfills-at target, trace callers and consumers outward using `grep_search` and `view_file`. At each hop, determine whether the file requires changes to fulfill the plan. If yes, add it to the manifest and trace its callers/consumers in turn.
+
+**Fixed-point criterion:** Scope discovery is complete when an additional trace hop produces no new files requiring changes.
+
+### File Manifest
 
 ```tree
 .
 ├── src/
-│   ├── [NEW] api/routes.py
-│   └── [MODIFY] main.py
+│   ├── [NEW] api/routes.py          # UO-01 scope trace
+│   ├── [MODIFY] service.py          # REQ-01 fulfills-at
+│   └── [MODIFY] main.py             # service.py caller hop
 └── config/
-    └── [MODIFY] settings.json
+    └── [MODIFY] settings.json       # REQ-03 fulfills-at
 ```
 
 ---
