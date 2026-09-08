@@ -38,7 +38,7 @@ Break the work into **tracer bullet** tickets strictly grounded in your `Seam Ma
 <vertical-slice-rules>
 
 - **Roadmap Alignment:** Each drafted feature ticket MUST correspond precisely to a roadmap phase from `SPEC.md` (`or an independently verifiable sub-slice of a phase if the phase touches multiple distinct technical seams`).
-- **Slice Anatomy:** Each slice cuts a narrow but COMPLETE path through every layer (`schema, API, UI, tests`) — vertical, NOT a horizontal layer-by-layer slice. A completed slice MUST be independently demoable or `Black-Box Verifiable`.
+- **Slice Anatomy:** Each slice cuts a narrow but COMPLETE path through every layer (`schema, API, UI/wiring`) — vertical, NOT a horizontal layer-by-layer slice. A completed slice MUST be independently demoable or `Black-Box Verifiable`.
 - **Sizing & Blast Radius:** Size each ticket around a focused primary core (`<= 5 primary seams`). Declare both primary files and anticipated related files (potential callers, schemas, downstream consumers); do not rigidly freeze file boundaries to allow realistic execution adjustments.
 
 </vertical-slice-rules>
@@ -89,10 +89,11 @@ Do NOT close or modify any parent issue or specification.
 
 # <NN> — <Ticket title>
 
-**Primary Targets:** [basename.py](file:///absolute/path/to/basename.py)
-**Anticipated Blast Radius:** Primary files above, plus potential related files (callers, schemas, tests): [related.py](file:///path) (flexible boundary; not strictly locked)
-**Blocked by:** `<NN> — <Title>` or `None — can start immediately`
-**Status:** `ready-for-agent`
+- **Primary Targets:** [<primary_file_1>](file:///path), [<primary_file_2>](file:///path)
+- **Anticipated Blast Radius:** [<related_file_1>](file:///path), [<related_file_2>](file:///path)
+- **Blocked by:** `<NN> — <Title>` or `None — can start immediately`
+- **Status:** `ready-for-agent`
+<!-- Guidance: Anticipated Blast Radius contains only clickable markdown file links of potential callers, schemas, mappers, or downstream consumers. Do not output literal guidance text or test references. -->
 
 ## Context & What to Build
 Explain in direct, conversational technical language (explain-style: senior engineer over coffee):

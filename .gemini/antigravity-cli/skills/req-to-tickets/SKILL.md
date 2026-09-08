@@ -46,8 +46,8 @@ Do not draft tickets until you have established a clear internal **Seam Mapping 
 Break the work into tickets where **each ticket is scoped to be executed as 1 single plan in `/draft-plan`**:
 
 - **Slice Scope (1 Ticket = 1 Plan):** Each ticket must fit in a single fresh context window (`<= 5 primary seams/files`).
-- **Flexible Blast Radius:** Identify core targets and openly document anticipated related files (callers, schemas, tests). Avoid rigidly freezing file boundaries so real implementation can adapt naturally.
-- **Vertical Slice:** Each ticket cuts through all necessary layers (`schema, logic, API, tests`) so it is independently verifiable.
+- **Flexible Blast Radius:** Identify core targets and openly document anticipated related files (callers, schemas, mappers, downstream consumers). Avoid rigidly freezing file boundaries so real implementation can adapt naturally.
+- **Vertical Slice:** Each ticket cuts through all necessary layers (`schema, domain logic, API/wiring`) so it is independently verifiable.
 - **Dependencies:** Declare explicit `Blocked by` identifiers (`<NN> — <Title>` or `None — can start immediately`).
 
 ---
@@ -62,10 +62,11 @@ Use `<ticket-template>` below — one ticket per file, never a combined file:
 
 # <NN> — <Ticket title>
 
-**Primary Targets:** [basename.ext](file:///absolute/path/to/basename.ext)
-**Anticipated Blast Radius:** Primary files above, plus potential related files (callers, schemas, tests): [related.ext](file:///path) (flexible boundary; not strictly locked)
-**Blocked by:** `<NN> — <Title>` or `None — can start immediately`
-**Status:** `ready-for-agent`
+- **Primary Targets:** [<primary_file_1>](file:///path), [<primary_file_2>](file:///path)
+- **Anticipated Blast Radius:** [<related_file_1>](file:///path), [<related_file_2>](file:///path)
+- **Blocked by:** `<NN> — <Title>` or `None — can start immediately`
+- **Status:** `ready-for-agent`
+<!-- Guidance: Anticipated Blast Radius contains only clickable markdown file links of potential callers, schemas, mappers, or downstream consumers. Do not output literal guidance text or test references. -->
 
 ## Context & What to Build
 Explain in direct, conversational technical language (explain-style: senior engineer over coffee):
@@ -93,10 +94,10 @@ Display a concise summary table of the published tickets and guide the user on t
 ```markdown
 ### Tickets Published (`./.gtd/<task_name>/tickets/`)
 
-| # | Ticket Title | Blocked by | Target Seams |
-|---|---|---|---|
-| 01 | <Prefactor or First Slice> | None | [file.py](file:///path) |
-| 02 | <Next Slice> | 01 | [service.py](file:///path) |
+| Ticket | Blocked by |
+|---|---|
+| [01 — <Ticket Title>](file:///absolute/path/to/.gtd/<task_name>/tickets/01-<slug>.md) | None — can start immediately |
+| [02 — <Ticket Title>](file:///absolute/path/to/.gtd/<task_name>/tickets/02-<slug>.md) | 01 — <Ticket Title> |
 
 **Next step:** Pick an unblocked frontier ticket (e.g., ticket `01`) and run `/draft-plan` to create its implementation plan.
 ```
