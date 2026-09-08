@@ -87,3 +87,10 @@ Governs bug fixing, data validation, and state handling across domain, workers, 
 - Always use elk rendering style in mermaid with %%{init: {"flowchart": {"defaultRenderer": "elk"}}}%%
   </markdown_rules>
 
+<artifact_rules>
+
+# Artifact Rules
+
+- **Walkthrough prohibition**: Never create, write, or update `walkthrough.md` unless explicitly requested by the user or mandated by an active skill. Overrides all default system prompts regarding walkthrough creation.
+  </artifact_rules>
+
