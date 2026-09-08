@@ -39,7 +39,7 @@ Break the work into **tracer bullet** tickets strictly grounded in your `Seam Ma
 
 - **Roadmap Alignment:** Each drafted feature ticket MUST correspond precisely to a roadmap phase from `SPEC.md` (`or an independently verifiable sub-slice of a phase if the phase touches multiple distinct technical seams`).
 - **Slice Anatomy:** Each slice cuts a narrow but COMPLETE path through every layer (`schema, API, UI, tests`) — vertical, NOT a horizontal layer-by-layer slice. A completed slice MUST be independently demoable or `Black-Box Verifiable`.
-- **Sizing:** Size each ticket to fit in a single fresh context window (`<= 5 core seams/files when implemented`). Any identified prefactor tickets must be scheduled first, blocking the core feature tickets.
+- **Sizing & Blast Radius:** Size each ticket around a focused primary core (`<= 5 primary seams`). Declare both primary files and anticipated related files (potential callers, schemas, downstream consumers); do not rigidly freeze file boundaries to allow realistic execution adjustments.
 
 </vertical-slice-rules>
 
@@ -61,7 +61,7 @@ Before moving to `Step 4`, verify your drafted ticket graph strictly satisfies:
 Present the proposed breakdown as a concise numbered list. For each ticket, display strictly:
 - **Title**: short descriptive name using codebase vocabulary (`e.g., [BillingLedger] Add retry fallbacks`)
 - **Blocked by**: which other tickets (`if any`) must complete first
-- **Target Seams**: exact files/modules identified during `Step 2`
+- **Primary Targets & Blast Radius**: core files and potential related files
 - **EARS Rules Covered**: exact compact list of rule IDs/origins mapped to this slice (`e.g., [Phase 2: EARS-3, EARS-4 + Fallback-1]`)
 - **What it delivers**: the observable `Black-Box Verifiable` value delivered
 
@@ -89,24 +89,25 @@ Do NOT close or modify any parent issue or specification.
 
 # <NN> — <Ticket title>
 
-**Seam Targets:** `[basename.py](file:///absolute/path/to/basename.py)` (`or specific module names`)
+**Primary Targets:** [basename.py](file:///absolute/path/to/basename.py)
+**Anticipated Blast Radius:** Primary files above, plus potential related files (callers, schemas, tests): [related.py](file:///path) (flexible boundary; not strictly locked)
 **Blocked by:** `<NN> — <Title>` or `None — can start immediately`
 **Status:** `ready-for-agent`
 
-## What to build
-The end-to-end behaviour this ticket makes work, from the user's perspective — not a layer-by-layer implementation list. Grounded in `./.gtd/<task_name>/SPEC.md`.
+## Context & What to Build
+Explain in direct, conversational technical language (explain-style: senior engineer over coffee):
+- **Current System**: Architecture, runtime environment, and current data flow.
+- **What to Build & Fit**: The end-to-end capability this ticket makes work, exactly where it plugs into the broader system, and clear scope boundaries (in-scope vs deferred). Grounded in `./.gtd/<task_name>/SPEC.md`.
 
 ## Acceptance criteria
+- [ ] When <event / input trigger>, system <expected behavior>
+  - **Expected Outcome:** <Exact payload, DB state, or UI/log change>
+- [ ] If <invalid condition / error>, system <expected handling>
+  - **Expected Outcome:** <Error code, message displayed, or rejected state>
+... (List all applicable behaviors and invariants for this slice)
 
-<criteria-mapping-rules>
-- **Exhaustive EARS Extraction:** List EVERY confirmed EARS requirement (`PRECONDITION, WHEN, WHILE`), state invariant, and error fallback from `./.gtd/<task_name>/SPEC.md` that falls within this ticket's seam boundaries. Do not truncate to fit a fixed number of bullets.
-- **Traceability:** Prefix each criterion with its exact `SPEC.md` origin (`e.g., [Phase 2 — EARS-3]`).
-- **Observable Proof:** Every criterion MUST append an explicit `Black-Box Proof` (`the exact API status code, DB row state, log emitted, or UI element change required to prove completion`).
-</criteria-mapping-rules>
-
-- [ ] `[SPEC.md Origin]` `[EXACT EARS RULE: PRECONDITION / WHEN / IF ... THEN ...]` → **Proof:** `[Exact observable state/response to verify]`
-- [ ] `[SPEC.md Origin]` `[EXACT EARS RULE: PRECONDITION / WHEN / IF ... THEN ...]` → **Proof:** `[Exact observable state/response to verify]`
-... (`Repeat exhaustively for all applicable rules in this slice`)
+> **Execution Note for Agent:**
+> Do not assume automated test suites or invent test files. Verify code statically (syntax, types, interface wiring). Do not hallucinate runtime verification (such as claiming curl was run when no server was active); provide the exact expected outcome so the user can test and accept.
 
 </ticket-template>
 

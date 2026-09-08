@@ -27,11 +27,11 @@ Perform exhaustive **Legwork** on the target (`module, file, function, interface
 Present the concrete **Test Strategy Proposal** and wait for explicit user approval:
 
 ### A. Seam & Dependency Audit (`Anti-Brittle Verification`)
-- **Target Seam / Interface:** State exactly the external interface signature to be tested (`e.g., [OrderService.place_order](file:///path#L20)`). Confirm that no private helper or internal seam is exposed solely for testing (`Zero Interface Leakage`).
+- **Target Seam / Interface:** State exactly the external interface signature to be tested (e.g., [OrderService.place_order](file:///path#L20)). Confirm that no private helper or internal seam is exposed solely for testing (`Zero Interface Leakage`).
 - **Dependency Map & Test Stand-in:** Categorize every dependency of the target (`In-process`, `Local-substitutable`, `Remote-owned`, `True-external`) and specify the exact stand-in or adapter used (`e.g., Postgres -> Local PGLite stand-in; DiscountCalc -> In-process direct call; Stripe -> Mock Adapter`).
 
 ### B. Oracle Declaration (`Ground Truth vs Assumptions`)
-- **Behavioral & Boundary Claims:** Cite exact sources (`e.g., CLAIM: Order status locks after payment -> SOURCE: [OrderService.py:L45](file:///path#L45)` or `SPEC`).
+- **Behavioral & Boundary Claims:** Cite exact sources (e.g., CLAIM: Order status locks after payment -> SOURCE: [OrderService.py:L45](file:///path#L45) or `SPEC`).
 - **Causal Independence:** State exact variables that must not alter outputs (`e.g., sort order must not affect total calculation`).
 - **Unverified Assumptions:** Explicitly flag any untraced claims with `⚠️ ASSUMPTION — needs human confirmation`.
 
@@ -40,10 +40,10 @@ For each test item, verify that it asserts on observable interface behavior (`Ob
 
 | Test Category | Target Seam / Function | Verification Target (`Observable Outcome / Invariant`) | Test Stand-in / Adapter (`No In-Process Mocks`) | Breaks-If Mutation (`Specific Code Bug That Fails This`) |
 | :--- | :--- | :--- | :--- | :--- |
-| **Unit / Logic** | `[calc_total](file:///path#L10)` | Total == Sum(items) - discount | `In-process direct call` | Omitting discount clamp when total < 0 |
-| **Integration** | `[process_pay](file:///path#L50)` | Database rollback on timeout | `Local stand-in (PGLite/SQLite)` | Swallowing timeout exception without rollback |
-| **Adversarial** | `[parse_header](file:///path#L20)` | Rejection of truncated/bad payload | `In-process direct call` | Accepting malformed payload header |
-| **Edge Case** | `[init_pool](file:///path#L5)` | Graceful failure when pool_size=0 | `In-memory FakePort` | Division by zero or unhandled IndexError |
+| **Unit / Logic** | [calc_total](file:///path#L10) | Total == Sum(items) - discount | `In-process direct call` | Omitting discount clamp when total < 0 |
+| **Integration** | [process_pay](file:///path#L50) | Database rollback on timeout | `Local stand-in (PGLite/SQLite)` | Swallowing timeout exception without rollback |
+| **Adversarial** | [parse_header](file:///path#L20) | Rejection of truncated/bad payload | `In-process direct call` | Accepting malformed payload header |
+| **Edge Case** | [init_pool](file:///path#L5) | Graceful failure when pool_size=0 | `In-memory FakePort` | Division by zero or unhandled IndexError |
 
 **Hard Stop:** Output exactly: `Please review the proposed test matrix and assumptions. I will not write test code until explicitly confirmed.`
 

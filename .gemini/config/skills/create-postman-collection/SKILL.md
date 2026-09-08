@@ -23,11 +23,11 @@ Perform exhaustive **Legwork** on the target (`feature flow, endpoint family, co
 Present the concrete **Collection Strategy Proposal** and wait for explicit user approval:
 
 ### A. Prerequisite & Auth Audit (`Discovery Verification`)
-- **Target Endpoint Family / Seam:** State exactly the controller class/module and base path being covered (`e.g., [OrderController](file:///path#L15) -> /api/v1/orders`).
+- **Target Endpoint Family / Seam:** State exactly the controller class/module and base path being covered (e.g., [OrderController](file:///path#L15) -> /api/v1/orders).
 - **Auth & Prerequisite Map:** Declare required role guards (`e.g., Admin vs User JWT`) and exactly how required resource IDs are obtained (`e.g., Setup Request POST /login -> saves {{accessToken}}; Setup Request POST /users -> saves {{userId}}`).
 
 ### B. Oracle Declaration (`Ground Truth vs Assumptions`)
-- **Behavioral & Boundary Claims:** Cite exact route signatures and expected HTTP status codes (`e.g., CLAIM: POST /orders returns 201 with OrderDTO -> SOURCE: [OrderController.py:L40](file:///path#L40)`).
+- **Behavioral & Boundary Claims:** Cite exact route signatures and expected HTTP status codes (e.g., CLAIM: POST /orders returns 201 with OrderDTO -> SOURCE: [OrderController.py:L40](file:///path#L40)).
 - **Data Discovery Claims:** Specify auto-discovered variables vs required manual environment variables.
 - **Unverified Assumptions:** Explicitly flag any untraced claims with `⚠️ ASSUMPTION — needs human confirmation`.
 

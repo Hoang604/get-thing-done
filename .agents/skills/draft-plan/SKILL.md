@@ -30,17 +30,15 @@ Use GitHub-style alerts strictly to flag architectural boundaries and risks:
 
 ---
 
-## 2. Requirements (EARS Syntax & Seam Tracing)
+## 2. Requirements & Seam Tracing
 
-Translate approved requirements strictly into checkable EARS syntax structures. Each requirement MUST include a **`[UO-xx]` traceability tag** linking it back to the User Outcome it serves:
+Translate approved requirements into checkable behavioral statements. Each requirement MUST include a **`[UO-xx]` traceability tag** linking it back to the User Outcome it serves, and cite its fulfilling target seam:
 
-- [ ] **REQ-01 [UO-01] (Ubiquitous):** `The <system/component> shall <Action>.` -> Fulfills at [TargetSeam](file:///path#L10)
-- [ ] **REQ-02 [UO-01] (Event):** `When <Trigger>, the <system/component> shall <Action>.` -> Fulfills at [TargetSeam](file:///path#L10)
-- [ ] **REQ-03 [UO-02] (State):** `While <State>, the <system/component> shall <Action>.` -> Fulfills at [TargetSeam](file:///path#L10)
-- [ ] **REQ-04 [UO-01] (Unwanted):** `If <Condition>, then the <system/component> shall <Action>.` -> Fulfills at [TargetSeam](file:///path#L10)
-- [ ] **REQ-05 [UO-02] (Optional):** `Where <Feature>, the <system/component> shall <Action>.` -> Fulfills at [TargetSeam](file:///path#L10)
+- [ ] **REQ-01 [UO-01]:** When <Trigger>, <system/component> shall <Action>. -> Fulfills at [TargetSeam](file:///path#L10)
+- [ ] **REQ-02 [UO-01]:** If <Condition/Error>, <system/component> shall <Action>. -> Fulfills at [TargetSeam](file:///path#L10)
+- [ ] **REQ-03 [UO-02]:** <system/component> shall <Action>. -> Fulfills at [TargetSeam](file:///path#L10)
 
-**Zero Orphan Requirements & Bidirectional Tracing:** Every requirement must (a) explicitly cite the exact clickable markdown link (`file://` with line anchor if modifying, or target path if new) of the target seam/interface that fulfills it (e.g., `-> Fulfills at [OrderService.process_order](file:///path/service.py#L45)`), AND (b) trace back to at least one User Outcome via the `[UO-xx]` tag. For changes to intermediate pipeline stages, annotate the upstream ingress and downstream terminal sink (e.g., `-> Ingress: [API.route](file:///path#L10) | Egress: [DB.persist](file:///path#L80)`). Every `UO-xx` must be served by at least one `REQ-yy`; orphan outcomes are plan defects.
+**Zero Orphan Requirements & Bidirectional Tracing:** Every requirement must (a) explicitly cite the exact clickable markdown link (`file://` with line anchor if modifying, or target path if new) of the target seam/interface that fulfills it (e.g., -> Fulfills at [OrderService.process_order](file:///path/service.py#L45)), AND (b) trace back to at least one User Outcome via the `[UO-xx]` tag. For changes to intermediate pipeline stages, annotate the upstream ingress and downstream terminal sink (e.g., -> Ingress: [API.route](file:///path#L10) | Egress: [DB.persist](file:///path#L80)). Every `UO-xx` must be served by at least one `REQ-yy`; orphan outcomes are plan defects.
 
 ---
 

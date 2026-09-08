@@ -45,7 +45,8 @@ Do not draft tickets until you have established a clear internal **Seam Mapping 
 
 Break the work into tickets where **each ticket is scoped to be executed as 1 single plan in `/draft-plan`**:
 
-- **Slice Scope (1 Ticket = 1 Plan):** Each ticket must fit in a single fresh context window (`<= 5 core seams/files`).
+- **Slice Scope (1 Ticket = 1 Plan):** Each ticket must fit in a single fresh context window (`<= 5 primary seams/files`).
+- **Flexible Blast Radius:** Identify core targets and openly document anticipated related files (callers, schemas, tests). Avoid rigidly freezing file boundaries so real implementation can adapt naturally.
 - **Vertical Slice:** Each ticket cuts through all necessary layers (`schema, logic, API, tests`) so it is independently verifiable.
 - **Dependencies:** Declare explicit `Blocked by` identifiers (`<NN> — <Title>` or `None — can start immediately`).
 
@@ -61,17 +62,25 @@ Use `<ticket-template>` below — one ticket per file, never a combined file:
 
 # <NN> — <Ticket title>
 
-**Seam Targets:** `[basename.ext](file:///absolute/path/to/basename.ext)`
+**Primary Targets:** [basename.ext](file:///absolute/path/to/basename.ext)
+**Anticipated Blast Radius:** Primary files above, plus potential related files (callers, schemas, tests): [related.ext](file:///path) (flexible boundary; not strictly locked)
 **Blocked by:** `<NN> — <Title>` or `None — can start immediately`
 **Status:** `ready-for-agent`
 
-## What to build
-The end-to-end behavior or capability this ticket makes work from the user/caller perspective. Clearly define what is in scope and what is deferred to subsequent tickets.
+## Context & What to Build
+Explain in direct, conversational technical language (explain-style: senior engineer over coffee):
+- **Current System**: Architecture, runtime environment, and current data flow.
+- **What to Build & Fit**: The end-to-end capability this ticket delivers, exactly where it plugs into the broader system, and clear scope boundaries (in-scope vs deferred to subsequent tickets).
 
 ## Acceptance criteria
-- [ ] `[REQ-01]` `[EARS format: Ubiquitous / Event / State / Unwanted / Optional]` → **Proof:** `[Exact observable state/response/test to verify]`
-- [ ] `[REQ-02]` `[EARS format: Ubiquitous / Event / State / Unwanted / Optional]` → **Proof:** `[Exact observable state/response/test to verify]`
-... (List all specific acceptance criteria for this slice)
+- [ ] When <event / input trigger>, system <expected behavior>
+  - **Expected Outcome:** <Exact payload, DB state, or UI/log change>
+- [ ] If <invalid condition / error>, system <expected handling>
+  - **Expected Outcome:** <Error code, message displayed, or rejected state>
+... (List all applicable behaviors and invariants for this slice)
+
+> **Execution Note for Agent:**
+> Do not assume automated test suites or invent test files. Verify code statically (syntax, types, interface wiring). Do not hallucinate runtime verification (such as claiming curl was run when no server was active); provide the exact expected outcome so the user can test and accept.
 
 </ticket-template>
 
@@ -86,8 +95,8 @@ Display a concise summary table of the published tickets and guide the user on t
 
 | # | Ticket Title | Blocked by | Target Seams |
 |---|---|---|---|
-| 01 | <Prefactor or First Slice> | None | `[file.py](file:///path)` |
-| 02 | <Next Slice> | 01 | `[service.py](file:///path)` |
+| 01 | <Prefactor or First Slice> | None | [file.py](file:///path) |
+| 02 | <Next Slice> | 01 | [service.py](file:///path) |
 
 **Next step:** Pick an unblocked frontier ticket (e.g., ticket `01`) and run `/draft-plan` to create its implementation plan.
 ```

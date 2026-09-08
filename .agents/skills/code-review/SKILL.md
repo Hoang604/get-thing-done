@@ -48,7 +48,7 @@ Classify dependencies to evaluate architectural boundaries and propose refactors
 5. **Replace, Don't Layer:** Old unit tests on shallow modules are waste once tests at the deepened interface exist. Refactors must replace them with tests asserting observable outcomes at the seam.
 
 **REPORT FORMAT**
-Use exact 4-section format. You must cite all files, code symbols, and line ranges as clickable markdown links using the `file://` scheme with absolute paths (e.g., `[basename.py:L10-20](file:///absolute/path/to/basename.py#L10-L20)`). Use only the file's basename for the link text. Never wrap links in backticks.
+Use exact 4-section format. You must cite all files, code symbols, and line ranges as clickable markdown links using the `file://` scheme with absolute paths (e.g., [basename.py:L10-20](file:///absolute/path/to/basename.py#L10-L20)). Use only the file's basename for the link text. Never wrap links in backticks.
 
 **1. Scope Reviewed**
 List exact components and files analyzed using strict file links.
