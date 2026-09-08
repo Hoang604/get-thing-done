@@ -68,15 +68,6 @@ Governs bug fixing, data validation, and state handling across domain, workers, 
 
 </invariant_policy>
 
-<tool_mechanics>
-
-# Tool Mechanics
-
-- **grep_search**: When searching for multiple known targets (e.g., a list of types, functions, or errors), aggregate them into a single `grep_search` using regex (e.g., `TypeA|TypeB|TypeC` with `IsRegex=true`). Never execute sequential searches for items in a known set.
-- **view_file**: It better to omit StartLine and EndLine on the first time call view_file for each file. Read target file exactly once per context window. Trust context memory for all subsequent edits.
-- **run_command**: Always set `WaitMsBeforeAsync`=10000. Stop calling tools immediately after launching an async task. Rely on automatic reactive wakeup upon completion; do NOT call manage_task or schedule.
-- **write_to_file**: Omit `ArtifactMetadata` completely for all workspace target files. Include `ArtifactMetadata` exclusively when creating artifact documents inside the brain directory (`<appDataDir>/brain/...`). 
-  </tool_mechanics>
 
 <markdown_rules>
 
