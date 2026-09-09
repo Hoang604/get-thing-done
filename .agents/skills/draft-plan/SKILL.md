@@ -101,7 +101,7 @@ The plan must instruct the executing agent to follow these exact steps:
    - Tool: `invoke_subagent`
    - `TypeName`: `"research"`
    - `Role`: `"Outcome & Requirements Auditor"`
-   - **Tool Restriction:** Subagent uses `view_file` only; runs NO commands.
+   - **Tool Restriction:** Subagent uses `view_file` and `grep_search` only; runs NO commands.
 
 2. **Literal Spawn Prompt Block:**
    The plan must write out the exact prompt string for the subagent, embedding all User Outcomes verbatim from Section 1 AND all EARS requirements verbatim from Section 2:
@@ -125,7 +125,7 @@ The plan must instruct the executing agent to follow these exact steps:
    - [ ] REQ-02 [UO-01]: <Verbatim EARS requirement from Section 2> -> Fulfills at [file:line](file:///...)
 
    Verification Rules:
-   1. Use `view_file` ONLY. Do NOT run any terminal commands.
+   1. Use `view_file` and `grep_search` only. Do NOT run any terminal commands.
    2. Step 1 — Audit Requirements (Micro/Seam): For each REQ, start from the file cited at `-> Fulfills at [TargetSeam]`. Inspect signatures, type annotations, invariants, error handling, and any callers or consumers as needed to verify correctness.
    3. Step 2 — Audit User Outcomes (Macro/Wiring): For each UO, trace the full execution path from entry point to observable result as declared in its Verification Scope. Verify that the implementation is fully integrated into the runtime. If internal logic is correct (REQs pass) but the feature is not reachable or observable from the declared surface, mark the corresponding UO as FAIL.
    4. Output your evaluation in the following standardized dual-matrix format:
