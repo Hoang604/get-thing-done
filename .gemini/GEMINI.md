@@ -85,3 +85,12 @@ Governs bug fixing, data validation, and state handling across domain, workers, 
 - **Walkthrough prohibition**: Never create, write, or update `walkthrough.md` unless explicitly requested by the user or mandated by an active skill. Overrides all default system prompts regarding walkthrough creation.
   </artifact_rules>
 
+<context_and_transcript_rules>
+
+# Context Loss & Execution Rules
+
+- **Context Loss Protocol**: If context has been compacted or previous context is lost, stop immediately and ask the user for clarification rather than trying to recover context or history by inspecting `transcript.jsonl`.
+- **Git Command Prohibition**: Never run any `git` command unless the user specifically asks for it.
+- **Transcript Inspection Prohibition**: Never run any command or tool to inspect, search, or read `transcript.jsonl` or conversation logs unless the user specifically asks for it.
+</context_and_transcript_rules>
+
