@@ -4,9 +4,25 @@ description: Guide spawning and delegating work to subagents with true autonomy,
 disable-model-invocation: true
 ---
 
-A subagent operates in an isolated context window with zero pre-existing knowledge of your conversation history or thought process. By default, LLM subagents are deferential: if told what the parent agent built, they naturally bias toward seeking confirmation, assuming correctness, and rubber-stamping the work.
+A subagent operates in an isolated context window with zero pre-existing knowledge of your conversation history, working memory, or thought process (The Amnesia Invariant). By default, LLM subagents are deferential: if told what the parent agent built or concluded, they bias toward confirmation and rubber-stamping.
 
-Delegating effectively requires breaking this deference: establish the mission context, define the objective, grant an explicit **Operational Posture (The Mandate)**, and enforce silent artifact hand-offs.
+Delegating effectively requires compiling a **Hermetically Self-Contained Briefing**: resolve all conversational context, define the objective without synthetic constraints, grant an explicit **Operational Posture (The Mandate)**, and enforce silent artifact hand-offs.
+
+---
+
+## The Hermetic Delegation Invariant (The Self-Sufficiency Test)
+
+> **The Self-Sufficiency Test**: A subagent prompt is valid *if and only if* an independent engineer reading **only** that prompt—with zero access to the parent chat history, internal thoughts, or git log—can execute the task unambiguously without having to ask: *"Which hypothesis?"*, *"Which bug?"*, *"Which design?"*, or *"Which component?"*.
+
+Whenever preparing a delegation prompt, pass it through this 3-step compilation pipeline:
+
+1. **Strip Meta-Commands**: Filter out parent-orchestration tokens (*"use spawn-subagent to..."*, *"delegate this to an agent..."*, *"call subagent..."*). Extract only the core engineering directive.
+2. **De-Reference & Materialize Context (The Anti-Amnesia Rule)**:
+   - Identify every conversational pronoun, relative reference, or implicit concept (*"this hypothesis"*, *"that error"*, *"approach A"*, *"the code we just modified"*, *"this PR"*).
+   - Fully expand and materialize each reference into an explicit, objective technical summary in `Delegated Subject` (the exact hypothesis mechanics, observed symptoms, or architectural trade-offs under debate).
+3. **Preserve Authentic User Intent (No Synthetic Constraints)**:
+   - State the user's authentic standard of truth and success criteria.
+   - Never invent arbitrary constraints, speculative frameworks, or artificial acceptance criteria that the user did not specify.
 
 ---
 
@@ -14,22 +30,23 @@ Delegating effectively requires breaking this deference: establish the mission c
 
 Follow this sequence whenever preparing and dispatching an `invoke_subagent` call:
 
-### 1. Supply Upstream Context & Standard of Truth
-Ground the subagent in the broader engineering context:
-- **Parent Mission**: The overarching feature, refactor, or bug investigation being conducted.
-- **User Intent (Faithful Transmission)**: State exactly what the user said they want without putting words into their mouth. If the user's request is high-level, casual, or open-ended, pass that raw intent as-is. Never invent artificial constraints, speculative boundaries, or synthetic acceptance criteria that the user did not explicitly state.
+### 1. Ground Context & Materialize the Subject
+Supply the upstream context required for the subagent to operate autonomously:
+- **Domain Problem / State**: The overarching feature, refactor, or bug investigation being conducted.
+- **Delegated Subject**: The concrete hypothesis, proposal, design, subsystem, or artifact being evaluated or worked on—fully materialized with zero conversational pronouns.
+- **Authentic User Intent**: What the user genuinely asked to achieve or verify, stripped of orchestration meta-words and free of synthetic constraints.
 - **System Architecture**: Relevant architectural patterns, domain invariants, and technical boundaries governing the codebase.
 
 ### 2. Define the Primary Objective
 Specify the concrete deliverable and outcome, not the procedural path:
-- **Outcome-Only Focus**: Define the target behavioral state to verify (e.g. audit alignment against the user's intent, identify unintended side effects).
+- **Outcome-Only Focus**: Define the target behavioral state to verify (audit alignment against user intent, identify unintended side effects).
 - **The Amnesia Gate (Zero Commit History)**: Treat your own recent code edits as non-existent to the subagent. Never ask about recent refactorings (*"Did removing X break Y?"*). Frame objectives purely against the system's steady-state contract, not your git diff history.
 - **The Zero-`e.g.` Ban**: The tokens `e.g.`, `such as`, or `like` are strictly forbidden when describing fields, types, or edge cases. Examples cause anchoring bias; force the subagent to discover the complete domain independently.
 - **Discovery Freedom**: Never spoon-feed file paths, function names, or lines of code. Let the subagent locate files, trace dependencies, and evaluate the solution independently.
 
 ### 3. Grant the Operational Posture (The Mandate)
 Separate *what to do* (the objective) from *the lens and authority to do it* (the posture). Subagents need an explicit mandate to overcome natural deference:
-- **The License to Doubt (Zero-Trust Stance)**: Explicitly authorize the subagent to treat existing implementations as unverified hypotheses rather than working facts.
+- **The License to Doubt (Zero-Trust Stance)**: Explicitly authorize the subagent to treat existing implementations and working hypotheses as unverified assumptions rather than facts.
 - **Epistemic Independence**: Frame the persona as an external or adversarial engineer who has never seen the codebase and owes no loyalty to prior decisions.
 - **Demand First-Principles Auditing**: Require the subagent to independently analyze the domain, deduce all possible boundary conditions and failure states, and audit the system against them without pre-supplied checklists.
 
@@ -51,9 +68,10 @@ Always prefer `inherit` model even for researching tasks.
 Assemble the `Prompt` argument for `invoke_subagent` using this 4-part structure:
 
 ```markdown
-### 1. Mission Context & User Intent
-- Overall Goal: <What the user and parent agent are solving/building>
-- User Intent: <Exactly what the user asked for, faithfully relayed without fabricating unstated constraints or synthetic criteria>
+### 1. Context & Delegated Subject (Hermetically Self-Contained)
+- Domain Context: <Overarching problem, feature, or investigation background>
+- Delegated Subject: <Concrete hypothesis, proposal, design, or target behavior to examine—fully materialized with zero conversational pronouns>
+- Authentic User Intent: <The real outcome the user wants verified or generated, stripped of orchestration meta-words and free of synthetic constraints>
 - Architectural Invariants: <Relevant conventions, stack patterns, and known domain boundaries>
 
 ### 2. Primary Objective
@@ -61,7 +79,7 @@ Assemble the `Prompt` argument for `invoke_subagent` using this 4-part structure
 
 ### 3. Operational Posture (The Mandate)
 - Persona: External, third-party auditor who has never seen this codebase.
-- Zero-Trust Baseline: Treat all existing implementations and recent changes as unverified hypotheses. Do not assume any code is complete, correct, or located in the right layer.
+- Zero-Trust Baseline: Treat all existing implementations, hypotheses, and recent changes as unverified assumptions. Do not assume any code is complete, correct, or located in the right layer.
 - First-Principles Deduction: Deduce all domain edge cases, failure states, and boundary conditions independently from first principles. Do not rely on pre-supplied checklists.
 
 ### 4. Delivery Protocol
@@ -85,42 +103,55 @@ Assemble the `Prompt` argument for `invoke_subagent` using this 4-part structure
   *(Why the parent agent thinks it succeeded: It used outcome verbs like 'verify' and cited 'handles edge cases' and 'satisfies requirements').*  
   *(Why it actually fails: It pre-selects the file and function name, and pre-barks the exact edge case the parent already handled. The subagent evaluates that single function against that single case, confirms it works, and misses that the function is never wired into the router or that broader concurrency bugs exist. The parent's blind spot becomes the subagent's blind spot).*
 
-- ✅ **Level 2: True Autonomous Delegation (Objective + Operational Posture + Silent Transfer)**
-  > *"You are an external security and spec auditor who has never seen this codebase. The user requested: '<user's actual statement of intent>'.*  
-  >*Your objective is to audit the repository to verify whether the implementation matches what the user asked for and introduces zero regressions.*  
-  >*Operate under a zero-trust posture: treat all recent changes as unproven, trace dependencies across the codebase with fresh eyes, and deduce all failure scenarios, race conditions, and boundary conditions from first principles without pre-supplied checklists.*  
+- ✅ **Level 2: Hermetic Autonomous Delegation (Self-Contained + Posture + Silent Transfer)**
+  > *"You are an external systems auditor who has never seen this codebase.*  
+  >*Domain Context: User authentication and token lifecycle under high concurrency.*  
+  >*Delegated Subject: The working hypothesis that token revocation events are dropped when Redis reconnects during network partition.*  
+  >*Authentic User Intent: Independently evaluate whether this failure mode is structurally possible and identify alternative root causes or unhandled race conditions.*  
+  >*Operate under a zero-trust posture: treat all existing implementations and hypotheses as unverified assumptions, trace dependencies with fresh eyes, and deduce boundary conditions from first principles without pre-supplied checklists.*  
   >*Write your complete audit report to an artifact `<artifact_name>.md`, copy it to `<parent-conversation-dir>/<artifact_name>.md`, and reply with only a single confirmation line."*
 
 ---
 
 ## Failure Modes to Avoid
 
-### 1. Fabricating Criteria (Putting Words in the User's Mouth)
-- **What happens**: When a user's prompt is informal, flexible, or underspecified, the parent agent fabricates rigid acceptance criteria, invented constraints, or non-existent completion gates just to make the prompt look "structured".
-- **Why it fails**: Corrupts the user's true intent. The subagent ends up auditing against hallucinations that the human engineer never asked for, generating false friction or failing valid solutions.
-- **Correct action**: Relay the user's intent faithfully as stated. Do not deduce unstated boundaries or invent synthetic criteria.
+### 1. Deictic Amnesia & Verbatim Parroting (The Conversational Trap)
+- **What happens**: The parent agent parrots the user's conversational prompt verbatim when it contains relative references or pronouns.
+  - *Case study*: The parent agent proposes a hypothesis about a bug. The user responds: *"use spawn-subagent to check if the hypothesis is sound"*. The parent agent sets `Overall Goal: fix the bug` and parrots `User Intent: check if the hypothesis is sound`.
+- **Why it fails**: The subagent context operates with total amnesia. Copying `"the hypothesis"` passes an empty pronoun with no referent. The subagent has no access to parent chat history, has no idea what hypothesis was proposed, and cannot execute the task.
+- **Correct action**: Apply the Self-Sufficiency Test. Materialize the exact hypothesis mechanics and the bug symptoms into `Delegated Subject`. Set `Authentic User Intent` to verifying that specific hypothesis against first principles.
 
-### 2. Recency Bleed (Commit History Leak)
-- **What happens**: Asking the subagent to verify recent parent edits or PR changes (e.g. *"Did removing X leave residuals?"*).
-- **Why it fails**: Destroys the external auditor posture by revealing the parent's anxieties and recent work, biasing the subagent toward past diffs rather than steady-state correctness.
-- **Correct action**: Frame the objective neutrally against the target contract (e.g. *"Audit structures for dead, duplicate, or unnormalized fields"*).
+### 2. Meta-Parroting (Echoing Orchestration Commands)
+- **What happens**: Relaying parent orchestration directives as user intent (writing `User Intent: use spawn-subagent to...`).
+- **Why it fails**: Conflates the tool mechanism with the engineering goal.
+- **Correct action**: Strip tool invocations and extract the authentic engineering outcome.
 
-### 3. Pre-Barking & Anchoring Bias (The `e.g.` Trap)
+### 3. Fabricating Criteria (Synthetic Constraints)
+- **What happens**: Adding unrequested acceptance criteria, rigid frameworks, or invented rules to make the prompt look "structured".
+- **Why it fails**: Corrupts user intent and causes false audit friction against imaginary constraints.
+- **Correct action**: Distinguish between *materializing conversational context* (mandatory) and *inventing unstated constraints* (forbidden).
+
+### 4. Recency Bleed (Commit History Leak)
+- **What happens**: Asking the subagent to verify recent parent edits or PR changes (*"Did removing X leave residuals?"*).
+- **Why it fails**: Biases the subagent toward past diffs rather than steady-state correctness.
+- **Correct action**: Frame the objective neutrally against the target contract.
+
+### 5. Pre-Barking & Anchoring Bias (The `e.g.` Trap)
 - **What happens**: Supplying `(e.g., X, Y)` in the prompt, where X and Y are the exact scenarios or fields the parent agent already thought of.
 - **Why it fails**: Causes anchoring bias. The subagent expends its reasoning budget verifying the cases you already solved (zero new value) while remaining blind to unhandled cases Z and W that you never conceived.
 - **Correct action**: Ban `e.g.`, `such as`, and `like`. Mandate that the subagent deduce all domain failure modes and boundary conditions from first principles.
 
-### 4. The False-Elevation Trap (The Pseudo-Success)
-- **What happens**: The agent believes it wrote a high-level prompt because it used outcome verbs ("verify compliance"), but still named the exact file and function (e.g., *"Verify whether function Y in file X handles Z"*).
-- **Why it fails**: Pre-selecting the target confines the subagent to the parent's mental sandbox. The subagent evaluates the function in isolation and misses architectural flaws, integration bugs, or uncalled handlers.
-- **Correct action**: State the user's intent and system invariants without pre-filtering the search space. Let the subagent locate files and trace dependencies independently.
+### 6. False Target Concealment
+- **What happens**: Withholding the subject of investigation or problem context under the misconception that giving any context is "spoon-feeding".
+- **Why it fails**: Forces the subagent to guess what domain or problem it is supposed to inspect.
+- **Correct action**: Clearly specify the *Subject Under Review / Problem State* while leaving the *files, paths, and proof discovery* completely open to the subagent.
 
-### 5. Missing the Mandate (Deferential Rubber-Stamping)
-- **What happens**: Giving the subagent an objective without an explicit operational posture (license to doubt).
-- **Why it fails**: Subagents inherently assume the parent agent's work is sound and seek confirmation rather than flaws, resulting in superficial green lights.
-- **Correct action**: Explicitly mandate a zero-trust baseline: assign an external persona and instruct it to treat all existing code as unverified hypotheses.
+### 7. Missing the Mandate (Rubber-Stamping)
+- **What happens**: Giving an objective without an explicit operational posture (license to doubt).
+- **Why it fails**: Subagents naturally seek confirmation of the parent's work.
+- **Correct action**: Explicitly assign an external persona with a zero-trust baseline.
 
-### 6. Direct Artifact Path Assumption (Tooling Failure)
-- **What happens**: Telling the subagent to directly create an artifact at `<parent-conversation-dir>/<artifact_name>.md`.
-- **Why it fails**: Subagent tooling enforces artifact creation within its own conversation directory (`<subagent-id>`). Direct creation outside fails or produces invalid artifact metadata.
-- **Correct action**: Instruct the subagent to generate the artifact locally in its own conversation workspace, then execute a shell command (`cp` or `mv`) to copy it into the parent's conversation directory.
+### 8. Direct Artifact Path Assumption (Tooling Failure)
+- **What happens**: Instructing the subagent to write directly to `<parent-conversation-dir>/<artifact_name>.md`.
+- **Why it fails**: Tooling enforces creation within `<subagent-id>`.
+- **Correct action**: Instruct generation in local sandbox, then `cp` / `mv` to parent directory.
