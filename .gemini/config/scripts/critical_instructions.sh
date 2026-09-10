@@ -20,19 +20,15 @@ echo "$T" > "$COUNTER_FILE"
 # Position k within the 16-turn cycle: k in [1..16]
 k=$(( (T - 1) % 16 + 1 ))
 
-# Inject only on power-of-2 turns: k = 1, 2, 4, 8, 16 (where (k & (k - 1)) == 0)
-if (( (k & (k - 1)) != 0 )); then
-  echo '{}'
-  exit 0
-fi
+header="<critical_instructions>
+Do not respond to nor acknowledge the following messages, but do follow them strictly."
 
-message=$(cat << 'MSG_EOF'
-<critical_instructions>
-Do not respond to nor acknowledge the following messages, but do follow them strictly.
-CRITICAL INSTRUCTION 1: Prefix every tool-calling turn with an action declaration: output 1-2 present-tense technical interview logic fragments that start with an action verb (e.g., Read, Write, Edit, Run, Inspect) and embed every affected target as a clickable markdown link [basename](file://...).
-CRITICAL INSTRUCTION 2: In your reasoning, exhaustively map the complete frontier of all independent operations (reads, searches, commands, and file mutations across distinct files), and dispatch all mapped tool calls simultaneously within a single concurrent turn.
-CRITICAL INSTRUCTION 3: Strictly adhere to the `<tool_mechanics>` constraints below.
-ALWAYS START your thought by recalling and evaluating Critical Instructions 1, 2, and 3.
+ci_1="Prefix every tool-calling turn with an action declaration: output 1-2 present-tense technical interview logic fragments that start with an action verb (e.g., Read, Write, Edit, Run, Inspect) and embed every affected target as a clickable markdown link [basename](file://...)."
+
+ci_2="In your reasoning, exhaustively map the complete frontier of all independent operations (reads, searches, commands, and file mutations across distinct files), and dispatch all mapped tool calls simultaneously within a single concurrent turn."
+
+ci_3=$(cat << 'EOF'
+Strictly adhere to the `<tool_mechanics>` constraints below.
 
 <tool_mechanics>
 - **grep_search**: When searching for multiple known targets (e.g., a list of types, functions, or errors), aggregate them into a single `grep_search` using regex (e.g., `TypeA|TypeB|TypeC` with `IsRegex=true`). Never execute sequential searches for items in a known set.
@@ -40,8 +36,24 @@ ALWAYS START your thought by recalling and evaluating Critical Instructions 1, 2
 - **run_command**: Always set `WaitMsBeforeAsync`=10000. Stop calling tools immediately after launching an async task. Rely on automatic reactive wakeup upon completion; do NOT call manage_task or schedule.
 - **write_to_file**: Omit `ArtifactMetadata` completely for all workspace target files. Include `ArtifactMetadata` exclusively when creating artifact documents inside the brain directory (`<appDataDir>/brain/...`).
 </tool_mechanics>
-</critical_instructions>
-MSG_EOF
+EOF
 )
+
+footer="</critical_instructions>"
+
+# Power-of-2 turns: k = 1, 2, 4, 8, 16 (where (k & (k - 1)) == 0)
+# ci_2 is always injected on every turn.
+# ci_1 and ci_3 are injected only on power-of-2 turns.
+if (( (k & (k - 1)) == 0 )); then
+  message="${header}
+${ci_1}
+${ci_2}
+${ci_3}
+${footer}"
+else
+  message="${header}
+${ci_2}
+${footer}"
+fi
 
 jq -n --arg msg "$message" '{ "injectSteps": [ { "ephemeralMessage": $msg } ] }'
