@@ -47,7 +47,7 @@ Anchor candidate architectures in concrete engineering forces rather than subjec
 
 ### Quality Tiers (Universal Scale)
 
-Classify each candidate against the Quality Tiers (Tier 1 to 5, with a +0.5 bonus for utilizing existing repository patterns). Target Tier 5:
+Classify each candidate against the Quality Tiers (Tier 1 to 5, with a +0.5 bonus for utilizing existing repository patterns). Target Tier 5.5:
 
 | Tier | Designation | Macro Architectural Signature |
 |:---:|---|---|
@@ -112,7 +112,7 @@ Deliver the entire architectural proposal as a single, cohesive presentation. St
 
 ## Approach A: <Descriptive Title> (Minimal Surface)
 
-- **Quality Tier**: Tier rating (Tier 1 to 5) with pattern modifier and justification.
+- **Quality Tier**: Tier rating (Tier 1 to 5.5) with pattern modifier and justification.
 - **Suitable If**: The concrete production scenario or operational priority where this approach is the superior engineering choice.
 - **Subsystem Topology & Boundaries**: Public interfaces versus encapsulated internal domain mechanics.
 - **State Lifecycle & Data Flow**: Directed execution path from stimulus to terminal settlement.
@@ -124,7 +124,7 @@ Deliver the entire architectural proposal as a single, cohesive presentation. St
 
 ## Approach B: <Descriptive Title> (Decoupled Topology)
 
-- **Quality Tier**: Tier rating (Tier 1 to 5) with pattern modifier and justification.
+- **Quality Tier**: Tier rating (Tier 1 to 5.5) with pattern modifier and justification.
 - **Suitable If**: The concrete production scenario or operational priority where this approach is the superior engineering choice.
 - **Subsystem Topology & Boundaries**: Public interfaces versus encapsulated internal domain mechanics.
 - **State Lifecycle & Data Flow**: Directed execution path from stimulus to terminal settlement.
