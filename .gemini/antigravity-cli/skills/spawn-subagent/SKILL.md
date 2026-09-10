@@ -32,7 +32,9 @@ Follow this sequence whenever preparing and dispatching an `invoke_subagent` cal
 
 ### 1. Ground Context & Materialize the Subject
 Supply the upstream context required for the subagent to operate autonomously:
-- **Domain Problem / State**: The overarching feature, refactor, or bug investigation being conducted.
+- **Domain Context / Problem State**: The overarching subsystem, feature domain, or investigation area.
+- **Business Context / Ground Truth**: The business intent, core domain policies, and rules defining correctness. Informs the subagent of intended business behavior so it does not falsely assume existing buggy or incomplete code represents the specification.
+- **Operational / Runtime Context**: How the system functions in live execution—data flow dynamics, sync vs async execution, actor interactions, concurrency, and workload conditions.
 - **Delegated Subject**: The concrete hypothesis, proposal, design, subsystem, or artifact being evaluated or worked on—fully materialized with zero conversational pronouns.
 - **Authentic User Intent**: What the user genuinely asked to achieve or verify, stripped of orchestration meta-words and free of synthetic constraints.
 - **System Architecture**: Relevant architectural patterns, domain invariants, and technical boundaries governing the codebase.
@@ -70,6 +72,8 @@ Assemble the `Prompt` argument for `invoke_subagent` using this 4-part structure
 ```markdown
 ### 1. Context & Delegated Subject (Hermetically Self-Contained)
 - Domain Context: <Overarching problem, feature, or investigation background>
+- Business Context / Ground Truth: <Core business rules, intended policies, and domain invariants defining correctness independent of code implementation>
+- Operational Context: <Live execution reality: execution model, sync vs async flows, actor interactions, concurrency, or scale>
 - Delegated Subject: <Concrete hypothesis, proposal, design, or target behavior to examine—fully materialized with zero conversational pronouns>
 - Authentic User Intent: <The real outcome the user wants verified or generated, stripped of orchestration meta-words and free of synthetic constraints>
 - Architectural Invariants: <Relevant conventions, stack patterns, and known domain boundaries>
@@ -155,3 +159,20 @@ Assemble the `Prompt` argument for `invoke_subagent` using this 4-part structure
 - **What happens**: Instructing the subagent to write directly to `<parent-conversation-dir>/<artifact_name>.md`.
 - **Why it fails**: Tooling enforces creation within `<subagent-id>`.
 - **Correct action**: Instruct generation in local sandbox, then `cp` / `mv` to parent directory.
+
+---
+
+## Ongoing Subagent Communication Protocol (`send_message`)
+
+When following up, redirecting, or assigning subsequent tasks to an active subagent via `send_message`:
+
+### 1. Zero Redundancy & Minimal Reference
+- **Do Not Rehash**: Never repeat, summarize, or re-explain context, file structures, or findings that the subagent already identified or holds in its conversation transcript.
+- **Minimal Pointers**: Reference prior context using the absolute minimum words necessary to disambiguate the target: cite only the finding index, artifact section, or distinct failure identifier without re-explaining the underlying mechanics.
+
+### 2. Directive Formulation Rules
+Construct follow-up messages using explicit, outcome-driven rules:
+- **Lead with the Direct Outcome**: State the concrete deliverable, verification check, or implementation goal as the opening clause.
+- **Strip Meta-Language**: Eliminate orchestration filler, polite conversational padding, and procedural commentary (*"Now that you finished X, please do Y..."* -> State Y directly).
+- **Enforce Authentic Constraints Only**: Include only genuine technical constraints and success criteria. Never invent arbitrary checklist items or speculative acceptance steps.
+- **Zero Leading Anchors**: Avoid pre-supposing the exact solution or naming narrow hypothetical causes. Leave the proof and validation pathway fully autonomous.
