@@ -1,6 +1,7 @@
 # Tests
 
 Use `python3 -m unittest` to run tests.
+Không bao giờ chạy test khi thao tác hoặc sửa đổi các file markdown (`.md`).
 
 # Skills Management
 

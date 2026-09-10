@@ -28,6 +28,25 @@ Writing a **context pointer**: Wording, not target file, decides reliability. Co
 
 Where the ladder decides _how far down_ a piece sits, **co-location** decides _what sits beside it_ once there: keep a concept's definition, rules, and caveats under one heading rather than scattered, so reading one part brings its neighbours with it.
 
+## Generality and the action-thought split
+
+A skill steers an agent across two distinct planes with opposite demands: **action** (what the agent executes) and **thought** (how the agent reasons). Confusing the two breaks the skill.
+
+### Direction of action must be deterministic
+
+Where execution requires exact conformity, eliminate all degrees of freedom. Specify the literal physical contract without variance. Generality in action is workflow entropy.
+
+### Direction of thought must be general
+
+Steer reasoning exclusively through **generality**.
+
+**Generality** is the extraction of the essential, invariant principle that governs an entire class of problems. It is not vagueness (*"be thorough"* is empty noise). It is the universal common denominator that remains true across every instance without naming any single one.
+
+A general instruction provides a **generative principle**: from one compact definition, the agent deduces every valid variation across any domain or scale.
+
+- **Checklists are cognitive pollution**: A checklist is an admission that the unifying principle was not found. Listing categories degrades the agent into a clerk ticking boxes, hallucinating relevance for inapplicable items instead of reasoning from structure.
+- **Examples anchor and blind**: An illustrative instance triggers **exemplar anchoring**: attention collapses onto the surface traits of the sample, mistaking it for the outer boundary of the problem.
+
 ## When to split
 
 **Granularity** is how finely skills are divided. Splitting user-invoked skills spends **cognitive load** (more skills for the human to remember), so split only when sequence isolation earns it:
@@ -75,3 +94,5 @@ Use these to diagnose issues the user may be having with the skill.
 - **Sprawl** — a skill simply too long, even when every line is live and unique. Cure: disclose **reference** behind pointers, and split by **branch** or sequence. **Guardrail**: Inline material required by all branches; only put behind a pointer what some branches reach.
 - **No-op** — a line the model already obeys by default, so you pay load to say nothing. The test: does it change behaviour versus the default? A weak leading word (_be thorough_ when the agent is already thorough-ish) is a no-op; the fix is a stronger word (_relentless_), not a different technique.
 - **Negation** — steering by prohibition backfires: _don't think of an elephant_ makes the elephant more available. Reframe prohibitions into constructive physical contracts; keep negative rules solely as boundary guardrails.
+- **Disguised enumeration** — the cosmetic retreat when forbidden from using checklists. Rather than deriving a general principle, the model collapses bulleted items into a comma-separated clause within prose. The underlying structure remains an enumerated checklist, still forcing the agent to audit irrelevant nouns instead of reasoning from structure.
+- **Exemplar anchoring** — supplying illustrative instances within reasoning directives. The model anchors on the accidental properties of the example, blinding it to valid architectures outside the example's shadow.
