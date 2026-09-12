@@ -6,8 +6,8 @@ disable-model-invocation: true
 
 # CORE DIRECTIVE
 
-Translate an approved alignment contract or propose plan into a deterministic, zero-entropy `implementation_plan.md` Artifact.
-Do not re-explore alternative designs. Enforce literal interface boundaries (`class` / `def` signatures with docstrings and type annotations) paired with explicit inline contracts (`invariants, error modes, data structures`). Never leak method bodies or line-by-line implementation code into the plan. Enforce independent subagent code verification to guarantee exhaustive execution without failure-hiding.
+Translate an approved proposal into a **self-contained** `implementation_plan.md` Artifact.
+The plan's sole purpose is **instant, zero-read execution**: once approved, coding must proceed immediately without inspecting any additional files for context. Enforce literal boundary interfaces paired with the **Closed Scope Invariant** ($\text{Unbound References} = \emptyset$) so every structure manipulated by the target logic is fully bound within the plan. Enforce independent subagent audit for verification.
 
 ---
 
@@ -58,10 +58,12 @@ Translate approved requirements into checkable behavioral statements with bidire
 
 ## 3. Affected Files
 
-### Scope Discovery
-Starting from each UO's Verification Scope and each REQ's Fulfills-at target, trace callers and consumers outward using `grep_search` and `view_file`. At each hop, determine whether the file requires changes to fulfill the plan. If yes, add it to the manifest and trace its callers/consumers in turn.
-
-**Fixed-point criterion:** Scope discovery is complete when an additional trace hop produces no new files requiring changes.
+### Scope & Semantic Context Discovery
+1. **Mutation Scope (Files to mutate):** Starting from each UO's Verification Scope and each REQ's Fulfills-at target, trace callers and consumers outward using `grep_search` and `view_file`. At each hop, determine whether the file requires changes to fulfill the plan. If yes, add it to the manifest and trace its callers/consumers in turn.
+   - **Fixed-point criterion:** Scope discovery is complete when an additional trace hop produces no new files requiring changes.
+2. **Semantic Scope Closure (References to bind):** For every seam identified, enforce the **Closed Scope Invariant**: every reference required to author the target logic must be structurally bound within the plan. Trace upstream definitions until the set of unbound references is empty:
+   $$\text{Unbound References} = \emptyset$$
+   Read-only files containing referenced structures are not added to the Mutation Manifest, but their resolved definitions are inlined into the plan's seam context.
 
 ### File Manifest
 
@@ -77,13 +79,13 @@ Starting from each UO's Verification Scope and each REQ's Fulfills-at target, tr
 
 ---
 
-## 4. Design Definition (`Literal Boundary Contracts`)
+## 4. Design Definition (`Literal Boundary Contracts & Closed Scope`)
 
 For every target file to create (`[NEW]`), modify (`[MODIFY]`), or delete (`[DELETE]`), pinpoint exact line ranges using clickable [basename](file:///path#L10-L20) links without backticks and declare literal physical contracts:
 
-- **Target Seam, Signatures & Data Schemas:**
-  - Define external boundaries only: `class` / `def` signatures with complete type annotations, docstrings, and `...` (ellipses) method bodies.
-  - Declare all explicit data structures (schemas, models, DTOs) crossing the seam boundary.
+- **Target Seam, Signatures & Bound Structures:**
+  - Define external boundaries: `class` / `def` signatures with complete type annotations, docstrings, and `...` (ellipses) method bodies.
+  - **Closed Scope Context:** For every reference crossing or evaluated within the seam boundary, declare its concrete structural shape (the exact accessible properties, methods, or variants utilized by the implementation). An execution agent must possess complete structural knowledge without querying external definitions.
 - **Causal Execution & State Transitions:**
   - If execution involves multiple state transitions or external side effects, declare their strict causal order between entry preconditions and exit invariants. If single-step or pure computation, omit entirely — never fabricate artificial stages.
 - **Exact Caller & Downstream Sink Audit (`grep_search & dataflow proof`):**
@@ -157,3 +159,15 @@ You are an external, adversarial systems auditor operating under a strict ZERO-T
   - If business intent is Y: this code is incorrect (<reason>).
 ```
 ````
+
+---
+
+## 6. Plan Completion Criterion (`Closed Scope Gate`)
+
+Before finalizing `implementation_plan.md`, audit against the **Closed Scope Invariant**:
+- Can an execution agent implement the target logic end-to-end without running a single investigative search or read tool (`grep_search`, `view_file`)?
+- Does any seam rely on an unbound reference whose structural properties must be discovered at execution time?
+
+If any reference remains unbound, the plan is INCOMPLETE: trace the upstream definition, bind its structure into the plan, and re-audit until:
+
+$$\text{Unbound References} = \emptyset$$
