@@ -11,6 +11,18 @@ Do not re-explore alternative designs. Enforce literal interface boundaries (`cl
 
 ---
 
+## Context & Intent
+
+Every plan begins with a concise natural-language overview establishing technical context before formal contracts (senior engineer direct tone, zero dumbing down):
+- **Current System Context:** Where the affected components sit within the broader system today — runtime environment, architectural boundaries, and current data flow.
+- **Problem & Purpose:** The specific gap, failure mode, or requirement this change addresses and why it exists.
+- **Proposed Mechanism:** Operational flow of the change — what actual components and mechanisms will do to solve the problem.
+- **Crucial Nuances:** Key architectural constraints, trade-offs, or non-obvious realities highlighted explicitly.
+
+*Rules:* Name actual components and mechanisms; short, precise sentences without conversational filler; establish the mental model before presenting contracts.
+
+---
+
 ## 1. User Outcomes & Risk Assessment
 
 ### User Outcomes
@@ -32,13 +44,15 @@ Use GitHub-style alerts strictly to flag architectural boundaries and risks:
 
 ## 2. Requirements & Seam Tracing
 
-Translate approved requirements into checkable behavioral statements. Each requirement MUST include a **`[UO-xx]` traceability tag** linking it back to the User Outcome it serves, and cite its fulfilling target seam:
+Translate approved requirements into checkable behavioral statements with bidirectional tracing:
 
 - [ ] **REQ-01 [UO-01]:** When <Trigger>, <system/component> shall <Action>. -> Fulfills at [TargetSeam](file:///path#L10)
 - [ ] **REQ-02 [UO-01]:** If <Condition/Error>, <system/component> shall <Action>. -> Fulfills at [TargetSeam](file:///path#L10)
 - [ ] **REQ-03 [UO-02]:** <system/component> shall <Action>. -> Fulfills at [TargetSeam](file:///path#L10)
 
-**Zero Orphan Requirements & Bidirectional Tracing:** Every requirement must (a) explicitly cite the exact clickable markdown link (`file://` with line anchor if modifying, or target path if new) of the target seam/interface that fulfills it (e.g., -> Fulfills at [OrderService.process_order](file:///path/service.py#L45)), AND (b) trace back to at least one User Outcome via the `[UO-xx]` tag. For changes to intermediate pipeline stages, annotate the upstream ingress and downstream terminal sink (e.g., -> Ingress: [API.route](file:///path#L10) | Egress: [DB.persist](file:///path#L80)). Every `UO-xx` must be served by at least one `REQ-yy`; orphan outcomes are plan defects.
+**Bidirectional Tracing Rules:**
+- Every `UO-xx` must be served by at least one `REQ-yy`; every `REQ-yy` must cite its fulfilling seam link (zero orphan requirements or outcomes).
+- Multi-stage pipelines annotate entry ingress and terminal sink: -> Ingress: [entry](file:///path#L10) | Egress: [sink](file:///path#L80).
 
 ---
 
@@ -63,116 +77,83 @@ Starting from each UO's Verification Scope and each REQ's Fulfills-at target, tr
 
 ---
 
-## 4. Design Definition (`Zero-Prose Literal Contracts & Seam Matrix`)
+## 4. Design Definition (`Literal Boundary Contracts`)
 
-For every target file to create (`[NEW]`), modify (`[MODIFY]`), or delete (`[DELETE]`), pinpoint exact line ranges using clickable [basename](file:///path#L10-L20) links without backticks and declare exact literal contracts:
+For every target file to create (`[NEW]`), modify (`[MODIFY]`), or delete (`[DELETE]`), pinpoint exact line ranges using clickable [basename](file:///path#L10-L20) links without backticks and declare literal physical contracts:
 
-- **Target Seam, Signatures & Data Schemas (`Literal Signatures, Types & DTOs`):**
-  - Write ONLY the exact external boundary (`class` / `def` signatures, Pydantic/dataclass fields, TypedDicts, Enums, or config tables) with complete docstrings and strict type annotations (`e.g., def process(self, context: SpeechContext) -> None: """...""" ...`).
-  - Declare all explicit data structures (input/output models, payload schemas, DB migrations/tables) crossing the boundary. Always use `...` (ellipses) to represent method bodies. If complex logic, explain in docstrings.
-- **Ordered Execution Pipeline & State Transitions:**
-  - Define a concise, numbered sequential flow and state transitions within the seam (e.g., `1. Validate idempotency token -> 2. Acquire lock -> 3. Mutate ledger -> 4. Emit event`).
-  - Explicitly mark atomic transaction boundaries and rollback semantics without leaking line-by-line implementation code.
+- **Target Seam, Signatures & Data Schemas:**
+  - Define external boundaries only: `class` / `def` signatures with complete type annotations, docstrings, and `...` (ellipses) method bodies.
+  - Declare all explicit data structures (schemas, models, DTOs) crossing the seam boundary.
+- **Causal Execution & State Transitions:**
+  - If execution involves multiple state transitions or external side effects, declare their strict causal order between entry preconditions and exit invariants. If single-step or pure computation, omit entirely — never fabricate artificial stages.
 - **Exact Caller & Downstream Sink Audit (`grep_search & dataflow proof`):**
-  - **Caller Audit (Upstream Ingress):** Run `grep_search` across the workspace for this symbol. List every single caller file and exact line range (e.g., [caller.py:L10-L25](file:///path/caller.py#L10-L25)) that must be updated to match the new signature. If 0 callers exist outside tests, state: `"Caller Audit: 0 production callers found via grep_search."`
-  - **Sink Audit (Downstream Dataflow):** For intermediate pipeline stages, trace the return values, payload mutations, or emitted events downstream until reaching a **Terminal Sink** (HTTP response, persistent store, external queue, or UI render). List every downstream consumer (e.g., [consumer.py:L50-L70](file:///path/consumer.py#L50-L70)) and verify schema compatibility. If this seam is itself the terminal boundary, state: `"Sink Audit: Terminal sink reached at this seam."`
-  - **Composition & Runtime Wiring:** Specify exact registration points where the new or modified seam is instantiated, registered, or mounted in the application lifecycle (e.g., DI container, route mounting in server, CLI subcommands).
-- **Invariants, Concurrency & Error Modes:**
-  - State exact invariants (`what must not change`), exact typed exceptions raised (`exceptions/return variants`), concurrency controls (locks, mutexes, thread safety), AND flag any out-of-seam state accessed directly (`e.g., os.environ keys or config tables read without parameter injection`).
+  - **Caller Audit (Ingress):** Run `grep_search` across workspace for this symbol. List every caller [file:line] requiring update, or state: "Caller Audit: 0 production callers found via grep_search."
+  - **Sink Audit (Dataflow):** Trace return values, mutations, or emitted events downstream to their **Terminal Sink** (HTTP response, persistent store, external queue, or UI render), or state: `"Sink Audit: Terminal sink reached at this seam."`
+  - **Composition Wiring:** Specify exact instantiation or mounting points in the application lifecycle (DI container, route table, CLI registry).
+- **Invariants & Hermeticity:**
+  - Declare boundary invariants (what must remain true across execution), explicit error modes (typed exceptions / return variants), and any out-of-band state accessed outside parameter injection (environment, disk, undeclared globals).
 
 ---
 
 ## 5. Verification & Validation Proof
 
-In `implementation_plan.md`, define the mechanical, checkable verification steps that the executing agent must perform upon completing code changes:
+In `implementation_plan.md`, define the mechanical, checkable verification steps to be executed:
 
 ### A. Baseline Check
 - Specify exact terminal commands (`e.g.,` typecheck, lints, builds, smoke tests) executing against the target interfaces.
 
-### B. Independent Subagent Dual Audit & Exact Spawn Prompt
-The plan MUST define the exact subagent invocation and the literal, fully rendered prompt that the executing agent will use.
+### B. Independent Subagent Dual Audit Prompt
+Define the literal prompt block for `invoke_subagent(TypeName="self", Role="Outcome & Requirements Auditor", Model="inherit")`:
 
-> [!IMPORTANT]
-> The plan defines the execution instructions and the literal spawn prompt. The executing agent MUST NOT paraphrase, summarize, or abbreviate this prompt during invocation. Real audit results must come exclusively from the live subagent execution.
+````markdown
+#### Subagent Spawn Directive
+> [!CAUTION]
+> Pass the block below verbatim into `invoke_subagent` (`Prompt` argument) without paraphrasing or summarizing:
 
-The plan must instruct the executing agent to follow these exact steps:
+```text
+You are an external, adversarial systems auditor operating under a strict ZERO-TRUST mandate. Treat all implementation claims as unverified assumptions; you owe no loyalty to the author.
 
-1. **Subagent Invocation Configuration:**
-   - Tool: `invoke_subagent`
-   - `TypeName`: `"research"`
-   - `Role`: `"Outcome & Requirements Auditor"`
-   - **Tool Restriction:** Subagent uses `view_file` and `grep_search` only; runs NO commands.
+1. Protocol & Boundary:
+   - Grounding: Read [implementation_plan.md](file://<appDataDir>/brain/<conversation-id>/implementation_plan.md) to internalize the target system context, outcomes, and requirements.
+   - Investigation Constraints: Inspect codebase using `view_file` and `grep_search`. Do NOT mutate application code or run commands (except `cp` for artifact delivery in Step 3).
 
-2. **Literal Spawn Prompt Block:**
-   The plan must write out the exact prompt string for the subagent, embedding all User Outcomes verbatim from Section 1 AND all EARS requirements verbatim from Section 2:
+2. Dual Verification Mandate:
+   - Micro Audit (Technical Requirements): For each `REQ-yy`, verify that the code at its cited seam link literally satisfies the EARS behavioral specification and honors all declared boundary contracts.
+   - Macro Audit (User Outcomes): For each `UO-xx`, verify the unbroken execution path from entry ingress to terminal sink across runtime wiring. If internal seam logic passes in isolation but runtime composition is severed or unmounted, mark FAIL.
+   - If anything in the code seems questionable, document it: if business intent is X, this code is correct; if business intent is Y, this code is incorrect.
 
-   ````markdown
-   #### Subagent Spawn Directive
-   > [!CAUTION]
-   > **LITERAL INVOCATION REQUIRED**: When invoking the auditor subagent, copy the entire block below character-for-character into the `invoke_subagent` `Prompt` argument. Do not summarize, translate or rephrase.
+3. Delivery Protocol:
+   - Create an artifact named `audit_report.md` in your sandbox (<appDataDir>/brain/<subagent-id>/audit_report.md) adhering strictly to the report structure below.
+   - Copy the artifact to the parent directory:
+     cp "<appDataDir>/brain/<subagent-id>/audit_report.md" "<parent-conversation-dir>/audit_report.md"
+   - Reply to parent with ONLY this single confirmation line (do not leak or summarize report contents in chat):
+     "Completed: Audit report written and copied to audit_report.md"
 
-   ```text
-   You are an independent Outcome & Requirements Auditor. Your sole mission is dual verification: verifying both micro-level technical requirements AND macro-level end-to-end user outcomes in the implemented code.
+---
 
-   1. User Outcomes to verify:
-   - [ ] UO-01: <Verbatim capability/quality statement from Section 1>
-     - Acceptance Signal: <Verbatim from Section 1>
-     - Verification Scope: <Verbatim from Section 1>
-   - [ ] UO-02: ...
+# Artifact Structure for `audit_report.md`:
 
-   2. Technical Requirements to verify:
-   - [ ] REQ-01 [UO-01]: <Verbatim EARS requirement from Section 2> -> Fulfills at [file:line](file:///...)
-   - [ ] REQ-02 [UO-01]: <Verbatim EARS requirement from Section 2> -> Fulfills at [file:line](file:///...)
+### Dual Verification Audit Report
 
-   Verification Rules:
-   1. Use `view_file` and `grep_search` only. Do NOT run any terminal commands.
-   2. Step 1 — Audit Requirements (Micro/Seam): For each REQ, start from the file cited at `-> Fulfills at [TargetSeam]`. Inspect signatures, type annotations, invariants, error handling, and any callers or consumers as needed to verify correctness.
-   3. Step 2 — Audit User Outcomes (Macro/Wiring): For each UO, trace the full execution path from entry point to observable result as declared in its Verification Scope. Verify that the implementation is fully integrated into the runtime. If internal logic is correct (REQs pass) but the feature is not reachable or observable from the declared surface, mark the corresponding UO as FAIL.
-   4. Output your evaluation in the following standardized dual-matrix format:
+#### User Outcomes Audit
+| # | User Outcome | Subagent Status | Evidence |
+|---|---|---|---|
+| UO-01 | <Outcome statement> | PASS / FAIL | <Trace proof or failure reasoning with [file:line](file:///...) citations> |
 
-   ### Dual Verification Audit Report
+#### Technical Requirements Audit
+| # | EARS Requirement | Trace | Subagent Status | Seam Line Citations |
+|---|---|---|---|---|
+| REQ-01 | <Requirement statement> | UO-01 | PASS / FAIL | [file:line](file:///...) |
 
-   #### User Outcomes Audit
-   | # | User Outcome | Subagent Status | Evidence |
-   |---|---|---|---|
-   | UO-01 | <Verbatim outcome> | PASS / FAIL | <Trace proof or failure reasoning with [file:line](file:///...) citations> |
+#### Audit Verdict
+- Outcome Status: ALL PASS / HAS FAILURES
+- Requirement Status: ALL PASS / HAS FAILURES
+- Final Delivery Gate: PASS (100% across both) / FAIL
 
-   #### Technical Requirements Audit
-   | # | EARS Requirement | Trace | Subagent Status | Seam Line Citations |
-   |---|---|---|---|---|
-   | REQ-01 | <Verbatim requirement> | UO-01 | PASS / FAIL | [file:line](file:///...) |
-
-   #### Audit Verdict
-   - Outcome Status: ALL PASS / HAS FAILURES
-   - Requirement Status: ALL PASS / HAS FAILURES
-   - Final Delivery Gate: PASS (100% across both) / FAIL
-   ```
-   ````
-
-3. **Remediation Loop:**
-   - If the subagent marks ANY requirement or user outcome as `FAIL`:
-     - Formulate the approach to do it right.
-     - Apply the fix in the code.
-     - Re-spawn the verification subagent using the exact same verbatim prompt block.
-     - Repeat until 100% of both outcomes and requirements are marked `PASS`.
-
-### C. Completion Criteria (Mandatory Delivery Gate)
-To finalize execution and declare completion, the executing agent MUST embed the real subagent dual audit tables (received from the live subagent response) directly inside `#### 2. Verification Proof` of its final `Execution & Verification Report`:
-
-```markdown
-#### 2. Verification Proof
-- **Baseline Check:** `<Exact command(s) executed for verification>` -> `<Passing output summary line / exit code>`
-- **Dual Subagent Audit Proof (Auditor ID: `<Conversation ID>`):**
-
-  **User Outcomes Audit:**
-  | # | User Outcome | Subagent Status | Evidence |
-  |---|---|---|---|
-  | UO-01 | `<Verbatim outcome>` | PASS | <Trace proof with [file:line](file:///...) citations> |
-
-  **Technical Requirements Audit:**
-  | # | EARS Requirement | Trace | Subagent Status | Seam Line Citations |
-  |---|---|---|---|---|
-  | REQ-01 | `<Verbatim requirement>` | UO-01 | PASS | [file:line](file:///...) |
+### Ambiguities & Business Assumptions
+<!-- If none found, write: "None" -->
+- [file:line](file:///...):
+  - If business intent is X: this code is correct (<reason>).
+  - If business intent is Y: this code is incorrect (<reason>).
 ```
-
-Execution is strictly INCOMPLETE if any row in either the User Outcomes Audit or Technical Requirements Audit has status `FAIL` or is missing.
+````

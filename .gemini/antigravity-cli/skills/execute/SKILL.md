@@ -21,8 +21,10 @@ disable-model-invocation: true
 ## Execution Steps
 
 1. **Singular Path**: Mutate only targets explicitly listed in the Alignment Contract whitelist.
-2. **Verify**: Run verification commands.
-   - **Pre-Red-Loop Whitelist Gate**: Before touching any file to fix a verification failure, check:
+2. **Verify**: Execute verification declared in the plan:
+   - Run baseline check commands.
+   - If the plan contains a Subagent Spawn Directive, dispatch the auditor subagent and ingest its report upon completion.
+   - **Pre-Red-Loop Whitelist Gate**: If verification fails (command error or subagent `FAIL` verdict), check:
      - Is the file to be modified explicitly present in the Contract Target Whitelist?
      - If **YES**: Execute **Red Loop**.
      - If **NO**: **Red Loop is strictly forbidden**. Execute **Hard Stop** immediately.
@@ -73,6 +75,7 @@ disable-model-invocation: true
 
 #### 2. Verification Proof
 - **Baseline Check:** `<Exact command(s) executed for verification>` -> `<Passing output summary line / exit code>`
+- **Subagent Audit:** [audit_report.md](file://<appDataDir>/brain/<conversation-id>/audit_report.md) -> `<Verdict (e.g. ALL PASS)>`
 
 #### 3. Execution Delta & Diagnostics
 - **Diagnostic Matrix:**

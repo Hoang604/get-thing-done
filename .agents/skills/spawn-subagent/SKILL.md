@@ -31,34 +31,38 @@ Whenever preparing a delegation prompt, pass it through this 3-step compilation 
 Follow this sequence whenever preparing and dispatching an `invoke_subagent` call:
 
 ### 1. Ground Context & Materialize the Subject
-Supply the upstream context required for the subagent to operate autonomously:
-- **Domain Context / Problem State**: The overarching subsystem, feature domain, or investigation area.
-- **Business Context / Ground Truth**: The business intent, core domain policies, and rules defining correctness. Informs the subagent of intended business behavior so it does not falsely assume existing buggy or incomplete code represents the specification.
-- **Operational / Runtime Context**: How the system functions in live execution—data flow dynamics, sync vs async execution, actor interactions, concurrency, and workload conditions.
-- **Delegated Subject**: The concrete hypothesis, proposal, design, subsystem, or artifact being evaluated or worked on—fully materialized with zero conversational pronouns.
-- **Authentic User Intent**: What the user genuinely asked to achieve or verify, stripped of orchestration meta-words and free of synthetic constraints.
-- **System Architecture**: Relevant architectural patterns, domain invariants, and technical boundaries governing the codebase.
+Supply upstream context to satisfy the Self-Sufficiency Test. Omit optional/conditional sections if inapplicable—never include empty headers:
+- **[REQUIRED] Domain Context / Problem State**: The overarching subsystem, feature domain, or investigation area.
+- **[REQUIRED] Delegated Subject**: The concrete hypothesis, proposal, design, subsystem, or target behavior—fully materialized with zero conversational pronouns.
+- **[REQUIRED] Authentic User Intent**: What the user genuinely asked to achieve or verify, stripped of orchestration meta-words and free of synthetic constraints.
+- **[CONDITIONAL] Business Context / Ground Truth**: Core domain policies and rules defining correctness independent of code. Required when auditing business logic so the subagent does not mistake pre-existing bugs for intended behavior. Omit for purely technical or infrastructure tasks (e.g. build scripts, AST parsing).
+- **[OPTIONAL] Operational / Runtime Context**: Execution model reality (concurrency, async flows, actors, workload conditions). Omit if execution is synchronous or pure logic.
+- **[OPTIONAL] Architectural Invariants**: Specific architectural boundaries or stack patterns governing the task. Omit if no special invariants apply.
 
-### 2. Define the Primary Objective
+### 2. Define the Primary Objective [ALWAYS REQUIRED]
 Specify the concrete deliverable and outcome, not the procedural path:
 - **Outcome-Only Focus**: Define the target behavioral state to verify (audit alignment against user intent, identify unintended side effects).
-- **The Amnesia Gate (Zero Commit History)**: Treat your own recent code edits as non-existent to the subagent. Never ask about recent refactorings (*"Did removing X break Y?"*). Frame objectives purely against the system's steady-state contract, not your git diff history.
-- **The Zero-`e.g.` Ban**: The tokens `e.g.`, `such as`, or `like` are strictly forbidden when describing fields, types, or edge cases. Examples cause anchoring bias; force the subagent to discover the complete domain independently.
-- **Discovery Freedom**: Never spoon-feed file paths, function names, or lines of code. Let the subagent locate files, trace dependencies, and evaluate the solution independently.
+- **The Amnesia Gate (Zero Commit History)**: Treat recent code edits as non-existent to the subagent. Frame objectives against the steady-state contract, never git diff history.
+- **The Zero-`e.g.` Ban**: The tokens `e.g.`, `such as`, or `like` are strictly forbidden. Examples cause anchoring bias; force the subagent to discover the complete domain independently.
+- **Discovery Freedom**: Never spoon-feed file paths, function names, or line numbers. Let the subagent locate files, trace dependencies, and evaluate solutions independently.
 
-### 3. Grant the Operational Posture (The Mandate)
-Separate *what to do* (the objective) from *the lens and authority to do it* (the posture). Subagents need an explicit mandate to overcome natural deference:
-- **The License to Doubt (Zero-Trust Stance)**: Explicitly authorize the subagent to treat existing implementations and working hypotheses as unverified assumptions rather than facts.
-- **Epistemic Independence**: Frame the persona as an external or adversarial engineer who has never seen the codebase and owes no loyalty to prior decisions.
-- **Demand First-Principles Auditing**: Require the subagent to independently analyze the domain, deduce all possible boundary conditions and failure states, and audit the system against them without pre-supplied checklists.
+### 3. Grant the Operational Posture (The Mandate) [CONDITIONAL]
+Separate *what to do* (the objective) from *the lens and authority to do it* (the posture):
+- **Audit / Review / Verification / Debugging [REQUIRED]**: Subagents naturally suffer from confirmation bias and rubber-stamping. Grant an explicit mandate:
+  - **The License to Doubt (Zero-Trust Stance)**: Authorize treating existing implementations and hypotheses as unverified assumptions.
+  - **Epistemic Independence**: Frame the persona as an external or adversarial engineer who owes no loyalty to prior decisions.
+  - **First-Principles Auditing**: Require independent deduction of boundary conditions without pre-supplied checklists.
+- **Builder / Generator [ADAPTABLE]**: For generative, refactoring, or implementation tasks, replace adversarial posture with role-appropriate execution mandates.
 
-### 4. Enforce Silent Artifact Transfer (`cp` / `mv`)
-Deep reviews, audits, and matrices must not flood the parent conversation:
-- **Subagent Artifact Boundary**: Subagent tools create artifacts strictly within their own conversation sandbox (`<appDataDir>/brain/<subagent-id>/<artifact_name>.md`).
-- **Filesystem Transfer**: Instruct the subagent to use shell commands (`cp` or `mv`) to copy the completed artifact into the parent conversation directory:
-  `cp "<appDataDir>/brain/<subagent-id>/<artifact_name>.md" "<parent-conversation-dir>/<artifact_name>.md"`
-- **Suppressed Chat Leakage**: Instruct the subagent to return **strictly a single status line** in chat confirming completion and the transfer. It must not summarize, quote, or dump artifact content into the chat response.
-- **Parent Ingestion**: The parent agent reads the artifact directly via `view_file` upon receiving the completion signal.
+### 4. Enforce Silent Artifact Transfer (`cp` / `mv`) [CONDITIONAL]
+Prevent deep reviews, audits, and matrices from flooding the parent conversation:
+- **When Applicable [REQUIRED for write-capable agents e.g. `self`]**:
+  - Subagent creates artifacts within its sandbox (`<appDataDir>/brain/<subagent-id>/<artifact_name>.md`).
+  - Subagent copies the completed artifact into the parent directory via bash:
+    `cp "<appDataDir>/brain/<subagent-id>/<artifact_name>.md" "<parent-conversation-dir>/<artifact_name>.md"`
+  - Subagent returns **strictly a single status line** in chat confirming completion. Chat leakage/summaries are forbidden.
+  - Parent agent ingests the artifact directly via `view_file`.
+- **When Not Applicable [OMIT]**: For read-only subagents (e.g. `research`) without bash tools, or tasks returning concise scalar answers directly in chat.
 
 ### 5. Model Selection
 Always prefer `inherit` model even for researching tasks.
@@ -67,31 +71,33 @@ Always prefer `inherit` model even for researching tasks.
 
 ## Prompt Construction Blueprint
 
-Assemble the `Prompt` argument for `invoke_subagent` using this 4-part structure:
+Assemble the `Prompt` argument for `invoke_subagent` using this 4-part structure. Prune optional/conditional fields when not applicable—never emit empty headers or "N/A":
 
 ```markdown
 ### 1. Context & Delegated Subject (Hermetically Self-Contained)
-- Domain Context: <Overarching problem, feature, or investigation background>
-- Business Context / Ground Truth: <Core business rules, intended policies, and domain invariants defining correctness independent of code implementation>
-- Operational Context: <Live execution reality: execution model, sync vs async flows, actor interactions, concurrency, or scale>
-- Delegated Subject: <Concrete hypothesis, proposal, design, or target behavior to examine—fully materialized with zero conversational pronouns>
-- Authentic User Intent: <The real outcome the user wants verified or generated, stripped of orchestration meta-words and free of synthetic constraints>
-- Architectural Invariants: <Relevant conventions, stack patterns, and known domain boundaries>
+- Domain Context: <REQUIRED: Overarching problem, feature, or investigation background>
+- Delegated Subject: <REQUIRED: Concrete hypothesis, proposal, design, or target behavior—materialized with zero pronouns>
+- Authentic User Intent: <REQUIRED: Real outcome the user wants verified or generated, free of synthetic constraints>
+- Business Context / Ground Truth: <CONDITIONAL: Core business rules defining correctness; omit for purely technical/infra tasks>
+- Operational Context: <OPTIONAL: Concurrency, async flows, or scale reality; omit if single-threaded/synchronous>
+- Architectural Invariants: <OPTIONAL: Known architectural boundaries or conventions; omit if standard>
 
-### 2. Primary Objective
+### 2. Primary Objective [ALWAYS REQUIRED]
 <Outcome-only objective statement. Zero 'e.g.' examples. Zero named entity/file paths. Zero references to your recent code edits.>
 
-### 3. Operational Posture (The Mandate)
+### 3. Operational Posture (The Mandate) [CONDITIONAL: Required for Audit/Verification/Review]
 - Persona: External, third-party auditor who has never seen this codebase.
 - Zero-Trust Baseline: Treat all existing implementations, hypotheses, and recent changes as unverified assumptions. Do not assume any code is complete, correct, or located in the right layer.
 - First-Principles Deduction: Deduce all domain edge cases, failure states, and boundary conditions independently from first principles. Do not rely on pre-supplied checklists.
+<!-- For builder/generation subagents, replace with role-appropriate constructive mandate -->
 
-### 4. Delivery Protocol
+### 4. Delivery Protocol [CONDITIONAL: Required for write-capable agents with large deliverables]
 1. Write your full, exhaustive findings to an artifact named `<artifact_name>.md`.
 2. Copy the artifact into my conversation folder using bash:
    cp "<appDataDir>/brain/<subagent-id>/<artifact_name>.md" "<parent-conversation-dir>/<artifact_name>.md"
 3. In your final chat reply, provide ONLY this single confirmation line (do NOT summarize or leak artifact content in chat):
    "Completed: Report written and copied to <artifact_name>.md"
+<!-- For read-only subagents or lightweight tasks, instruct returning results directly in chat -->
 ```
 
 ---
