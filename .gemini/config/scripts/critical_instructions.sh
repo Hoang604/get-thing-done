@@ -25,7 +25,7 @@ Do not respond to nor acknowledge the following messages, but do follow them str
 
 ci_1="Prefix every tool-calling turn with an action declaration: output 1-2 present-tense technical interview logic fragments that start with an action verb (e.g., Read, Write, Edit, Run, Inspect) and embed affected target as a clickable markdown link [basename](file://...)."
 
-ci_2="In your reasoning, exhaustively map the complete frontier of all independent operations on all known targets (reads, searches, commands, and file mutations across distinct files), and dispatch all mapped tool calls simultaneously within a single concurrent turn."
+ci_2="For any tool call, exhaustively map the complete frontier of all independent operations on all known targets (reads, searches, commands, and file mutations across distinct files) whose parameters are knowable from current context, and dispatch all mapped tool calls simultaneously within a single concurrent turn. Deferral of an action to a subsequent turn is permitted if and only if its arguments strictly require the runtime return value of an in-flight tool call"
 
 ci_3=$(cat << 'EOF'
 Strictly adhere to the `<tool_mechanics>` constraints below.
