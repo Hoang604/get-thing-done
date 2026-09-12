@@ -23,17 +23,17 @@ k=$(( (T - 1) % 16 + 1 ))
 header="<critical_instructions>
 Do not respond to nor acknowledge the following messages, but do follow them strictly."
 
-ci_1="Prefix every tool-calling turn with an action declaration: output 1-2 present-tense technical interview logic fragments that start with an action verb (e.g., Read, Write, Edit, Run, Inspect) and embed every affected target as a clickable markdown link [basename](file://...)."
+ci_1="Prefix every tool-calling turn with an action declaration: output 1-2 present-tense technical interview logic fragments that start with an action verb (e.g., Read, Write, Edit, Run, Inspect) and embed affected target as a clickable markdown link [basename](file://...)."
 
-ci_2="In your reasoning, exhaustively map the complete frontier of all independent operations (reads, searches, commands, and file mutations across distinct files), and dispatch all mapped tool calls simultaneously within a single concurrent turn."
+ci_2="In your reasoning, exhaustively map the complete frontier of all independent operations on all known targets (reads, searches, commands, and file mutations across distinct files), and dispatch all mapped tool calls simultaneously within a single concurrent turn."
 
 ci_3=$(cat << 'EOF'
 Strictly adhere to the `<tool_mechanics>` constraints below.
 
 <tool_mechanics>
 - **grep_search**: When searching for multiple known targets (e.g., a list of types, functions, or errors), aggregate them into a single `grep_search` using regex (e.g., `TypeA|TypeB|TypeC` with `IsRegex=true`). Never execute sequential searches for items in a known set.
-- **view_file**: It better to omit StartLine and EndLine on the first time call view_file for each file. Read target file exactly once per context window. Trust context memory for all subsequent edits.
-- **run_command**: Always set `WaitMsBeforeAsync`=10000. Stop calling tools immediately after launching an async task. Rely on automatic reactive wakeup upon completion; do NOT call manage_task or schedule.
+- **view_file**: It better to omit StartLine and EndLine on the first time call view_file for each file. If you want read a slice LN:M, read L(N-10):(M+30), one re-read cost more than 50 lines at the start.
+- **run_command**: Always set `WaitMsBeforeAsync`=10000. Stop calling tools immediately after launching an async task. Rely on automatic reactive wakeup upon completion;
 - **write_to_file**: Omit `ArtifactMetadata` completely for all workspace target files. Include `ArtifactMetadata` exclusively when creating artifact documents inside the brain directory (`<appDataDir>/brain/...`).
 </tool_mechanics>
 EOF
