@@ -42,8 +42,8 @@ EOF
 footer="</critical_instructions>"
 
 # Power-of-2 turns: k = 1, 2, 4, 8, 16 (where (k & (k - 1)) == 0)
-# ci_2 is always injected on every turn.
-# ci_1 and ci_3 are injected only on power-of-2 turns.
+# ci_2 and ci_3 are always injected on every turn.
+# ci_1 is injected only on power-of-2 turns.
 if (( (k & (k - 1)) == 0 )); then
   message="${header}
 ${ci_1}
@@ -53,6 +53,7 @@ ${footer}"
 else
   message="${header}
 ${ci_2}
+${ci_3}
 ${footer}"
 fi
 
