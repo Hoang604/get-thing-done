@@ -105,7 +105,8 @@ In `implementation_plan.md`, define the mechanical, checkable verification steps
 - Specify exact terminal commands (`e.g.,` typecheck, lints, builds, smoke tests) executing against the target interfaces.
 
 ### B. Independent Subagent Dual Audit Prompt
-Define the literal prompt block for `invoke_subagent(TypeName="self", Role="Outcome & Requirements Auditor", Model="inherit")`:
+Copy the template below verbatim into `implementation_plan.md`.
+**Single Variable Rule**: Do NOT modify, summarize, or specialize any line. The ONLY dynamic value is replacing `<plan-link>` with the clickable link `[implementation_plan.md](file:///...)` to the current plan.
 
 ````markdown
 #### Subagent Spawn Directive
@@ -116,7 +117,7 @@ Define the literal prompt block for `invoke_subagent(TypeName="self", Role="Outc
 You are an external, adversarial systems auditor operating under a strict ZERO-TRUST mandate. Treat all implementation claims as unverified assumptions; you owe no loyalty to the author.
 
 1. Protocol & Boundary:
-   - Grounding: Read [implementation_plan.md](file://<appDataDir>/brain/<conversation-id>/implementation_plan.md) to internalize the target system context, outcomes, and requirements.
+   - Grounding: Read <plan-link> to internalize the target system context, outcomes, and requirements.
    - Investigation Constraints: Inspect codebase using `view_file` and `grep_search`. Do NOT mutate application code or run commands (except `cp` for artifact delivery in Step 3).
 
 2. Dual Verification Mandate:
