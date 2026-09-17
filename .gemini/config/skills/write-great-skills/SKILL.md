@@ -15,7 +15,7 @@ All skills are user-invoked (`disable-model-invocation: true`). `description` is
 A skill is built from two content types — **steps** (ordered actions in `SKILL.md`, primary tier) and **reference** (definitions, rules, parameters, or facts consulted on demand, secondary tier) — that mix freely: a skill can be all steps, all reference, or both. The core decision is which to use and where each sits on the **information hierarchy**, a ladder ranked by how immediately the agent needs the material:
 
 1. **In-skill step** — an ordered action in `SKILL.md`, the primary tier: what the agent does, in order. Each step ends on a **completion criterion** (the condition that tells the agent the work is done). Make it _checkable_ (can the agent tell done from not-done?) and, where it matters, _exhaustive_ ("every modified model accounted for", setting high demand) — a vague criterion invites **premature completion** (ending a step before it is genuinely done).
-2. **In-skill reference** — a definition, rule, or fact in `SKILL.md`, consulted on demand. Often a legitimately flat peer-set (every rule of a review on one rung) — a fine arrangement, not a smell. _This skill is all reference._
+2. **In-skill reference** — a definition, rule, or fact in `SKILL.md`, consulted on demand. Often a legitimately flat peer-set (every rule of a review on one rung) — a fine arrangement, not a smell.
 3. **External reference** — plain reference file outside any skill, reached via **context pointer**. Home for shared reference.
 
 A demanding completion criterion drives thorough **legwork** — the behind-the-scenes digging the agent does within the work (reading files, exploring codebase, verifying state) — whether the skill has steps or not, since "every rule applied" binds flat reference just as "every step done" binds a sequence.
@@ -80,9 +80,9 @@ You win twice over: fewer tokens, _and_ a sharper hook for the agent to hang its
 
 Steering by prohibition (**negation**) is a symptom of underspecification: it names what failed without defining the target grammar. Prefer **constructive contracts** that make the desired shape unambiguous:
 
-- **Physical shape over adjectives** — qualitative requests (_"be concise"_) are no-ops. Define the physical contract positively: exact line budget, word count bounds, or structural syntax (e.g., _single line, 1–8 words, tag-first_).
+- **Physical shape over adjectives** — qualitative requests (_"be concise"_) are no-ops. Define the physical contract positively through observable, mechanically verifiable constraints on the output, eliminating all qualitative degrees of freedom.
 - **In-line anchors** — a single concrete, realistic example in the prompt anchors generation density and tone far more reliably than paragraphs of abstract rules.
-- **Boundary repulsion** — use negative guardrails (`Do NOT`) strictly as secondary boundary clips to suppress strong pre-training attractors (e.g., default conversational prose or filler), never as the primary generator.
+- **Boundary repulsion** — use negative guardrails (`Do NOT`) strictly as secondary boundary clips to suppress strong pre-training attractors, never as the primary generator.
 
 ## Failure modes
 
@@ -96,3 +96,22 @@ Use these to diagnose issues the user may be having with the skill.
 - **Negation** — steering by prohibition backfires: _don't think of an elephant_ makes the elephant more available. Reframe prohibitions into constructive physical contracts; keep negative rules solely as boundary guardrails.
 - **Disguised enumeration** — the cosmetic retreat when forbidden from using checklists. Rather than deriving a general principle, the model collapses bulleted items into a comma-separated clause within prose. The underlying structure remains an enumerated checklist, still forcing the agent to audit irrelevant nouns instead of reasoning from structure.
 - **Exemplar anchoring** — supplying illustrative instances within reasoning directives. The model anchors on the accidental properties of the example, blinding it to valid architectures outside the example's shadow.
+
+## Authoring protocol
+
+When authoring, refactoring, or updating any target skill, the agent must execute these steps in order before drafting or modifying content:
+
+1. **Recite invariants**: Output the verbatim text of this skill's invariant principles from the following sections:
+   - `Predictability`
+   - `Generality and the action-thought split`
+   - `Constructive contracts`
+   - `Pruning`
+   - `Co-location`
+2. **Partition conditional mechanisms**: Enumerate the following 6 conditional mechanisms from this skill, partitioning them into **Applicable** vs. **Inapplicable** for the target skill with structural rationale:
+   - `In-skill steps`
+   - `Progressive disclosure`
+   - `Context pointers`
+   - `Sequence splitting`
+   - `Leading words`
+   - `In-line anchors`
+3. **Map planes**: For every planned section, rule, or directive of the target skill, explicitly classify it into either **Thought Direction** or **Action Direction** before drafting.
