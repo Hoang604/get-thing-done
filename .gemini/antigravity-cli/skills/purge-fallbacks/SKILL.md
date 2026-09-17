@@ -1,60 +1,43 @@
 ---
 name: purge-fallbacks
-description: Scan, classify, and eliminate defensive fallback operators and state fabrication in favor of Fail-Fast Invariant Assertions across the codebase.
+description: Reference criteria distinguishing invariant-corrupting state fabrication from contract-authorized defaults.
 disable-model-invocation: true
 ---
 
-# Purge Fallbacks & Invariant Restoration
-
-## 1. Generative Principle: The Boundary Membrane
+# Invariant Integrity: State Fabrication vs. Contractual Defaults
 
 A software boundary is a **validation membrane**, never a **state fabricator**.
 
-Every boundary transition (network ingress, deserialization, DOM measurement, runtime capability negotiation) evaluates to exactly one outcome:
-1. **Admit**: Pass the valid, complete domain state through untouched.
-2. **Reject**: Fail-fast immediately (`throw InvariantViolationError`) when structural invariants are violated, or yield an explicit unsettled signal when layout has not converged.
+A downstream consumer lacks the structural authority to invent state. State originates exclusively at the producer and must satisfy structural invariants before admission.
 
-### The Fabrication Anti-Pattern
-Any inline operator (`??`, `||`, `?: dummy`) or sanitization branch that synthesizes unmeasured coordinates, replaces a local container with global dimensions, or demotes a corrupted entity into an empty default is **State Fabrication**. Downstream consumers must never receive fabricated state.
+## 1. The Generative Principle
 
----
+Every value transition across a boundary evaluates to a binary outcome:
+- **Admit**: The incoming state fully satisfies the structural contract $\rightarrow$ pass through untouched.
+- **Reject**: The incoming state violates the structural contract or required state is missing $\rightarrow$ fail fast immediately.
 
-## 2. Invariant Classification Grammar
+Substituting a synthetic value at the point of consumption to evade rejection is **State Fabrication**. It converts a fail-fast invariant violation into silent state corruption.
 
-Evaluate every detected fallback against the binary membrane contract:
+## 2. Structural Classification
 
-| State Class | Observable Property | Required Action |
-|---|---|---|
-| **Invariant** | Load-bearing identity, spatial coordinate, geometry dimension, or structural relationship. | **Eliminate fallback**. Require non-optional type upstream and assert fail-fast at boundary. |
-| **Unsettled Lifecycle** | Transient measurement during mount, resize, or asynchronous layout convergence. | **Eliminate surrogate defaults**. Skip frame execution or suspend computation until layout settles. |
-| **Legitimate Optional** | Explicitly declared optional field in API schema with authoritative empty semantics. | Preserve contract-declared default constant. |
+### State Fabrication (Defensive Masking)
+State fabrication occurs whenever a consumer synthesizes data to compensate for an upstream breach of contract.
 
----
+- **Invariant Erasure**: Suppressing an invalid or missing required state instead of terminating execution at the failure boundary.
+- **Lineage Inversion**: Defining fallback semantics at the downstream consumer rather than enforcing completeness at the upstream producer.
+- **Temporal Falsification**: Substituting dummy structures in place of pending asynchronous state instead of preserving the explicit unready lifecycle.
 
-## 3. Execution Protocol
+### Contractual Defaults (Legitimate Absence)
+A default is legitimate if and only if absence is a first-class semantic state explicitly authorized by the contract.
 
-### Step 1: Discover Candidates
-Run the scanner across the target scope:
-```bash
-bash .agents/skills/purge-fallbacks/scripts/scan-fallbacks.sh [optional-path]
-```
-*Completion Criterion*: Scanner produces candidate list across the target scope.
+- **Contractual Provenance**: The default value and its fallback semantics are defined by the authoritative contract or schema, not synthesized ad-hoc by the consumer.
+- **Boundary Anchoring**: Resolution occurs at the ingress or configuration boundary, establishing canonical state before entering the domain.
+- **Semantic Neutrality**: The default represents the deliberate, complete absence of optional state, not the surrogate repair of corrupted or missing required state.
 
-### Step 2: Binary Membrane Audit
-Classify every candidate line:
-- If the fallback fabricates state for an **Invariant** or an **Unsettled Lifecycle**, mark as **Fabrication Violation**.
-- If the candidate is a boolean condition (`if (a || b)`), bitwise codec, or discriminated union type guard, mark as **Scanner Noise**.
-*Completion Criterion*: Zero unclassified candidate lines remaining.
+## 3. The Structural Boundary Test
 
-### Step 3: Eliminate Fabrication
-1. Replace all invariant fallbacks with explicit `InvariantViolationError` throws.
-2. Replace all surrogate dimension fallbacks with unsettled lifecycle guards (early return/skip frame).
-3. Correct upstream TypeScript contracts from `prop?: Type` to `prop: Type`.
-*Completion Criterion*: Target scope contains zero fallback operators on invariant fields.
+Evaluate any fallback against the structural contract:
 
-### Step 4: Verification Gate
-Execute workspace validation:
-```bash
-npm run validate
-```
-*Completion Criterion*: 0 test failures, 0 lint errors, 0 typecheck errors.
+1. **Contract Authority**: Does the authoritative contract declare the field optional, with this exact default defined as its canonical representation? If the field is required for domain integrity, any consumer-side fallback is state fabrication.
+2. **Lineage Ownership**: Is the fallback positioned at the ingress boundary where state is initially ingested, or downstream where state is consumed? Downstream consumers must assert invariants, not fabricate defaults.
+3. **Failure Semantics**: Does the absence of this value indicate that an upstream invariant was violated? If yes, the boundary must reject immediately.
