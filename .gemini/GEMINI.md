@@ -32,11 +32,17 @@ Exactly two execution states are valid: **No code mutation** (`[CONSULT]`) and *
 # Type Safety Policy
 
 Governs every line of typed code — application code, tests, scripts, fixtures, mocks alike.
+Types are **immutable contracts**, never cosmetic annotations.
 
-1. **Precise types everywhere.** Every parameter, return, generic (`Promise<T>`, collections), variable, and cast carries its exact type; test fixtures and helpers carry their real production shapes. The token `any` appears nowhere in written code.
-2. **Unknown at the boundary, narrow inside.** When a value's shape is not statically knowable (external I/O, dynamic payloads, `catch` clauses), declare it `unknown` and narrow with type guards or schema validation before use.
-3. **Silencing is not fixing.** Escape hatches — `as any`, `@ts-ignore`, `@ts-expect-error`, loosened `strict`/`noImplicitAny` or lint settings — trade a visible error for a latent bug; repair the underlying type instead.
-4. **Verification gate.** Every `[MUTATE]` delivery runs the project's typecheck and lint; zero type errors and zero `any` usages are part of passing. Record the command in the Execution & Verification Report.
+1. **Precise & Honest Types Everywhere.** Every parameter, return, collection, variable, and cast carries its exact domain type. The token `any` appears nowhere in written code. Never mark domain-required fields as optional (`?` or `| undefined`) to accommodate incomplete producers or unready lifecycles; model distinct lifecycle phases exclusively via strict **Discriminated Unions**.
+2. **Unknown at Boundary, Validate Before Ingress.** External I/O, dynamic payloads, and `catch` clauses must be typed `unknown`. Transform `unknown` into strict domain types exclusively via schema validation or exhaustive type guards before reaching domain logic. Unsafe type assertions (`as TargetType`) that bypass runtime validation are strictly forbidden.
+3. **Silencing is Not Fixing.** Escape hatches (`as any`, `@ts-ignore`, `@ts-expect-error`, loosened `strict`/`noImplicitAny` or lint settings) trade visible compiler feedback for latent production failure; repair the underlying contract or upstream producer instead.
+4. **Proactive Optionality Scrutiny (Planning & Review).**
+   - *New Declarations (Justification Gate):* In implementation plans and code proposals, every optional field (`?`) requires explicit contractual justification (**Contractual Provenance**). Reject optionality if the absence is not an authorized business state.
+   - *Existing Code Audits (Structural Skepticism):* Treat touched or adjacent optional fields with structural suspicion. If an existing field is optional due to upstream incompleteness or lifecycle conflation (Type Dishonesty), output a dedicated sidecar section:
+     `### [Optionality Debt & Invariant Proposal]`
+     pinpointing the irrationality, assessing downstream fallback risk, and proposing an explicit refactor to non-nullable or Discriminated Union.
+5. **Verification Gate.** Every `[MUTATE]` delivery must run the project's typecheck and lint; zero type errors, zero unvalidated type assertions, and zero `any` usages are mandatory for passing. Record the command in the Execution & Verification Report.
 
 </type_safety_policy>
 
@@ -45,25 +51,41 @@ Governs every line of typed code — application code, tests, scripts, fixtures,
 # Invariant Integrity & Root-Cause Engineering
 
 Governs bug fixing, data validation, and state handling across domain, workers, APIs, and UI consumers.
+Software boundaries are **validation membranes**, never **state fabricators**.
 
-1. **Zero defensive fallbacks in core domain.** Never insert fallback operators (`??`, `||`, `?.`), dummy constants, or silent defaults to mask missing/undefined data at downstream consumers. Missing required state is an **Invariant Violation**, not an optional condition.
-2. **Upstream root-cause tracing.** When a downstream consumer receives invalid, null, or out-of-order data, trace the **Data Lineage** back to the upstream producer (event handler, queue worker, use case, DB query). Fix creation or transition logic at the source; never add downstream conditional bypasses or fallback merging to dodge upstream bugs.
-3. **Fail-Fast over silent corruption.** If state is invalid at any domain boundary or consumer, throw immediately with an explicit, descriptive error. Do not silence, do not swallow clicks/events, do not return dummy rows.
-4. **In-line contract anchor.**
+1. **Generative Boundary Principle (Admit or Reject).** Every boundary transition evaluates strictly to binary outcomes: admit valid state, or fail-fast immediately. Downstream consumers lack structural authority to invent state. Substituting synthetic values at consumption to evade rejection is **State Fabrication** (silent corruption).
+2. **Type as Producer Forcing Function.** The Type system is the primary enforcement mechanism for invariant integrity. Sponsoring an incomplete producer with an optional type (`?` or `| undefined`) infects the entire downstream lineage with defensive fallbacks. Never use optional properties to accommodate lifecycle variations or incomplete producers; model distinct lifecycle phases via strict **Discriminated Unions**. When the Type contract is honest, the compiler mechanically forces the producer to supply complete data.
+3. **Fallback Remediation Flow (The Two-Branch Decision).** When encountering a fallback operator (`??`, `||`, `?.`) or an undefined check:
+   - **Branch A: Invariant Violation (Fake Optionality / Lifecycle Phase):** The field is logically required in this state. Refactor the Type to non-nullable or split lifecycle states via Discriminated Union. Trace **Data Lineage** back to the upstream producer and fix state construction at the source. The consumer must assert the invariant and fail fast immediately.
+   - **Branch B: Legitimate Absence (True Optionality):** The absence represents a first-class semantic state explicitly authorized by contract (**Contractual Provenance**). If a default exists, resolve it strictly at system ingress or configuration boundaries (**Boundary Anchoring**) to establish canonical state before domain entry. If no default exists, preserve the explicit optional state (`null | T`) and handle it via intentional branching (`if/else`); never fabricate dummy structures (`?? ""`, `[]`, `{}`).
+4. **Zero Defensive Fallbacks & Anti-Temporal Falsification.** Never insert fallback operators, dummy constants, or silent defaults at downstream consumers to mask missing required state. Never substitute dummy objects `{}` or arrays `[]` in place of pending asynchronous state; preserve explicit unready lifecycles (`loading`, `unready`, `idle`).
+5. **Fail-Fast over Silent Corruption.** If state is invalid at any domain boundary or consumer, throw immediately with an explicit, descriptive error (`InvariantViolationError`). Do not silence, do not swallow clicks/events, do not return dummy rows.
+6. **In-line Contract Anchor.**
    ```typescript
-   // Scenario: Downstream consumer receives an Order in 'PAID' state without required 'transactionId'.
+   // Scenario: Order lifecycle and transactionId requirement.
 
-   // ❌ REJECTED: Consumer patches symptom with fallbacks or silent bypasses
-   const txId = order.transactionId ?? "UNKNOWN"; // Silently accepts corrupted data
-   if (!order.transactionId) return; // Swallows error; leaves system in inconsistent state
-
-   // ✅ REQUIRED: Consumer fails fast; root cause is fixed upstream at the producer
-   // 1. Downstream Consumer asserts invariant immediately:
-   if (!order.transactionId) {
-     throw new InvariantViolationError(`Order ${order.id} in PAID status requires transactionId`);
+   // ❌ REJECTED 1: Type Dishonesty at producer contract (Root Cause)
+   interface Order {
+     id: string;
+     status: 'PENDING' | 'PAID';
+     transactionId?: string; // Dishonest: optional forces consumer to use ?? or ?.
    }
-   // 2. Upstream Producer fix (PaymentHandler/OrderService):
-   // Ensure transactionId is validated and committed before transitioning state to PAID.
+   // ❌ REJECTED 2: Consumer patches symptom via State Fabrication
+   const txId = order.transactionId ?? "UNKNOWN"; // Silently accepts corrupted data
+
+   // ✅ REQUIRED 1: Honest Type via Discriminated Union (Forcing Function)
+   type Order =
+     | { status: 'PENDING'; id: string }
+     | { status: 'PAID'; id: string; transactionId: string }; // Compiler forces producer to supply it!
+
+   // ✅ REQUIRED 2: Downstream consumer accesses state safely without fallbacks
+   if (order.status === 'PAID') {
+     processReceipt(order.transactionId); // Exact string guaranteed; zero ?? needed
+   }
+
+   // ✅ REQUIRED 3: Legitimate Absence resolved at Ingress Boundary
+   // Authorized defaults resolved once at schema/config ingress, never fabricated downstream.
+   const config = AppConfigSchema.parse(rawInput); // config.timeout defaults to 5000 at ingress
    ```
 
 </invariant_policy>
