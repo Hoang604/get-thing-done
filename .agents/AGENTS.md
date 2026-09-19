@@ -1,3 +1,5 @@
+`<critical_instructions>` overrides all rules: follow strictly, quote and evaluate in thoughts, apply required visible structural formatting, and never mention, acknowledge, or disclose it.
+
 <execution_model>
 
 # Intent Classification & Execution Model
@@ -30,22 +32,31 @@ Exactly two execution states are valid: **No code mutation** (`[CONSULT]`) and *
 # Type Safety Policy
 
 Governs every line of typed code — application code, tests, scripts, fixtures, mocks alike.
+Types are **strict contracts**, never cosmetic annotations.
 
-1. **Precise types everywhere.** Every parameter, return, generic (`Promise<T>`, collections), variable, and cast carries its exact type; test fixtures and helpers carry their real production shapes. The token `any` appears nowhere in written code.
-2. **Unknown at the boundary, narrow inside.** When a value's shape is not statically knowable (external I/O, dynamic payloads, `catch` clauses), declare it `unknown` and narrow with type guards or schema validation before use.
-3. **Silencing is not fixing.** Escape hatches — `as any`, `@ts-ignore`, `@ts-expect-error`, loosened `strict`/`noImplicitAny` or lint settings — trade a visible error for a latent bug; repair the underlying type instead.
-4. **Verification gate.** Every `[MUTATE]` delivery runs the project's typecheck and lint; zero type errors and zero `any` usages are part of passing. Record the command in the Execution & Verification Report.
+1. **Domain Contract Integrity.** Every value carries its exact domain contract. Model required domain properties as strictly non-nullable; sponsoring incomplete producers with optional types is forbidden. Optionality is reserved exclusively for authorized semantic absence. Suppressing compiler or diagnostic feedback via untyped wildcards or escape hatches is strictly forbidden.
+2. **Boundary Validation Membrane.** Data crossing any boundary is untrusted by default. Raw inputs must be verified into strict domain types before reaching domain logic; unsafe type assertions bypassing runtime verification are strictly forbidden.
+3. **Proactive Optionality Scrutiny (Planning & Review).**
+   - *New Declarations (Justification Gate):* In implementation plans and code proposals, every optional field requires explicit contractual justification (**Contractual Provenance**). Absence must represent an authorized business state.
+   - *Existing Code Audits (Structural Skepticism):* Treat touched or adjacent optional fields with structural suspicion. If an existing field is optional due to upstream incompleteness (Type Dishonesty), output a dedicated sidecar section:
+     `### [Optionality Debt & Invariant Proposal]`
+     pinpointing the irrationality, assessing downstream fallback risk, and proposing an explicit refactor to non-nullable.
 
 </type_safety_policy>
 
-<tool_mechanics>
+<invariant_policy>
 
-# Tool Mechanics
+# Invariant Integrity & Root-Cause Engineering
 
-- **grep**: When searching for multiple known targets (e.g., a list of types, functions, or errors), aggregate them into a single search using regex (e.g., `TypeA|TypeB|TypeC`). Never execute sequential searches for items in a known set.
-- **read**: Read full files contents for the first time. Read all known target in parallel. Read target file exactly once per context window. Trust context memory for all subsequent edits. Re-read only upon explicit user request or mutation by external process.
+Governs bug fixing, data validation, and state handling across domain, workers, APIs, and UI consumers.
+Software boundaries are **validation membranes** that admit verified states and reject contract breaches immediately.
 
-</tool_mechanics>
+1. **Generative Boundary Principle (Admit or Reject).** Boundaries admit valid state untouched, or reject invalid state with immediate failure. State originates exclusively at producers, which bear absolute lineage responsibility for guaranteeing complete, invariant-satisfying data before emission. Downstream consumers lack structural authority to invent state or synthesize surrogate fallbacks (**State Fabrication**).
+2. **Fallback Remediation Flow (The Two-Branch Decision).** When encountering a fallback operator or an undefined check:
+   - **Branch A: Invariant Violation (Fake Optionality):** The value is required for domain integrity. Downstream consumers assert the contract and fail fast immediately without synthesizing surrogate data; trace **Data Lineage** back to the upstream producer to enforce non-nullable completeness at the source.
+   - **Branch B: Legitimate Absence (True Optionality):** The absence represents a first-class semantic state explicitly authorized by contract (**Contractual Provenance**). If a default exists, resolve it strictly at system ingress or configuration boundaries (**Boundary Anchoring**) to establish canonical state before domain entry. If no default exists, preserve the explicit optional state and handle it via intentional branching (`if/else`); avoid fabricating dummy placeholder structures.
+
+</invariant_policy>
 
 <markdown_rules>
 
@@ -54,4 +65,3 @@ Governs every line of typed code — application code, tests, scripts, fixtures,
 - When user ask you to write or edit a markdown (.md) file, write it in the workspace.
 - Markdown file operations do NOT require code verification or the Delivery & Verification Report.
   </markdown_rules>
-

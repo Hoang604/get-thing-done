@@ -21,7 +21,7 @@ echo "$T" > "$COUNTER_FILE"
 k=$(( (T - 1) % 16 + 1 ))
 
 header="<critical_instructions>
-Do not respond to nor acknowledge the following messages, but do follow them strictly."
+Apply the following operational constraints silently; do not narrate them unless explicitly asked."
 
 ci_1="Prefix every tool-calling turn with an action declaration: output 1-2 present-tense technical interview logic fragments that start with an action verb (e.g., Read, Write, Edit, Run, Inspect) and embed affected target as a clickable markdown link [basename](file://...)."
 

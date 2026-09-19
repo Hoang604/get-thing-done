@@ -54,6 +54,66 @@ chmod +x "$TARGET_DIR/config/scripts/view_file_guard.py"
 mkdir -p "$HOME/.local/bin"
 ln -sf "$TARGET_DIR/config/scripts/init-python-agent.sh" "$HOME/.local/bin/init-python-agent"
 
+# Merge opencode config into ~/.config/opencode/opencode.json
+OPENCODE_CFG_SRC="$TARGET_AGENTS_DIR/opencode.json"
+OPENCODE_CFG_DIR="$HOME/.config/opencode"
+OPENCODE_CFG_DST="$OPENCODE_CFG_DIR/opencode.json"
+
+if [ -f "$OPENCODE_CFG_SRC" ]; then
+    echo "  Source (opencode config): $OPENCODE_CFG_SRC"
+    echo "  Target (opencode config): $OPENCODE_CFG_DST"
+    mkdir -p "$OPENCODE_CFG_DIR"
+    python3 - "$OPENCODE_CFG_SRC" "$OPENCODE_CFG_DST" <<'PYEOF'
+import json
+import os
+import shutil
+import sys
+
+src, dst = sys.argv[1], sys.argv[2]
+
+with open(src, encoding="utf-8") as f:
+    incoming = json.load(f)
+
+existing = {}
+if os.path.exists(dst):
+    try:
+        with open(dst, encoding="utf-8") as f:
+            existing = json.load(f)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        backup = dst + ".bak"
+        shutil.copy2(dst, backup)
+        print(f"    Existing config not valid JSON, backed up to {backup}")
+
+def deep_merge(base, override):
+    result = dict(base)
+    for key, value in override.items():
+        if isinstance(value, dict) and isinstance(result.get(key), dict):
+            result[key] = deep_merge(result[key], value)
+        else:
+            result[key] = value
+    return result
+
+merged = deep_merge(existing, incoming)
+with open(dst, "w", encoding="utf-8") as f:
+    json.dump(merged, f, indent=2, ensure_ascii=False)
+    f.write("\n")
+PYEOF
+fi
+
+# Install opencode plugins to ~/.config/opencode/plugins (auto-loaded, no config entry needed)
+OPENCODE_PLUGINS_SRC="$TARGET_AGENTS_DIR/opencode/plugins"
+OPENCODE_PLUGINS_DST="$HOME/.config/opencode/plugins"
+
+if [ -d "$OPENCODE_PLUGINS_SRC" ]; then
+    echo "  Source (opencode plugins): $OPENCODE_PLUGINS_SRC"
+    echo "  Target (opencode plugins): $OPENCODE_PLUGINS_DST"
+    mkdir -p "$OPENCODE_PLUGINS_DST"
+    for f in "$OPENCODE_PLUGINS_SRC"/*.ts; do
+        [ -e "$f" ] || continue
+        cp "$f" "$OPENCODE_PLUGINS_DST/"
+    done
+fi
+
 # Configure statusLine in ~/.gemini/antigravity-cli/settings.json if not present
 SETTINGS_FILE="$TARGET_DIR/antigravity-cli/settings.json"
 python3 - <<EOF
