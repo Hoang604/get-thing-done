@@ -52,9 +52,9 @@ Evaluate the implementation across two concurrent planes:
 ## 3. Delivery Protocol
 
 1. Author your audit findings in `<appDataDir>/brain/<subagent-id>/audit_report.md` matching the artifact structure below.
-2. Copy the artifact to the parent directory:
+2. Copy the artifact to the directory containing the implementation plan (<plan-dir>):
    ```bash
-   cp "<appDataDir>/brain/<subagent-id>/audit_report.md" "<parent-conversation-dir>/audit_report.md"
+   cp "<appDataDir>/brain/<subagent-id>/audit_report.md" "<plan-dir>/audit_report.md"
    ```
 3. Reply to the parent agent with EXACTLY this single line and nothing else:
    `Completed: Audit report written and copied to audit_report.md`

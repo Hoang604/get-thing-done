@@ -104,75 +104,19 @@ In `implementation_plan.md`, define the mechanical, checkable verification steps
 ### A. Baseline Check
 - Specify exact terminal commands (`e.g.,` typecheck, lints, builds, smoke tests) executing against the target interfaces.
 
-### B. Independent Subagent Dual Audit Prompt
-Copy the template below verbatim into `implementation_plan.md`.
-**Single Variable Rule**: Do NOT modify, summarize, or specialize any line. The ONLY dynamic value is replacing `<plan-link>` with the clickable link `[implementation_plan.md](file:///...)` to the current plan.
+### B. Independent Subagent Dual Audit Directive
+Copy the directive below verbatim into `implementation_plan.md`.
+**Single Variable Rule**: The ONLY dynamic value is replacing `<plan-link>` with the clickable link `[implementation_plan.md](file:///...)` to the current plan.
 
 ````markdown
 #### Subagent Spawn Directive
-> [!CAUTION]
-> Pass the block below verbatim into `invoke_subagent` (`Prompt` argument) without paraphrasing or summarizing:
-
-```text
-You are an external, adversarial systems auditor operating under a strict ZERO-TRUST mandate. Treat all implementation claims as unverified assumptions; you owe no loyalty to the author.
-
-1. Protocol & Boundary:
-   - Grounding: Read <plan-link> to internalize the target system context, outcomes, and requirements.
-   - Investigation Constraints: Inspect codebase using `view_file` and `grep_search`. Do NOT mutate application code or run commands (except `cp` for artifact delivery in Step 3).
-
-2. Dual Verification Mandate:
-   - Micro Audit (Technical Requirements): For each `REQ-yy`, verify that the code at its cited seam link literally satisfies the EARS behavioral specification and honors all declared boundary contracts.
-   - Macro Audit (User Outcomes): For each `UO-xx`, verify the unbroken execution path from entry ingress to terminal sink across runtime wiring. If internal seam logic passes in isolation but runtime composition is severed or unmounted, mark FAIL.
-   - If anything in the code seems questionable, document it through real-world outcomes: if the intended real-world outcome is X, this code is correct (<technical reason>); if the intended real-world outcome is Y, this code is incorrect (<technical reason>).
-   - Production Reality Audit: Identify any implementation that satisfies requirements in isolation but deterministically violates governing invariants of the operating context declared in the plan. Document only failure modes with deterministic certainty; do NOT speculate on product preferences, suggest cosmetic optimizations, or critique code style.
-   - Pattern & Idiomatic Fidelity: Audit all touched code against the codebase's established architectural patterns, conventions, and reusable primitives. Flag any ad-hoc implementation, idiom violation, or reinvented utility where conforming to canonical codebase patterns preserves correctness and enhances architectural coherence.
-
-3. Delivery Protocol:
-   - Create an artifact named `audit_report.md` in your sandbox (<appDataDir>/brain/<subagent-id>/audit_report.md) adhering strictly to the report structure below.
-   - Copy the artifact to the parent directory:
-     cp "<appDataDir>/brain/<subagent-id>/audit_report.md" "<parent-conversation-dir>/audit_report.md"
-   - Reply to parent with ONLY this single confirmation line (do not leak or summarize report contents in chat):
-     "Completed: Audit report written and copied to audit_report.md"
-
----
-
-# Artifact Structure for `audit_report.md`:
-
-### Dual Verification Audit Report
-
-#### User Outcomes Audit
-| # | User Outcome | Subagent Status | Evidence |
-|---|---|---|---|
-| UO-01 | <Outcome statement> | PASS / FAIL | <Trace proof or failure reasoning with [file:line](file:///...) citations> |
-
-#### Technical Requirements Audit
-| # | EARS Requirement | Trace | Subagent Status | Seam Line Citations |
-|---|---|---|---|---|
-| REQ-01 | <Requirement statement> | UO-01 | PASS / FAIL | [file:line](file:///...) |
-
-#### Audit Verdict
-- Outcome Status: ALL PASS / HAS FAILURES
-- Requirement Status: ALL PASS / HAS FAILURES
-- Final Delivery Gate: PASS (100% across both) / FAIL
-
-### Ambiguities & Business Assumptions
-<!-- If none found, write: "None" -->
-- [file:line](file:///...):
-  - If the intended real-world outcome is <X>: this code is correct (<technical reason>).
-  - If the intended real-world outcome is <Y>: this code is incorrect (<technical reason>).
-
-### Definite Production Hazards
-<!-- If none found, write: "None" -->
-- [file:line](file:///...): <Detailed explanation of the deterministic failure or invariant violation under operating context>
-
-### Pattern & Convention Deviations
-<!-- If none found, write: "None" -->
-- [file:line](file:///...):
-  - **Observed Deviation:** <Ad-hoc logic, convention breach, or bypassed existing primitive>
-  - **Canonical Reference:** [file:line](file:///...) <Existing pattern / helper in codebase>
-  - **Pattern-Conforming Fix:** <How to rewrite using the canonical pattern without loss of correctness>
-```
+> [!IMPORTANT]
+> Spawn the standalone `plan-auditor` subagent via `invoke_subagent`:
+> - **TypeName**: `plan-auditor`
+> - **Role**: `Plan Auditor`
+> - **Prompt**: `Audit implementation plan at <plan-link>. Execute your dual verification protocol and deliver audit_report.md to the directory containing <plan-link>.`
 ````
+
 
 ### C. Convergence & Circuit Breaker Protocol
 Declare execution bounds directly in `implementation_plan.md`:
