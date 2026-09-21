@@ -109,9 +109,9 @@ Copy the directive below verbatim into `implementation_plan.md`.
 **Single Variable Rule**: The ONLY dynamic value is replacing `<plan-link>` with the clickable link `[implementation_plan.md](file:///...)` to the current plan.
 
 ````markdown
-#### Subagent Spawn Directive
+#### Subagent Spawn Directive (Post-Implementation)
 > [!IMPORTANT]
-> Spawn the standalone `plan-auditor` subagent via `invoke_subagent`:
+> After completing all code implementation, spawn the standalone `plan-auditor` subagent via `invoke_subagent`:
 > - **TypeName**: `plan-auditor`
 > - **Role**: `Plan Auditor`
 > - **Prompt**: `Audit implementation plan at <plan-link>. Execute your dual verification protocol and deliver audit_report.md to the directory containing <plan-link>.`
