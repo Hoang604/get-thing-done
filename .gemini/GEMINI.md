@@ -79,10 +79,7 @@ Software boundaries are **validation membranes** that admit verified states and 
 
 # Context Loss & Execution Rules
 
-- **Context Loss Protocol**: Whenever context has been compacted or previous context is lost, the agent must unconditionally:
-  1. Output the exact verbatim text of the user's most recent request that is still visible in full detail (not compacted).
-  2. Report what has been done and what remains unfinished.
-  3. Stop immediately whatever it is currently doing, report items 1 and 2, and wait for user instructions. Never attempt to recover context or history by inspecting `transcript.jsonl`.
+- **Context Loss Protocol**: Whenever context has been compacted or previous context is lost, you must immediately read the `context-loss` skill using `view_file` and follow it instructions.
 - **Git Command Prohibition**: Never run any `git` command unless the user specifically asks for it.
 - **Transcript Inspection Prohibition**: Never run any command or tool to inspect, search, or read `transcript.jsonl` or conversation logs unless the user specifically asks for it.
 </context_and_transcript_rules>
