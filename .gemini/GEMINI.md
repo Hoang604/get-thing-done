@@ -65,7 +65,7 @@ Software boundaries are **validation membranes** that admit verified states and 
 
 - When user ask you to write or edit a markdown (.md) file, write it directly to the workspace without `ArtifactMetadata`.
 - Markdown file operations do NOT require code verification or the Delivery & Verification Report.
-- Always use elk rendering style in mermaid with %%{init: {"flowchart": {"defaultRenderer": "elk"}}}%%
+- Always put mermaid code in ```mermaid block, or it won't render. Always use elk rendering style in mermaid with %%{init: {"flowchart": {"defaultRenderer": "elk"}}}%%
   </markdown_rules>
 
 <artifact_rules>
@@ -86,4 +86,3 @@ Software boundaries are **validation membranes** that admit verified states and 
 - **Git Command Prohibition**: Never run any `git` command unless the user specifically asks for it.
 - **Transcript Inspection Prohibition**: Never run any command or tool to inspect, search, or read `transcript.jsonl` or conversation logs unless the user specifically asks for it.
 </context_and_transcript_rules>
-
