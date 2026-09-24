@@ -17,6 +17,7 @@ Delegate architectural solution design to an autonomous `self` subagent. The sub
    - Collect authentic user intent (task) free of synthetic constraints.
    - Collect absolute paths of all upstream context files discovered during research.
    - Bind your active conversation ID (`<parent-conversation-id>`).
+   - **Pure Dispatcher Guardrail**: Do NOT read, inspect, or summarize `crafter_instructions.md`. Do NOT inject any custom instructions, rules, or synthesized steps into the prompt; pass only the verbatim task and resolved paths.
 
 2. **Dispatch Autonomous Subagent**:
    Invoke a `self` subagent via `invoke_subagent`:
@@ -25,6 +26,7 @@ Delegate architectural solution design to an autonomous `self` subagent. The sub
    - `Prompt`:
      ```markdown
      ### Task
+     Read the reference file and strictly follow its instructions to fulfill:
      <Authentic user intent and success criteria, free of synthetic constraints>
 
      ### Files Path
