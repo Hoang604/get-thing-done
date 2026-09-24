@@ -26,7 +26,7 @@ If the latest visible user request is `/execute` or requests execution of an imp
    - Locate the approved implementation plan artifact (`implementation_plan.md` in `<appDataDir>/brain/<conversation-id>/implementation_plan.md` or referenced in workspace).
    - Read the implementation plan file completely using `view_file`.
 2. **Read Execute Skill**:
-   - Read the `execute` skill instructions (`.gemini/antigravity-cli/skills/execute/SKILL.md`) using `view_file`.
+   - Read the `execute` skill instructions using `view_file`.
 3. **Continue Execution**:
    - Assess implemented deliverables versus remaining work based on the codebase state.
    - Continue execution immediately without stopping or waiting for user instructions.
