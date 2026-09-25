@@ -79,7 +79,7 @@ Software boundaries are **validation membranes** that admit verified states and 
 
 # Context Loss & Execution Rules
 
-- **Context Loss Protocol**: Whenever context has been compacted or previous context is lost, you must immediately read the `context-loss` skill using `view_file` and follow it instructions.
+- **Context Loss Protocol**: When context has been compacted, your first tool call must be `view_file` on the `context-loss` skill (resolve its path from the "Available skills" section). You must not call any other tool or respond before reading and following this skill.
 - **Git Command Prohibition**: Never run any `git` command unless the user specifically asks for it.
 - **Transcript Inspection Prohibition**: Never run any command or tool to inspect, search, or read `transcript.jsonl` or conversation logs unless the user specifically asks for it.
 </context_and_transcript_rules>

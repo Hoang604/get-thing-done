@@ -1,6 +1,6 @@
 ---
 name: context-loss
-description: Protocol for handling context loss or context compaction during conversation.
+description: You must read this skill immediately via view_file whenever context compaction occurs before calling any other tool or executing any task.
 ---
 
 # Context Loss Recovery Protocol
