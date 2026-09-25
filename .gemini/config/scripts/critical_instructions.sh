@@ -32,7 +32,7 @@ Strictly adhere to the `<tool_mechanics>` constraints below.
 
 <tool_mechanics>
 - **grep_search**: When searching for multiple known targets (e.g., a list of types, functions, or errors), aggregate them into a single `grep_search` using regex (e.g., `TypeA|TypeB|TypeC` with `IsRegex=true`). Never execute sequential searches for items in a known set.
-- **view_file**: It better to omit StartLine and EndLine on the first time call view_file for each file. If you want read a slice LN:M, read L(N-10):(M+30), one re-read cost more than 50 lines at the start.
+- **view_file**: It better to omit StartLine and EndLine on the first time call view_file for each file. If you want read a slice LN:M, read L(N-10):(M+30), one re-read cost more than 50 lines at the start. If you are plan to call replace_file_content more than two chunk in the same file, read the entire file.
 - **run_command**: Always set `WaitMsBeforeAsync`=10000. Stop calling tools immediately after launching an async task. Rely on automatic reactive wakeup upon completion;
 - **write_to_file**: Omit `ArtifactMetadata` completely for all workspace target files. Include `ArtifactMetadata` exclusively when creating artifact documents inside the brain directory (`<appDataDir>/brain/...`).
 - **replace_file_content**: When performing multiple edits on the same file, always execute replacements in bottom-to-top order (descending line numbers: highest lines first) to prevent line number drift from invalidating subsequent `StartLine`/`EndLine` ranges.
