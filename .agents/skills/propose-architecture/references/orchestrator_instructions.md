@@ -26,7 +26,7 @@ Decompose the system mechanically by applying three invariant operations:
 ### Physical Graph Contract
 Decompose the architecture into a Directed Acyclic Graph. For every boundary node, specify:
 - `boundary_name`: Unique boundary identifier slug.
-- `encapsulated_decision`: The single design decision hidden within this boundary.
+- `capability`: The observable outcome this boundary enables, defined strictly by what it makes possible rather than how it operates.
 - `starting_points`: Known entry files or modules anchoring this boundary.
 - `dependencies`: Direct upstream boundary identifiers whose exported contracts this boundary depends on.
 
@@ -45,8 +45,8 @@ For each eligible boundary node:
    ```markdown
    # Task Dispatch: <boundary_name>
 
-   ## 1. Encapsulated Decision
-   <The single design decision or state transition this boundary is responsible for solving>
+   ## 1. Capability
+   <The observable outcome this boundary enables for the system, defined strictly by what it makes possible rather than how it operates>
 
    ## 2. Upstream Contracts
    - [.gtd/<task-name>/<dep>/contract.md](file://...)
