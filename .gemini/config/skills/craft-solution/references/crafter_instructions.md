@@ -125,7 +125,10 @@ Conclude the proposal with an executive comparison table contrasting Approach A 
        - Terminate loop immediately. Kill the auditor subagent via `manage_subagents`.
      - **If Disparities or Concerns Detected**:
        - Kill the finished auditor instance via `manage_subagents` to release context.
-       - Refine `solution_proposal.md` to resolve all reported disparities, inflated tiers, or unsubstantiated guarantees.
+       - Refine `solution_proposal.md` adhering strictly to the **Disparity Remediation Protocol**:
+         - **Claim Invariant**: Every disputed claim must either cite the concrete physical mechanism that makes violation impossible, or be retracted into an unmitigated operational trade-off.
+         - **Tier Calibration**: Quality tiers are governed exclusively by state-space representation rather than runtime branching. Adopt the auditor's calibrated tier unconditionally, documenting the physical system barrier that makes a higher tier structurally unrepresentable.
+         - **Polarity Invariant**: Remediation must never reduce the structural divergence between approaches. Approach A resolves findings strictly by bounding scope without increasing indirection; Approach B resolves findings strictly by deepening encapsulation without reducing interface depth.
        - Spawn a NEW, fresh `proposal-auditor` instance (Audit cycle 2).
    - **Hard Limit**: Maximum 2 audit cycles (up to 3 drafts total). Terminate loop immediately when zero disparities remain or hard limit is reached. Kill any remaining auditor subagent.
 

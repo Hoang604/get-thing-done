@@ -14,7 +14,7 @@ Delegate architectural solution design to an autonomous `self` subagent. The sub
 
 1. **Resolve Paths**:
    - Locate the absolute path to this skill's reference file: `<skill-dir>/references/crafter_instructions.md` (dynamically resolve based on active platform and workspace environment).
-   - Collect authentic user intent (task) free of synthetic constraints.
+   - **Self-Sufficiency Invariant**: De-reference all conversational pronouns, relative terms, and implicit concepts from chat history into an explicit, standalone technical objective, free of synthetic constraints. The subagent operates in total amnesia and must execute without access to prior conversation turns.
    - Collect absolute paths of all upstream context files discovered during research.
    - Bind your active conversation ID (`<parent-conversation-id>`).
    - **Pure Dispatcher Guardrail**: Do NOT read, inspect, or summarize `crafter_instructions.md`. Do NOT inject any custom instructions, rules, or synthesized steps into the prompt; pass only the verbatim task and resolved paths.
