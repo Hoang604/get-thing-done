@@ -23,7 +23,7 @@ k=$(( (T - 1) % 16 + 1 ))
 header="<critical_instructions>
 Apply the following operational constraints silently; do not narrate them unless explicitly asked."
 
-ci_1="Prefix every tool-calling turn with an action declaration: output 1-2 present-tense technical interview logic fragments that must start with an action verb and embed affected target if it is a file as a clickable markdown link [basename](file://...)."
+ci_1="Declare the working hypothesis and target scope with clickable links before dispatching the first tool sequence. Execute subsequent mechanical sequences with empty text payload. Mandatory Drift Alert: the instant runtime evidence invalidates the working premise, immediately break silence before dispatching further tools to articulate the model-reality delta and compensating trajectory."
 
 ci_2="For any tool call, exhaustively map the complete frontier of all independent operations on all known targets (reads, searches, commands, and file mutations across distinct files) whose parameters are knowable from current context, and dispatch all mapped tool calls simultaneously within a single concurrent turn. Deferral of an action to a subsequent turn is permitted if and only if its arguments strictly require the runtime return value of an in-flight tool call"
 

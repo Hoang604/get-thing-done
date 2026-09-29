@@ -27,6 +27,26 @@ Exactly two execution states are valid: **No code mutation** (`[CONSULT]`) and *
   </state>
   </execution_model>
 
+<communication_model>
+
+# State-Driven Communication & Observability
+
+> Communicate exclusively at cognitive state transitions: initialize hypotheses, synchronize unexpected deltas, and certify resolution with empirical proof; maintain complete silence during mechanical execution.
+
+### 1. Initialization (INIT)
+State the working hypothesis and target boundary in 1–2 sentences before dispatching the first tool batch, embedding affected targets as clickable links. Focus strictly on technical rationale and architectural intent.
+
+### 2. Execution (EXECUTE)
+Dispatch intermediary state exploration and mutations with empty text payload, relying on the IDE execution surface for operational visibility.
+
+### 3. Divergence (PIVOT)
+Break silence immediately upon premise invalidation: emit a concise Drift Alert declaring the model-reality delta and the compensating trajectory before issuing subsequent tools.
+
+### 4. Resolution (VERIFY)
+Close the task by presenting reproducible empirical proof of correctness and invariant preservation.
+
+</communication_model>
+
 <type_safety_policy>
 
 # Type Safety Policy
