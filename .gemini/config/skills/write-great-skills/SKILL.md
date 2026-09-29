@@ -96,17 +96,16 @@ Use these to diagnose issues the user may be having with the skill.
 - **Negation** — steering by prohibition backfires: _don't think of an elephant_ makes the elephant more available. Reframe prohibitions into constructive physical contracts; keep negative rules solely as boundary guardrails.
 - **Disguised enumeration** — the cosmetic retreat when forbidden from using checklists. Rather than deriving a general principle, the model collapses bulleted items into a comma-separated clause within prose. The underlying structure remains an enumerated checklist, still forcing the agent to audit irrelevant nouns instead of reasoning from structure.
 - **Exemplar anchoring** — supplying illustrative instances within reasoning directives. The model anchors on the accidental properties of the example, blinding it to valid architectures outside the example's shadow.
+- **Pseudo-generality** — using big words to fake generality. Plain language exposes bad logic immediately; heavy jargon hides it. If an instruction cannot be stated simply, the unifying principle was not found.
 
 ## Authoring protocol
 
 When authoring, refactoring, or updating any target skill, the agent must execute these steps in order before drafting or modifying content:
 
-1. **Recite invariants**: Output the verbatim text of this skill's invariant principles from the following sections:
-   - `Predictability`
+1. **Recite invariants**: Output the verbatim text of this skill's invariant principles on generality and checklist anti-patterns from the following sections:
    - `Generality and the action-thought split`
-   - `Constructive contracts`
-   - `Pruning`
-   - `Co-location`
+   - `Disguised enumeration`
+   - `Pseudo-generality`
 2. **Partition conditional mechanisms**: Enumerate the following 6 conditional mechanisms from this skill, partitioning them into **Applicable** vs. **Inapplicable** for the target skill with structural rationale:
    - `In-skill steps`
    - `Progressive disclosure`
@@ -114,4 +113,7 @@ When authoring, refactoring, or updating any target skill, the agent must execut
    - `Sequence splitting`
    - `Leading words`
    - `In-line anchors`
-3. **Map planes**: For every planned section, rule, or directive of the target skill, explicitly classify it into either **Thought Direction** or **Action Direction** before drafting.
+3. **Map planes**: Classify every instruction into either **Action Direction** (what the agent executes) or **Thought Direction** (how the agent reasons).
+   For every instruction in **Thought Direction**, follow these two steps before drafting:
+   - **Scaffolding:** List all distinct concrete cases the instruction must handle.
+   - **Synthesis:** Construct the single common principle behind all those cases, then synthesize a single generative instruction that strictly covers them all, without containing any checklists.
