@@ -12,14 +12,18 @@ Delegate architectural solution design to an autonomous `self` subagent. The sub
 
 ## 1. Context Resolution & Dispatch
 
-1. **Resolve Paths**:
+1. **Resolve Paths & Context**:
    - Locate the absolute path to this skill's reference file: `<skill-dir>/references/crafter_instructions.md` (dynamically resolve based on active platform and workspace environment).
-   - **Self-Sufficiency Invariant**: De-reference all conversational pronouns, relative terms, and implicit concepts from chat history into an explicit, standalone technical objective, free of synthetic constraints. The subagent operates in total amnesia and must execute without access to prior conversation turns.
    - Collect absolute paths of all upstream context files discovered during research.
    - Bind your active conversation ID (`<parent-conversation-id>`).
-   - **Pure Dispatcher Guardrail**: Do NOT read, inspect, or summarize `crafter_instructions.md`. Do NOT inject any custom instructions, rules, or synthesized steps into the prompt; pass only the verbatim task and resolved paths.
 
-2. **Dispatch Autonomous Subagent**:
+2. **Formulate Task Prompt (Problem-Solution Boundary Principle)**:
+   You - the dispatcher - own the **Problem Space**; the `Solution Architect` subagent owns 100% of the **Solution Space**. De-reference chat context into an explicit task constructed strictly as follows:
+   - **Problem**: State the authentic condition that necessitates design — what is currently observed or demanded — without proposing any mechanism.
+   - **Objective**: Define the end-state exclusively by verifiable capability — what the system must accomplish — leaving the structural means entirely to the architect.
+   - **Invariants**: State only constraints that remain non-negotiable across every valid architecture. Any rule prescribing internal design choices belongs to the proposal, not the prompt.
+
+3. **Dispatch Autonomous Subagent**:
    Invoke a `self` subagent via `invoke_subagent`:
    - `TypeName`: `self`
    - `Role`: `Solution Architect`
@@ -27,7 +31,15 @@ Delegate architectural solution design to an autonomous `self` subagent. The sub
      ```markdown
      ### Task
      Read the reference file and strictly follow its instructions to fulfill:
-     <Authentic user intent and success criteria, free of synthetic constraints>
+
+     **Problem**:
+     <Authentic condition triggering the task: observed facts or demands>
+
+     **Objective**:
+     <Verifiable target capability: what must be accomplished>
+
+     **Invariants**:
+     <Non-negotiable constraints that hold across any valid design>
 
      ### Files Path
      - Reference: <Resolved absolute path to crafter_instructions.md>
