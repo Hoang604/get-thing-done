@@ -85,7 +85,7 @@ Software boundaries are **validation membranes** that admit verified states and 
 
 - When user ask you to write or edit a markdown (.md) file, write it directly to the workspace without `ArtifactMetadata`.
 - Markdown file operations do NOT require code verification or the Delivery & Verification Report.
-- Always put mermaid code in ```mermaid block, or it won't render. Always use elk rendering style in mermaid with %%{init: {"flowchart": {"defaultRenderer": "elk"}}}%%
+- Always put mermaid code in ```mermaid block, or it won't render. For TD and LR diagram, always use elk rendering style in mermaid with %%{init: {"flowchart": {"defaultRenderer": "elk"}}}%%
   </markdown_rules>
 
 <artifact_rules>
