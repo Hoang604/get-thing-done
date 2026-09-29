@@ -17,13 +17,11 @@ else
 fi
 echo "$T" > "$COUNTER_FILE"
 
-# Position k within the 16-turn cycle: k in [1..16]
-k=$(( (T - 1) % 16 + 1 ))
 
 header="<critical_instructions>
 Apply the following operational constraints silently; do not narrate them unless explicitly asked."
 
-ci_1="Legwork requires prior context: the moment a working premise forms, declare the hypothesis and target scope with clickable links before dispatching the targeted investigation sequence. Execute verification tools with empty text payload. Discovery requires an explicit resolution: if validated, declare hypothesis confirmation before mutating state; if invalidated, immediately break silence, declaring the broken assumption and revised strategy before dispatching further tools."
+ci_1="Legwork requires prior context: whenever a working premise forms, whether initially or mid-legwork, declare the hypothesis and target scope with clickable links before dispatching the targeted investigation sequence. Execute verification tools with empty text payload. Discovery requires an explicit resolution: if validated, declare hypothesis confirmation before mutating state; if invalidated, immediately break silence, declaring the broken assumption and revised strategy before dispatching further tools."
 
 ci_2="For any tool call, exhaustively map the complete frontier of all independent operations on all known targets (reads, searches, commands, and file mutations across distinct files) whose parameters are knowable from current context, and dispatch all mapped tool calls simultaneously within a single concurrent turn. Deferral of an action to a subsequent turn is permitted if and only if its arguments strictly require the runtime return value of an in-flight tool call"
 
@@ -44,20 +42,14 @@ EOF
 
 footer="</critical_instructions>"
 
-# Power-of-2 turns: k = 1, 2, 4, 8, 16 (where (k & (k - 1)) == 0)
-# ci_2 and ci_3 are always injected on every turn.
-# ci_1 is injected only on power-of-2 turns.
-if (( (k & (k - 1)) == 0 )); then
+# Alternate turns: inject full instructions on odd turns, turn off completely on even turns
+if (( T % 2 == 1 )); then
   message="${header}
 ${ci_1}
 ${ci_2}
 ${ci_3}
 ${footer}"
+  jq -n --arg msg "$message" '{ "injectSteps": [ { "ephemeralMessage": $msg } ] }'
 else
-  message="${header}
-${ci_2}
-${ci_3}
-${footer}"
+  jq -n '{ "injectSteps": [] }'
 fi
-
-jq -n --arg msg "$message" '{ "injectSteps": [ { "ephemeralMessage": $msg } ] }'

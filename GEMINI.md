@@ -5,8 +5,8 @@
 - **Tuyệt đối không chạy test** khi chỉ thao tác hoặc chỉnh sửa các file Markdown (`.md`).
 
 ## 2. Nguyên tắc Single Source of Truth (SSoT)
-- **Nguồn duy nhất**: Mọi cấu hình, kịch bản, quy tắc và kỹ năng tùy biến đều phải được khởi tạo hoặc chỉnh sửa tại thư mục nguồn gốc `.gemini/antigravity-cli/`.
-- **Không sửa thủ công ở thư mục đích**: Các thư mục như `.gemini/config/` hay `.agents/` là nơi nhận đồng bộ/đóng gói; không chỉnh sửa trực tiếp tại các thư mục này để tránh xung đột và ghi đè dữ liệu.
+- **Phạm vi thư mục nguồn gốc (`.gemini/antigravity-cli/`)**: Thư mục này CHỈ chứa duy nhất nguồn của **Skills** (`skills/`) và **Custom Subagents** (`agents/`), tuyệt đối không chứa bất cứ thứ gì khác (không chứa file `.sh`, không chứa hook hay cấu hình nào khác).
+- **Không sửa thủ công ở thư mục đích**: Các thư mục như `.gemini/config/` hay `.agents/` là nơi nhận đồng bộ/đóng gói; không chỉnh sửa trực tiếp skills và subagents tại các thư mục này để tránh xung đột và ghi đè dữ liệu.
 
 ## 3. Quản lý Kỹ năng (Skills Management)
 Khi được yêu cầu tạo hoặc chỉnh sửa skill:
