@@ -12,10 +12,36 @@ Structure execution not around arbitrary task tickets or isolated file diffs, bu
 Every boundary milestone is governed strictly by two invariant tiers:
 1. **Observable Outcome:** What capability or state transition this boundary unlocks for the system, defined strictly by:
    > *"The observable outcome this boundary enables for the system, defined strictly by what it makes possible rather than how it operates."*
-2. **Technical Decisions:** How this capability is achieved, defined strictly by:
-   > *"Articulate the engineering decisions so a senior engineer with only 10 minutes can confidently approve the boundary before implementation begins."*
+2. **Technical Decisions:** How this capability is materialized with minimal entropy, defined strictly by:
+   > *"Every technical decision serves solely to advance the system to a state possessing the new capability with minimal entropy."*
 
 The sum of all observable outcomes must compose cleanly into the complete objective.
+
+---
+
+## Minimal Entropy Evaluative Lenses
+
+When formulating technical decisions, evaluate every boundary against five authoritative architectural lenses:
+
+1. **Abstraction Conservation:**
+   *Anchors: Rich Hickey (Simple Made Easy) & Kent Beck (Once and Only Once / DRY)*
+   Every existing mechanism in the system represents paid-down complexity. Solve problems by anchoring directly into established abstractions and conventions. Inventing parallel ad-hoc primitives or duplicating logic for problems the codebase already solves is forbidden.
+
+2. **Seam Containment & Zero Blast Radius:**
+   *Anchors: David Parnas (Information Hiding) & Michael Feathers (The Seam Model)*
+   Confine all modifications hermetically behind an immediate seam. The ripple effect across external callers must be zero: callers interact through an invariant contract, ensuring the internal evolution of the boundary requires zero cascading edits elsewhere.
+
+3. **Contract Honesty & Generative Boundaries:**
+   *Anchors: Bertrand Meyer (Design by Contract) & Alexis King (Parse, Don't Validate)*
+   Data crossing boundaries must be strictly verified into non-nullable domain types before reaching execution logic. Optionality is reserved exclusively for authorized business absence; untyped wildcards (`any`, `dict`) or surrogate fallback values masking broken contracts are strictly forbidden.
+
+4. **Deep Modules & The Deletion Test:**
+   *Anchors: John Ousterhout (A Philosophy of Software Design)*
+   Maximize the ratio of encapsulated behavior to interface surface area. Reject shallow pass-through abstractions. Every introduced structure must pass the Deletion Test: if removing it causes complexity to collapse rather than reappear across callers, the structure is accidental complexity and must not exist.
+
+5. **Open-Closed & State Hermeticity:**
+   *Anchors: Bertrand Meyer (Open-Closed Principle) & Rich Hickey (Values over State)*
+   Absorb behavioral variations additively through polymorphism or strategy composition rather than mutating existing control flow with procedural `if/elif` branching. Execution within the boundary must be causally deterministic: consuming injected dependencies and emitting calculated results without mutating ambient globals or caller state in-place.
 
 ---
 
@@ -28,9 +54,6 @@ Starting from target entrypoints and interfaces, trace callers and consumers out
 - At each trace hop, determine whether the file requires changes.
 - **Fixed-Point Criterion:** Scope discovery is complete when an additional trace hop produces no new files requiring changes:
   $$\text{Scope}_{k+1} = \text{Scope}_k$$
-
-### Abstraction Conservation (Zero Reinvention)
-Every supporting mechanism already solved by the existing system must be reused. New code is reserved exclusively for novel domain logic not yet present in the repository; all auxiliary mechanisms (plumbing, serialization, persistence, transport) must anchor directly into pre-existing abstractions.
 
 ### Zero-Read Closed Scope Invariant
 Every data type, structure, or interface crossing a boundary seam must have its physical definition fully bound within the plan context:
@@ -75,7 +98,7 @@ For every milestone in the DAG, declare the physical blueprint across two cohesi
 - **Provenance & Justification:** The direct goal this milestone fulfills, OR the prerequisite required to implement downstream milestones cleanly and correctly.
 
 ### Tier 2: Technical Decisions & Physical Contracts (How)
-- **Key Decisions (10-Minute Review Standard):** Articulate the engineering decisions so a senior engineer with only 10 minutes can confidently approve the boundary before implementation begins.
+- **Key Decisions (10-Minute Review Standard):** Record the load-bearing engineering choices that satisfy the Minimal Entropy Invariant across the five evaluative lenses, articulated so a senior engineer with only 10 minutes can confidently approve the boundary before implementation begins.
 - **Literal Contracts & Strict Types:** Declare literal non-nullable domain models and boundary interfaces crossing the seam (`class` / `def` signatures with complete type annotations, docstrings, and `...` ellipses method bodies).
 - **Ingress Caller & Terminal Sink Audit:**
   - *Caller Audit (Ingress):* Audit all existing callers across the workspace. List every caller requiring updates, or certify: *"Caller Audit: 0 production callers found via search."*
@@ -96,7 +119,7 @@ Every boundary milestone in `implementation_plan.md` must follow this layout:
 - **Provenance & Justification:** <Direct requirement fulfilled, or prerequisite enabling Milestone N>
 
 #### Technical Decisions & Physical Contracts
-- **Key Decisions:** <Engineering decisions articulated for a 10-minute senior approval>
+- **Key Decisions:** <Load-bearing choices satisfying the Minimal Entropy lenses, articulated for a 10-minute senior approval>
 - **Literal Contracts & Bound Structures:**
   ```python
   class IngestionPayload(BaseModel):

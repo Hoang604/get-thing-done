@@ -2,11 +2,12 @@
 
 ## 1. Kiểm thử (Tests)
 - Chạy kiểm thử: `python3 -m unittest`.
-- **Tuyệt đối không chạy test** khi chỉ thao tác hoặc chỉnh sửa các file Markdown (`.md`).
+- **Tuyệt đối không chạy test** khi chỉ thao tác hoặc chỉnh sửa các file Markdown (`.md`) và script (`.sh`).
 
 ## 2. Nguyên tắc Single Source of Truth (SSoT)
 - **Phạm vi thư mục nguồn gốc (`.gemini/antigravity-cli/`)**: Thư mục này CHỈ chứa duy nhất nguồn của **Skills** (`skills/`) và **Custom Subagents** (`agents/`), tuyệt đối không chứa bất cứ thứ gì khác (không chứa file `.sh`, không chứa hook hay cấu hình nào khác).
 - **Không sửa thủ công ở thư mục đích**: Các thư mục như `.gemini/config/` hay `.agents/` là nơi nhận đồng bộ/đóng gói; không chỉnh sửa trực tiếp skills và subagents tại các thư mục này để tránh xung đột và ghi đè dữ liệu.
+- **Quy tắc file duy nhất (Không kiểm tra trùng lặp)**: Tất cả các file không phải là skill (bao gồm script, cấu hình, hook, templates...) luôn chỉ có một bản duy nhất trong repository; **tuyệt đối không tìm kiếm hay kiểm tra xem có nhiều bản khác nhau hay không**.
 
 ## 3. Quản lý Kỹ năng (Skills Management)
 Khi được yêu cầu tạo hoặc chỉnh sửa skill:

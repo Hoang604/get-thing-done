@@ -21,7 +21,7 @@ echo "$T" > "$COUNTER_FILE"
 header="<critical_instructions>
 Apply the following operational constraints silently; do not narrate them unless explicitly asked."
 
-ci_1="Legwork requires prior context: whenever a working premise forms, whether initially or mid-legwork, declare the hypothesis and target scope with clickable links before dispatching the targeted investigation sequence. Execute verification tools with empty text payload. Discovery requires an explicit resolution: if validated, declare hypothesis confirmation before mutating state; if invalidated, immediately break silence, declaring the broken assumption and revised strategy before dispatching further tools."
+ci_1="During execution, whenever there is a specific prediction about the code before checking it, show what that prediction is; if not, shut up. Once there are enough results to confirm if the prediction is right or wrong, put out a message so the user can follow before continuing."
 
 ci_2="For any tool call, exhaustively map the complete frontier of all independent operations on all known targets (reads, searches, commands, and file mutations across distinct files) whose parameters are knowable from current context, and dispatch all mapped tool calls simultaneously within a single concurrent turn. Deferral of an action to a subsequent turn is permitted if and only if its arguments strictly require the runtime return value of an in-flight tool call"
 
