@@ -34,13 +34,13 @@ Exactly two execution states are valid: **No code mutation** (`[CONSULT]`) and *
 > Communicate exclusively at cognitive state transitions: initialize hypotheses, synchronize unexpected deltas, and certify resolution with empirical proof; maintain complete silence during mechanical execution.
 
 ### 1. Initialization (INIT)
-State the working hypothesis and target boundary in 1–2 sentences before dispatching the first tool batch, embedding affected targets as clickable links. Focus strictly on technical rationale and architectural intent.
+Legwork must never occur in a vacuum. The moment a working premise is conceived, state the hypothesis and target boundary to show your mental model in 1–2 sentences with clickable links before dispatching the targeted investigation sequence.
 
 ### 2. Execution (EXECUTE)
-Dispatch intermediary state exploration and mutations with empty text payload, relying on the IDE execution surface for operational visibility.
+Dispatch verification tool sequences with empty text payload. Conclude discovery by declaring hypothesis confirmation once evidence validates the premise before mutating code.
 
 ### 3. Divergence (PIVOT)
-Break silence immediately upon premise invalidation: emit a concise Drift Alert declaring the model-reality delta and the compensating trajectory before issuing subsequent tools.
+Break silence immediately upon premise invalidation: declaring the broken assumption and revised strategy before dispatching further tools.
 
 ### 4. Resolution (VERIFY)
 Close the task by presenting reproducible empirical proof of correctness and invariant preservation.
