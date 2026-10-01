@@ -12,16 +12,22 @@ Structure execution not around arbitrary task tickets or isolated file diffs, bu
 Every boundary milestone is governed strictly by two invariant tiers:
 1. **Observable Outcome:** What capability or state transition this boundary unlocks for the system, defined strictly by:
    > *"The observable outcome this boundary enables for the system, defined strictly by what it makes possible rather than how it operates."*
-2. **Technical Decisions:** How this capability is materialized with minimal entropy, defined strictly by:
-   > *"Every technical decision serves solely to advance the system to a state possessing the new capability with minimal entropy."*
+2. **Technical Decisions:** How this capability is materialized with maximal yield, defined strictly by:
+   > *"Every technical decision serves solely to advance the system to a state possessing the new capability with maximal yield."*
+   >
+   > *Maximal yield pairs maximal delivered value with minimal system entropy.*
+
+> [!IMPORTANT]
+> **Minimal System Entropy is not minimal diff.**
+> Diff measures transition cost; entropy measures structural disorder. A change achieves minimal entropy only when the resulting codebase has exactly one canonical way to represent and execute the concept, leaving zero structural residue from the transition.
 
 The sum of all observable outcomes must compose cleanly into the complete objective.
 
 ---
 
-## Minimal Entropy Evaluative Lenses
+## Maximal Yield Evaluative Lenses
 
-When formulating technical decisions, evaluate every boundary against five authoritative architectural lenses:
+When formulating technical decisions, evaluate every boundary against six authoritative architectural lenses:
 
 1. **Abstraction Conservation:**
    *Anchors: Rich Hickey (Simple Made Easy) & Kent Beck (Once and Only Once / DRY)*
@@ -42,6 +48,10 @@ When formulating technical decisions, evaluate every boundary against five autho
 5. **Open-Closed & State Hermeticity:**
    *Anchors: Bertrand Meyer (Open-Closed Principle) & Rich Hickey (Values over State)*
    Absorb behavioral variations additively through polymorphism or strategy composition rather than mutating existing control flow with procedural `if/elif` branching. Execution within the boundary must be causally deterministic: consuming injected dependencies and emitting calculated results without mutating ambient globals or caller state in-place.
+
+6. **Caller Autonomy & High-Yield Design:**
+   *Anchors: John Ousterhout (Deep Modules)*
+   A boundary must maximize the power it provides to callers while keeping its interface minimal. Callers achieve their complete intent through a simple contract without managing callee state, coordinating internal sequencing, or creating parallel sources of truth.
 
 ---
 
@@ -98,7 +108,7 @@ For every milestone in the DAG, declare the physical blueprint across two cohesi
 - **Provenance & Justification:** The direct goal this milestone fulfills, OR the prerequisite required to implement downstream milestones cleanly and correctly.
 
 ### Tier 2: Technical Decisions & Physical Contracts (How)
-- **Key Decisions (10-Minute Review Standard):** Record the load-bearing engineering choices that satisfy the Minimal Entropy Invariant across the five evaluative lenses, articulated so a senior engineer with only 10 minutes can confidently approve the boundary before implementation begins.
+- **Key Decisions (10-Minute Review Standard):** Record the load-bearing engineering choices that satisfy the Maximal Yield Invariant across the evaluative lenses, articulated so a senior engineer with only 10 minutes can confidently approve the boundary before implementation begins.
 - **Literal Contracts & Strict Types:** Declare literal non-nullable domain models and boundary interfaces crossing the seam (`class` / `def` signatures with complete type annotations, docstrings, and `...` ellipses method bodies).
 - **Ingress Caller & Terminal Sink Audit:**
   - *Caller Audit (Ingress):* Audit all existing callers across the workspace. List every caller requiring updates, or certify: *"Caller Audit: 0 production callers found via search."*

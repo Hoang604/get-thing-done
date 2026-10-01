@@ -16,27 +16,26 @@ This skill is activated immediately when context has been compacted or previous 
 
 ## Recovery Workflow
 
-Inspect the most recent visible user request in full detail (not compacted).
+Assess execution state and inspect the most recent visible user request in full detail (not compacted).
 
-### Case 1: Most Recent Message is `/execute` (or Contains `/execute`)
+### Case 1: Currently Executing an Implementation Plan
 
-If the latest visible user request is `/execute` or requests execution of an implementation plan:
+If currently in the middle of executing an implementation plan:
 
-1. **Locate and Read Implementation Plan**:
+1. **Read Implementation Plan & Execute Skill**:
    - Locate the approved implementation plan artifact (`implementation_plan.md` in `<appDataDir>/brain/<conversation-id>/implementation_plan.md` or referenced in workspace).
    - Read the implementation plan file completely using `view_file` then read everything the implementation plan references.
-2. **Read Execute Skill**:
    - Read the `execute` skill instructions using `view_file`.
-3. **Continue Execution**:
+2. **Continue Execution**:
    - Assess implemented deliverables versus remaining work based on the codebase state.
    - Continue execution immediately without stopping or waiting for user instructions.
    - Deliver the execution report strictly adhering to the `execute` skill format upon completion.
 
 ---
 
-### Case 2: Other Messages (Not `/execute`)
+### Case 2: Other Situations (Not Executing an Implementation Plan)
 
-If the latest visible user request is NOT `/execute`:
+If NOT currently executing an implementation plan:
 
 1. **Echo Request**: Output the exact verbatim text of the user's most recent request that is still visible in full detail (not compacted).
 2. **Report Status**: Report clearly what has been done and what remains unfinished.

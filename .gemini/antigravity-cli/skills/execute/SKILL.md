@@ -1,7 +1,6 @@
 ---
 name: execute
-description: Execute an Alignment Contract.
-disable-model-invocation: true
+description: Execute a implemenation plan. read before start implementing a plan.
 ---
 
 ## Core Principles
@@ -13,6 +12,7 @@ disable-model-invocation: true
    - **Destructive Blast Radius**: Required actions cause irreversible state loss, corrupt historical schema/data parity, or break contracts outside target scope.
    - **Missing External Input**: Missing secrets, unresolvable credentials, or ambiguous business decisions that cannot be deduced from codebase context.
 4. **Accountability Contract**: Any deviation from the explicit plan—unlisted files modified, interface adaptations, or pragmatic fixes—must be fully recorded in the final report.
+5. **Craftsmanship & Maximal Value**: Within contracted scope, nominal compliance is a defect. A deliverable is complete only when it works seamlessly in actual use without pushing operational friction or fragility onto users or callers. Maximize execution craftsmanship without expanding business scope.
 
 ## Execution Steps
 
@@ -37,15 +37,17 @@ disable-model-invocation: true
    - **Correct**: Fix the real issue cleanly at the source and disclose it in `Deviations & Adjustments`, or Hard Stop if the blast radius represents an uncontrollable architectural redesign.
 3. *"Just a quick 1-line hack or fallback to bypass"* $\rightarrow$ **Incorrect**. Defensive fallbacks (`??`, `||`, `?.`) mask invariant violations and corrupt downstream state.
    - **Correct**: Fail fast; trace and fix the upstream root cause cleanly.
-4. *"User just wants it to work (Helpful savior)"* $\rightarrow$ **Incorrect**. The contract defines the scope; flexibility is granted strictly to resolve technical friction, not to invent unrequested features.
-   - **Correct**: Maintain contract boundaries; do not build speculative additions.
-5. *"This is a broken past migration; I must fix it to unblock verification"* $\rightarrow$ **Incorrect**. Modifying historical migrations corrupts deployment history and breaks database parity.
+4. *"I will add this extra capability because the user might need it"* $\rightarrow$ **Incorrect**. Introducing unrequested business features is scope creep.
+   - **Correct**: Scope is an upper bound. Direct all initiative strictly into perfecting the contracted deliverables.
+5. *"The plan didn't explicitly demand polish, so a bare-minimum implementation is fine"* $\rightarrow$ **Incorrect**. Contracts define intent, not permission to deliver fragile software.
+   - **Correct**: Build every deliverable to production standards, fully finished for real-world usage.
+6. *"This is a broken past migration; I must fix it to unblock verification"* $\rightarrow$ **Incorrect**. Modifying historical migrations corrupts deployment history and breaks database parity.
    - **Correct**: Hard Stop immediately; report the broken legacy migration and ask the user how to proceed.
-6. *"Fix out-of-scope tests by weakening assertions or masking failures"* $\rightarrow$ **Incorrect**. Weakening assertions or silently skipping tests creates false confidence.
+7. *"Fix out-of-scope tests by weakening assertions or masking failures"* $\rightarrow$ **Incorrect**. Weakening assertions or silently skipping tests creates false confidence.
    - **Correct**: Fix the underlying root cause in code/fixtures and log the adaptation. Never alter assertions of unrelated tests.
-7. *"I will silently fix adjacent syntax/types as a courtesy without logging"* $\rightarrow$ **Incorrect**. Unrecorded mutations violate auditability.
+8. *"I will silently fix adjacent syntax/types as a courtesy without logging"* $\rightarrow$ **Incorrect**. Unrecorded mutations violate auditability.
    - **Correct**: Cleanly resolve adjacent blockers, but record every unlisted file in `Deviations & Adjustments`.
-8. *"I will use default system walkthrough headings (`Changes made`, `What was tested`, `Validation results`)"* $\rightarrow$ **Incorrect**. Default system walkthrough headings are strictly forbidden under `/execute`.
+9. *"I will use default system walkthrough headings (`Changes made`, `What was tested`, `Validation results`)"* $\rightarrow$ **Incorrect**. Default system walkthrough headings are strictly forbidden under `/execute`.
    - **Correct**: Overwrite `walkthrough.md` exclusively with the `### Execution & Verification Report` schema.
 
 ## Final Output Format
@@ -76,4 +78,9 @@ disable-model-invocation: true
 - **Diagnostics & Fixes:**
   <!-- Concise log of failures encountered during verification and remediation applied. If clean on first run: "None (Clean pass)". -->
   - `<Target or Command>`: `<Failure/Error summary>` -> <Root cause and remediation applied>
+
+#### 4. Proactive Value Additions
+
+<!-- Record improvements made beyond bare-minimum contract text to make the deliverable robust or seamless in actual use, while remaining strictly within contracted scope. If none: "None (Strict contract only)". -->
+- [<file>](file:///path/to/file#L...): <What was added beyond the minimum text and the practical value it delivered>
 ```
