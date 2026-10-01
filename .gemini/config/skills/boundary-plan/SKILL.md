@@ -109,6 +109,8 @@ For every milestone in the DAG, declare the physical blueprint across two cohesi
 
 ### Tier 2: Technical Decisions & Physical Contracts (How)
 - **Key Decisions (10-Minute Review Standard):** Record the load-bearing engineering choices that satisfy the Maximal Yield Invariant across the evaluative lenses, articulated so a senior engineer with only 10 minutes can confidently approve the boundary before implementation begins.
+  - *Minimal Entropy:* Decisions in this boundary to minimize system entropy.
+  - *Maximal Value:* Decisions in this boundary to maximize delivered value.
 - **Literal Contracts & Strict Types:** Declare literal non-nullable domain models and boundary interfaces crossing the seam (`class` / `def` signatures with complete type annotations, docstrings, and `...` ellipses method bodies).
 - **Ingress Caller & Terminal Sink Audit:**
   - *Caller Audit (Ingress):* Audit all existing callers across the workspace. List every caller requiring updates, or certify: *"Caller Audit: 0 production callers found via search."*
@@ -119,9 +121,14 @@ For every milestone in the DAG, declare the physical blueprint across two cohesi
 
 ## 4. In-Line Structural Anchor
 
-Every boundary milestone in `implementation_plan.md` must follow this layout:
+Every `implementation_plan.md` begins with the overall strategy followed by the milestone sequence:
 
 ````markdown
+## Minimal Entropy & Maximal Value Strategy
+
+- **Minimal Entropy:** <Decisions made to achieve minimal entropy for the overall system>
+- **Maximal Value:** <Decisions made to achieve maximal value for the overall objective>
+
 ### Milestone 1: <Descriptive Title>
 
 - **Observable Outcome:** <What this boundary makes possible for the system or downstream milestones>
@@ -129,7 +136,9 @@ Every boundary milestone in `implementation_plan.md` must follow this layout:
 - **Provenance & Justification:** <Direct requirement fulfilled, or prerequisite enabling Milestone N>
 
 #### Technical Decisions & Physical Contracts
-- **Key Decisions:** <Load-bearing choices satisfying the Minimal Entropy lenses, articulated for a 10-minute senior approval>
+- **Key Decisions:** <Load-bearing choices satisfying the Maximal Yield lenses, articulated for a 10-minute senior approval>
+  - **Minimal Entropy:** <Decisions in this boundary to minimize system entropy>
+  - **Maximal Value:** <Decisions in this boundary to maximize delivered value>
 - **Literal Contracts & Bound Structures:**
   ```python
   class IngestionPayload(BaseModel):

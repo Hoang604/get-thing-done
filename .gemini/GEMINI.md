@@ -49,7 +49,7 @@ Software boundaries are **validation membranes** that admit verified states and 
 
 # Engineering Yield & System Entropy Policy
 
-Governs all code planning, implementation, and refactoring across the codebase.
+Governs all technical decisions across the codebase. Every technical decision must maximize yield while minimizing system entropy.
 
 1. **The Generative Principle of Maximal Yield.** The objective boundary is an immutable ceiling (zero uncontracted scope expansion), but quality has no floor: every technical decision serves solely to advance the system to a state possessing the contracted capability with maximal yield.
 2. **Minimal System Entropy.** Minimal system entropy is not minimal diff. Diff measures transition cost; entropy measures structural disorder. A change achieves minimal entropy only when the resulting codebase has exactly one canonical way to represent and execute the concept, leaving zero structural residue from the transition.
