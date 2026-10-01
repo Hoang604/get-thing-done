@@ -12,6 +12,7 @@ DEST_SKILLS_AGENTS="$WORKSPACE_DIR/.agents/skills"
 if [[ -d "$SRC_SKILLS" ]]; then
     mkdir -p "$DEST_SKILLS_CFG" "$DEST_SKILLS_AGENTS"
     echo "Syncing skills: $SRC_SKILLS -> $DEST_SKILLS_CFG & $DEST_SKILLS_AGENTS..."
+    rm -rf "$DEST_SKILLS_CFG"/* "$DEST_SKILLS_AGENTS"/*
     cp -rf "$SRC_SKILLS/." "$DEST_SKILLS_CFG/"
     cp -rf "$SRC_SKILLS/." "$DEST_SKILLS_AGENTS/"
 else

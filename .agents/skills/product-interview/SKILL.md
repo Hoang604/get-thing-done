@@ -16,8 +16,6 @@ Maintain actively throughout execution:
 
 - **Zero Hallucination**: Extract requirements and facts exclusively from explicit user confirmations and verified codebase findings. Never invent domain rules or assume unstated business logic.
 - **Zero Engineering Leakage**: Express all specifications strictly in human domain language, strictly excluding implementation symbols and syntax.
-- **Context Air-Gap Invariant**: The Main Agent must never inspect source code files or execute code searches. Codebase exploration is quarantined entirely within the `codebase-tracer` subagent.
-- **Grounded System Reality**: The verified objective operational truth actively enforced by the existing system. All domain specifications must anchor strictly to this reality without assuming unbuilt capabilities or violating system boundaries.
 - **Semantic Sync**: Propose precise Working Definitions for newly introduced domain nouns and verbs, locking on user confirmation.
 - **Reconcile Engine**: Before writing any confirmed answer to disk, cross-reference it against:
   - `docs/proposals/<feature>/proposal.md`
@@ -30,24 +28,22 @@ Maintain actively throughout execution:
 
 ## Execution Steps
 
-### 1. Codebase Trace (Subagent) & Gap Inventory
+### 1. Gap Inventory & Contrast Scan
 
-1. **Spawn Codebase Tracer**: Invoke `codebase-tracer` via `invoke_subagent` passing exclusively:
-   `Target proposal: <absolute_path_to_proposal>`
-   Completion criterion: The subagent completes execution and emits `docs/proposals/<feature>/codebase-trace.md`.
-2. **Ingest Baseline Assets**: Read `docs/proposals/<feature>/proposal.md` and `docs/proposals/<feature>/codebase-trace.md` using `view_file`.
-3. **Contrast Scan**: Contrast the proposal against grounded system reality documented in `codebase-trace.md`. Identify every ambiguity, contradiction, or unhandled reality where an implementing engineer would otherwise be forced to guess or invent business behavior.
-4. **Compile Inventory**: Compile these into an inventory of load-bearing unknowns, ordered by dependency: resolve foundational choices that reshape the problem before probing dependent details.
-- **Completion Criterion**: `codebase-trace.md` exists on disk, and the inventory of load-bearing unknowns is established in memory.
+Contrast `docs/proposals/<feature>/proposal.md` against `docs/proposals/<feature>/codebase-trace.md`.
+Identify every ambiguity, contradiction, or unhandled reality where an implementing engineer would otherwise be forced to guess or invent business behavior.
+
+Compile these into an inventory of load-bearing unknowns, ordered by dependency: resolve foundational choices that reshape the problem before probing dependent details.
 
 ### 2. Relentless Interview
 
 Use the `ask_question` tool to resolve every load-bearing unknown in the inventory:
-- **Grounded Question**: Open by articulating the grounded system reality that blocks or conflicts with the proposal and why engineering cannot resolve it without a business policy decision, then pose the domain choice.
-- **Operational Options**: Pair every question with 2–3 concrete choices, `(Recommended)` first, formatted as the user's direct response. Define each choice as an operational mechanism rather than an action label:
-  `<Operational Mechanism> — Choose this if <Trade-off>`
+- Formulate each question around a concrete business decision that eliminates developer guesswork.
+- Pair every question with 2–3 concrete choices, plus one pre-calculated `(Recommended)` default listed first. Format options as the user's direct response.
+- **Decision-Framed Options**: Format every option as: `<User Action / Business Choice> — Choose this if <condition>`.
 - Use `is_multi_select: true` when multiple independent choices or constraints can be selected simultaneously.
-- **Stopping Rule**: Halt questioning when every finding in the inventory has an explicit domain resolution locked in the Decision Log.
+
+Halt questioning when zero points of developer guesswork remain between the proposal and codebase reality, and all decisions are locked in the Decision Log.
 
 ### 3. Multi-Tab Playback Gate
 
@@ -71,8 +67,7 @@ If any tab is flagged or assumption vetoed, re-probe only the disputed dimension
 ### 4. Emit Product Draft
 
 When the user confirms all tabs of the Multi-Tab Playback Gate, write the authoritative domain specification directly to the file `docs/proposals/<feature>/product-draft.md`.
-- Must be composed exclusively from the confirmed Decision Log and grounded system reality.
-- Express all contracts strictly in human domain language and tables. Exclude implementation code blocks and programming language syntax.
+- Must be composed exclusively from the confirmed Decision Log and verified code assets.
 - Present all confirmed decisions using whatever structure and style best communicates the target domain behavior.
 - **Completion Criterion**: The file `docs/proposals/<feature>/product-draft.md` exists on disk reflecting all confirmed decisions from the Playback Gate, with zero unconfirmed markers.
 

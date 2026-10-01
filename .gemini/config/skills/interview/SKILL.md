@@ -114,7 +114,7 @@ When confirmed, output the template below and halt. Do not re-summarize or mutat
 **Template (`[ALIGNED]` or `[ALIGNED-PROVISIONAL]`):**
 > **[ALIGNED]** — Shared understanding locked.
 >
-> To evaluate architectural trade-offs before planning, run `/propose-plan` to compare two viable technical approaches (Pragmatic vs. Robust) with Quality Tier analysis.
+> To evaluate architectural trade-offs before planning, run `/craft-solution` to design and audit proposals with an autonomous Solution Architect. Or run `/boundary-plan` to directly draft a zero-read implementation plan.
 
 *(Use `[ALIGNED-PROVISIONAL]` if provisional defaults remain).*
 

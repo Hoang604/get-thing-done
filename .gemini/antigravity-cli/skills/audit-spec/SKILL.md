@@ -81,8 +81,8 @@ Output the exact hand-off message and halt:
 **[SPEC AUDITED & LOCKED]** — All system fallbacks, invariants, and edge cases sealed in ./.gtd/<task_name>/SPEC.md.
 
 Next Steps:
-- To decompose into dependency-ordered tracer-bullet tickets: run `/to-ticket`
-- To begin technical architecture and trade-off analysis: run `/propose-plan`
+- To draft a zero-read implementation plan: run `/boundary-plan`
+- To evaluate architectural trade-offs: run `/craft-solution`
 ```
 
 Stop execution immediately. Do NOT write an implementation plan or mutate source code.

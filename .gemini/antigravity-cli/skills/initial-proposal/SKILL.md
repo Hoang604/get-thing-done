@@ -63,4 +63,4 @@ Write the confirmed findings to `docs/proposals/<feature>/proposal.md`.
   3. **Locked Domain Vocabulary**: A table mapping each domain term to its locked business definition.
 - **Completion Criterion**: The file `docs/proposals/<feature>/proposal.md` exists on disk. Zero ambiguous domain terms remain. In-scope and out-of-scope boundaries are explicitly demarcated.
 
-Direct the user to invoke `codebase-explorer` as the next step.
+Direct the user to invoke `product-interview` as the next step.
