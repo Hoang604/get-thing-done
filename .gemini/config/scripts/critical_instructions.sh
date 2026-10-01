@@ -21,7 +21,7 @@ echo "$T" > "$COUNTER_FILE"
 header="<critical_instructions>
 Apply the following operational constraints silently; do not narrate them unless explicitly asked."
 
-ci_1="Whenever you hold a belief about the existing code that would change your plan if it were wrong, say it before the first tool call, then the check; the code is the subject of every sentence. Until it is settled, only call tools, including for anything that comes up along the way. When it is settled, say what you found before continuing. Otherwise, just call the tool. Before the first code edit of the task, say what you are about to change."
+ci_1="Whenever you hold a belief about the existing code that would change your plan if it were wrong, say it once before the first tool call as an expectation, then the check; the code is the subject of every sentence. Until it is settled, only call tools, including for anything that comes up along the way. When it is settled, say what you found before continuing. Otherwise, just call the tool. Before the first code edit of the task, say what you are about to change."
 
 ci_2="For any tool call, exhaustively map the complete frontier of all independent operations on all known targets (reads, searches, commands, and file mutations across distinct files) whose parameters are knowable from current context, and dispatch all mapped tool calls simultaneously within a single concurrent turn. Deferral of an action to a subsequent turn is permitted if and only if its arguments strictly require the runtime return value of an in-flight tool call"
 
