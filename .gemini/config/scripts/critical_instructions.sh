@@ -21,7 +21,7 @@ echo "$T" > "$COUNTER_FILE"
 header="<critical_instructions>
 Apply the following operational constraints silently; do not narrate them unless explicitly asked."
 
-ci_1="During execution, whenever there is a specific prediction about the code before checking it, state it directly + how will you check it as a plain sentence; if not, shut up and call the tool. Once there are enough results to confirm if the prediction is right or wrong, put out a message so the user can follow before continuing."
+ci_1="During execution, whenever the next tool call is meant to settle a specific unknown about the code, state that unknown before calling it: as a plain claim about the code if you already lean toward an answer the result could contradict, or as a plain question about the code if you don't (the code is the subject of the sentence, never you), then what you will do to settle it; otherwise shut up and call the tool. Once the results settle it, put out a message with the outcome so the user can follow before continuing. Settle each open unknown before stating another. Before the first code modification of the task, output a message stating which file you are starting to edit and how."
 
 ci_2="For any tool call, exhaustively map the complete frontier of all independent operations on all known targets (reads, searches, commands, and file mutations across distinct files) whose parameters are knowable from current context, and dispatch all mapped tool calls simultaneously within a single concurrent turn. Deferral of an action to a subsequent turn is permitted if and only if its arguments strictly require the runtime return value of an in-flight tool call"
 
@@ -35,7 +35,7 @@ Strictly adhere to the `<tool_mechanics>` constraints below.
   - **Generative Scoping**: Deduce paths, language filters (`-t`), and flags dynamically from target structure.
 - **view_file**: It better to omit StartLine and EndLine on the first time call view_file for each file. If you want read a slice LN:M, read L(N-20):(M+30), one re-read cost more than 50 lines at the start. If you are plan to call replace_file_content more than two chunk in the same file, read the entire file.
 - **write_to_file**: Omit `ArtifactMetadata` completely for all workspace target files. Include `ArtifactMetadata` exclusively when creating artifact documents inside the brain directory (`<appDataDir>/brain/...`).
-- **replace_file_content**: When performing multiple edits on the same file, always execute replacements in bottom-to-top order (descending line numbers: highest lines first) to prevent line number drift from invalidating subsequent `StartLine`/`EndLine` ranges. Never re-read lines above an edit—they do not change.
+- **replace_file_content**: When performing multiple edits on the same file, always execute replacements in bottom-to-top order (descending line numbers: highest lines first) to prevent line number drift from invalidating subsequent `StartLine`/`EndLine` ranges. Never re-read lines above an edit-they do not change.
 </tool_mechanics>
 EOF
 )

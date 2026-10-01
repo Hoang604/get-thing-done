@@ -19,9 +19,8 @@ Delegate architectural solution design to an autonomous `self` subagent. The sub
 
 2. **Formulate Task Prompt (Problem-Solution Boundary Principle)**:
    You - the dispatcher - own the **Problem Space**; the `Solution Architect` subagent owns 100% of the **Solution Space**. De-reference chat context into an explicit task constructed strictly as follows:
-   - **Problem**: State the authentic condition that necessitates design — what is currently observed or demanded — without proposing any mechanism.
-   - **Objective**: Define the end-state exclusively by verifiable capability — what the system must accomplish — leaving the structural means entirely to the architect.
-   - **Invariants**: State only constraints that remain non-negotiable across every valid architecture. Any rule prescribing internal design choices belongs to the proposal, not the prompt.
+   - **Problem**: State strictly the operational reality triggering the task: observed system behavior or authentic user requirements. Describe only what is, never what the codebase is missing or should become.
+   - **Objective**: Define the end-state exclusively by external verifiable behavior — what the system accomplishes for its use cases without specifying internal implementation.
 
 3. **Dispatch Autonomous Subagent**:
    Invoke a `self` subagent via `invoke_subagent`:
@@ -33,13 +32,10 @@ Delegate architectural solution design to an autonomous `self` subagent. The sub
      Read the reference file and strictly follow its instructions to fulfill:
 
      **Problem**:
-     <Authentic condition triggering the task: observed facts or demands>
+     <Operational reality: observed system behavior or authentic user requirements>
 
      **Objective**:
-     <Verifiable target capability: what must be accomplished>
-
-     **Invariants**:
-     <Non-negotiable constraints that hold across any valid design>
+     <External verifiable behavior: what the system accomplishes for its use cases>
 
      ### Files Path
      - Reference: <Resolved absolute path to crafter_instructions.md>

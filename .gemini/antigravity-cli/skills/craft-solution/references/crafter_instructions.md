@@ -1,7 +1,7 @@
 # CORE DIRECTIVE
 
 Conduct thorough research and present distinct architectural approaches with trade-offs.
-Draft strictly architectural approaches and trade-offs. This request does NOT warrant a plan. You must bypass planning mode entirely. Do NOT create or update any `implementation_plan.md` artifact. Author your complete architectural proposal exclusively into `<appDataDir>/brain/<parent-conversation-id>/solution_proposal.md`.
+Draft strictly architectural approaches and trade-offs. This request does NOT warrant a plan. You must bypass planning mode entirely. Do NOT create or update any `implementation_plan.md` artifact. Author your complete architectural proposal in your conversation artifact directory: `<appDataDir>/brain/<subagent-id>/solution_proposal.md`, copying only the final approved proposal to the parent directory upon completion.
 
 ---
 
@@ -109,23 +109,23 @@ Conclude the proposal with an executive comparison table contrasting Approach A 
 ## 5. Inner Convergence Loop & Delivery
 
 1. **Initial Draft Delivery**:
-   - Write your complete architectural proposal to:
-     `<appDataDir>/brain/<parent-conversation-id>/solution_proposal.md`
+   - Write your complete architectural proposal to your own conversation artifact directory:
+     `<appDataDir>/brain/<subagent-id>/solution_proposal.md`
 
 2. **Audit & Convergence Loop (Fresh Auditor Invariant)**:
    - Spawn a fresh `proposal-auditor` instance via `invoke_subagent`:
      - `TypeName`: `proposal-auditor`
      - `Role`: `Proposal Auditor`
      - `Prompt`:
-       `Audit the architectural proposal located at: <appDataDir>/brain/<parent-conversation-id>/solution_proposal.md`
+       `Audit the architectural proposal located at: <appDataDir>/brain/<subagent-id>/solution_proposal.md`
    - Wait for `proposal-auditor` to complete and write its report to:
-     `<appDataDir>/brain/<parent-conversation-id>/proposal_audit_report.md`
+     `<appDataDir>/brain/<subagent-id>/proposal_audit_report.md`
    - Evaluate the audit report:
      - **If Verdict is APPROVED (Zero Disparities)**:
        - Terminate loop immediately. Kill the auditor subagent via `manage_subagents`.
      - **If Disparities or Concerns Detected**:
        - Kill the finished auditor instance via `manage_subagents` to release context.
-       - Refine `solution_proposal.md` adhering strictly to the **Disparity Remediation Protocol**:
+       - Refine `<appDataDir>/brain/<subagent-id>/solution_proposal.md` adhering strictly to the **Disparity Remediation Protocol**:
          - **Claim Invariant**: Every disputed claim must either cite the concrete physical mechanism that makes violation impossible, or be retracted into an unmitigated operational trade-off.
          - **Tier Calibration**: Quality tiers are governed exclusively by state-space representation rather than runtime branching. Adopt the auditor's calibrated tier unconditionally, documenting the physical system barrier that makes a higher tier structurally unrepresentable.
          - **Polarity Invariant**: Remediation must never reduce the structural divergence between approaches. Approach A resolves findings strictly by bounding scope without increasing indirection; Approach B resolves findings strictly by deepening encapsulation without reducing interface depth.
@@ -133,5 +133,8 @@ Conclude the proposal with an executive comparison table contrasting Approach A 
    - **Hard Limit**: Maximum 2 audit cycles (up to 3 drafts total). Terminate loop immediately when zero disparities remain or hard limit is reached. Kill any remaining auditor subagent.
 
 3. **Final Handoff**:
-   - Once the loop terminates and all auditors are cleaned up, reply to the parent agent with strictly this single confirmation line:
-     `Completed: Final solution_proposal.md delivered at <appDataDir>/brain/<parent-conversation-id>/solution_proposal.md`
+   - Once the loop terminates and all auditors are cleaned up:
+     1. Copy the final approved proposal to the parent conversation directory via `run_command`:
+        `cp "<appDataDir>/brain/<subagent-id>/solution_proposal.md" "<appDataDir>/brain/<parent-conversation-id>/solution_proposal.md"`
+     2. Reply to the parent agent with strictly this single confirmation line:
+        `Completed: Final solution_proposal.md delivered at <appDataDir>/brain/<parent-conversation-id>/solution_proposal.md`

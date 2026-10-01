@@ -24,7 +24,7 @@ If the latest visible user request is `/execute` or requests execution of an imp
 
 1. **Locate and Read Implementation Plan**:
    - Locate the approved implementation plan artifact (`implementation_plan.md` in `<appDataDir>/brain/<conversation-id>/implementation_plan.md` or referenced in workspace).
-   - Read the implementation plan file completely using `view_file`.
+   - Read the implementation plan file completely using `view_file` then read everything the implementation plan references.
 2. **Read Execute Skill**:
    - Read the `execute` skill instructions using `view_file`.
 3. **Continue Execution**:
