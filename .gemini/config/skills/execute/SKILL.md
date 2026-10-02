@@ -9,22 +9,24 @@ description: Execute a implemenation plan. read before start implementing a plan
 2. **Autonomous Adaptation with Full Disclosure**: Software boundaries are fluid. When completing contracted deliverables uncovers unlisted structural dependencies or upstream defects required for correctness, remediate them cleanly at the source and disclose every deviation. Reject local defensive bypasses or suppressed failures.
 3. **True Blockers (Hard Stop)**: Stop execution immediately and escalate to the user only when encountering:
    - **Goal Invalidation**: The contract's core objective is contradictory, unworkable, or fundamentally flawed.
+   - **Plan Veto**: The auditor issues a PLAN VETO identifying an architectural flaw in the plan.
    - **Destructive Blast Radius**: Required actions cause irreversible state loss, corrupt historical schema/data parity, or break contracts outside target scope.
    - **Missing External Input**: Missing secrets, unresolvable credentials, or ambiguous business decisions that cannot be deduced from codebase context.
 4. **Accountability Contract**: Any deviation from the explicit plan—unlisted files modified, interface adaptations, or pragmatic fixes—must be fully recorded in the final report.
-5. **Craftsmanship & Maximal Value**: Within contracted scope, nominal compliance is a defect. A deliverable is complete only when it works seamlessly in actual use without pushing operational friction or fragility onto users or callers. Maximize execution craftsmanship without expanding business scope.
+5. **Generative Realization (Craftsmanship over Nominal Compliance)**: A deliverable is finished only when it works smoothly in real use, without pushing hassle onto the user or adding unrequested features. A contract defines functional intent, not permission to deliver raw scaffolding.
 
 ## Execution Steps
 
-1. **Execute Planned Work**: Mutate primary targets specified in the Alignment Contract. If completing the contracted objective requires touching unlisted adjacent files, resolve them cleanly at the root cause and log the adaptation.
-   - *Completion criterion*: All contracted deliverables implemented and self-consistent across the codebase.
+1. **Execute Planned Work**: Build each milestone as a finished tool ready for immediate use, so callers and users never have to deal with missing pieces. Fulfill the contract completely by handling all practical details inside. If completing the contracted objective requires touching unlisted adjacent files, resolve them cleanly at the root cause and log the adaptation.
+   - *Completion criterion*: All contracted deliverables implemented as complete, working tools self-consistent across the codebase.
 2. **Verify & Remediate (Red Loop)**: Execute verification declared in the contract:
-   - Run baseline check commands.
-   - **Subagent Audit Gate**: Dispatch the auditor subagent ONLY IF a `Subagent Spawn Directive` is explicitly declared in the approved plan. If absent, do NOT invoke subagents.
+   - Execute baseline check commands directly to verify system invariants and runtime execution.
+   - **Subagent Audit Gate**: Dispatch the auditor subagent for independent passive code inspection ONLY IF a `Subagent Spawn Directive` is explicitly declared in the approved plan. If absent, do NOT invoke subagents.
+   - Track cycles against the plan's declared **Audit Budget** (`<integer> | unlimited`). If the budget is exhausted without a pass, trigger an immediate Hard Stop.
    - When checks fail, fix the root cause immediately—whether within primary targets or in adjacent unlisted files.
-   - If a True Blocker is reached, halt execution and report the exact blocker, affected files, and root cause.
-   - *Completion criterion*: Verification commands pass and declared audit reports confirm contract compliance.
-3. **Report**: Overwrite `<appDataDir>/brain/<conversation-id>/walkthrough.md` strictly using the `Execution & Verification Report` format below.
+   - If a True Blocker is reached or the auditor issues a PLAN VETO, halt execution immediately without writing or updating `walkthrough.md`. Report findings directly to the user without attempting autonomous remediation.
+   - *Completion criterion*: Verification commands pass and declared audit reports confirm contract compliance with zero plan vetoes.
+3. **Report**: Overwrite `<appDataDir>/brain/<conversation-id>/walkthrough.md` strictly upon successful verification pass. Never create or update `walkthrough.md` on Plan Veto or unverified halts.
    - *Completion criterion*: `walkthrough.md` exists and matches the mandatory schema with all delivered changes, verification proofs, deviations & adjustments, and diagnostics recorded.
 
 ## Constraints & Anti-Rationalization
@@ -39,8 +41,8 @@ description: Execute a implemenation plan. read before start implementing a plan
    - **Correct**: Fail fast; trace and fix the upstream root cause cleanly.
 4. *"I will add this extra capability because the user might need it"* $\rightarrow$ **Incorrect**. Introducing unrequested business features is scope creep.
    - **Correct**: Scope is an upper bound. Direct all initiative strictly into perfecting the contracted deliverables.
-5. *"The plan didn't explicitly demand polish, so a bare-minimum implementation is fine"* $\rightarrow$ **Incorrect**. Contracts define intent, not permission to deliver fragile software.
-   - **Correct**: Build every deliverable to production standards, fully finished for real-world usage.
+5. *"The plan only asked for the core function, so raw scaffolding is fine"* $\rightarrow$ **Incorrect**. Contracts define intent, not permission to leave rough edges.
+   - **Correct**: Build every deliverable to production standards, fully finished so it works smoothly out of the box.
 6. *"This is a broken past migration; I must fix it to unblock verification"* $\rightarrow$ **Incorrect**. Modifying historical migrations corrupts deployment history and breaks database parity.
    - **Correct**: Hard Stop immediately; report the broken legacy migration and ask the user how to proceed.
 7. *"Fix out-of-scope tests by weakening assertions or masking failures"* $\rightarrow$ **Incorrect**. Weakening assertions or silently skipping tests creates false confidence.
@@ -67,7 +69,7 @@ description: Execute a implemenation plan. read before start implementing a plan
 
 #### 2. Verification Proof
 - **Baseline Check:** `<Exact command(s) executed for verification>` -> `<Passing output summary line / exit code>`
-- **Subagent Audit:** <[audit_report.md](file://<appDataDir>/brain/<conversation-id>/audit_report.md) -> `<Verdict>` | "N/A (Not declared in plan)">
+- **Subagent Audit:** <[audit_report.md](file://<appDataDir>/brain/<conversation-id>/audit_report.md) -> `<Verdict: PASS / FAIL / PLAN VETO>` | "N/A (Not declared in plan)">
 
 #### 3. Deviations & Diagnostics
 
@@ -81,6 +83,6 @@ description: Execute a implemenation plan. read before start implementing a plan
 
 #### 4. Proactive Value Additions
 
-<!-- Record improvements made beyond bare-minimum contract text to make the deliverable robust or seamless in actual use, while remaining strictly within contracted scope. If none: "None (Strict contract only)". -->
-- [<file>](file:///path/to/file#L...): <What was added beyond the minimum text and the practical value it delivered>
+<!-- Record thoughtful touches added to make the feature better to use within the contracted boundary, and why they helped. If none: "None (Strict contract only)". -->
+- [<file>](file:///path/to/file#L...): <Thoughtful touch added to make the feature better to use, and why it helped>
 ```

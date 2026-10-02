@@ -12,14 +12,19 @@ Structure execution not around arbitrary task tickets or isolated file diffs, bu
 Every boundary milestone is governed strictly by two invariant tiers:
 1. **Observable Outcome:** What capability or state transition this boundary unlocks for the system, defined strictly by:
    > *"The observable outcome this boundary enables for the system, defined strictly by what it makes possible rather than how it operates."*
-2. **Technical Decisions:** How this capability is materialized with maximal yield, defined strictly by:
+2. **Technical Decisions & Generative Realization:** How this capability is materialized with maximal yield, defined strictly by:
    > *"Every technical decision serves solely to advance the system to a state possessing the new capability with maximal yield."*
    >
    > *Maximal yield pairs maximal delivered value with minimal system entropy.*
+   >
+   > *Maximal value means finishing the feature completely so it works smoothly out of the box, handling all the rough edges inside.*
 
 > [!IMPORTANT]
 > **Minimal System Entropy is not minimal diff.**
 > Diff measures transition cost; entropy measures structural disorder. A change achieves minimal entropy only when the resulting codebase has exactly one canonical way to represent and execute the concept, leaving zero structural residue from the transition.
+>
+> **The Scaffolding Principle (Permanent Reality):**
+> Every structure introduced solely to facilitate transition is an invalid state in the final product. A boundary milestone is complete only when all construction scaffolding is fully dismantled: the codebase reaches a natural state as if it was designed this way from day one.
 
 The sum of all observable outcomes must compose cleanly into the complete objective.
 
@@ -109,8 +114,8 @@ For every milestone in the DAG, declare the physical blueprint across two cohesi
 
 ### Tier 2: Technical Decisions & Physical Contracts (How)
 - **Key Decisions (10-Minute Review Standard):** Record the load-bearing engineering choices that satisfy the Maximal Yield Invariant across the evaluative lenses, articulated so a senior engineer with only 10 minutes can confidently approve the boundary before implementation begins.
-  - *Minimal Entropy:* Decisions in this boundary to minimize system entropy.
-  - *Maximal Value:* Decisions in this boundary to maximize delivered value.
+  - *Minimal Entropy:* Architectural choices that preserve canonical system patterns and eliminate residual complexity.
+  - *Maximal Value (Generative Realization):* Choices that make the feature simple to use, keeping all the messy work hidden inside.
 - **Literal Contracts & Strict Types:** Declare literal non-nullable domain models and boundary interfaces crossing the seam (`class` / `def` signatures with complete type annotations, docstrings, and `...` ellipses method bodies).
 - **Ingress Caller & Terminal Sink Audit:**
   - *Caller Audit (Ingress):* Audit all existing callers across the workspace. List every caller requiring updates, or certify: *"Caller Audit: 0 production callers found via search."*
@@ -137,8 +142,8 @@ Every `implementation_plan.md` begins with the overall strategy followed by the 
 
 #### Technical Decisions & Physical Contracts
 - **Key Decisions:** <Load-bearing choices satisfying the Maximal Yield lenses, articulated for a 10-minute senior approval>
-  - **Minimal Entropy:** <Decisions in this boundary to minimize system entropy>
-  - **Maximal Value:** <Decisions in this boundary to maximize delivered value>
+  - **Minimal Entropy:** <Architectural choices that preserve canonical system patterns and eliminate residual complexity>
+  - **Maximal Value:** <Choices that make the feature simple to use, keeping all the messy work hidden inside>
 - **Literal Contracts & Bound Structures:**
   ```python
   class IngestionPayload(BaseModel):
@@ -180,14 +185,13 @@ Embed the audit directive verbatim into `implementation_plan.md`.
 > After completing all code implementation, spawn the standalone `boundary-auditor` subagent via `invoke_subagent`:
 > - **TypeName**: `boundary-auditor`
 > - **Role**: `Boundary Auditor`
-> - **Prompt**: `Audit boundary implementation plan at <plan-link>. Execute your dual verification protocol and deliver audit_report.md to the directory containing <plan-link>.`
+> - **Prompt**: `Audit boundary implementation plan at <plan-link>. Execute your passive code inspection protocol and deliver audit_report.md to the directory containing <plan-link>.`
 >
 > *Invocation Contract:* Dispatch with this exact prompt. Do NOT append custom instructions, context summaries, or conversational steering.
 ````
 
 ### Convergence & Circuit Breaker Protocol
 Declare execution bounds directly in `implementation_plan.md`:
-- **Audit Budget:** Maximum 2 verification cycles. If verification fails on the second attempt, trigger an immediate **Hard Stop**.
-- **Failure Dichotomy:** On Hard Stop, determine contract satisfiability before escalating:
-  - **Design Flaw:** The boundary contract is unsatisfiable under system reality $\to$ Halt code mutation, revise the implementation plan.
-  - **Reasoning Flaw:** The contract is satisfiable, but the implementation approach failed to converge $\to$ Fix the code within the established boundary.
+- **Audit Budget:** `<integer (default: 2) | unlimited>`
+  - Configures the maximum audit cycles before a Hard Stop. Set to `unlimited` to cycle until a clean pass or Plan Veto, or specify an integer limit (e.g., `1`, `3`).
+- **Plan Veto Escalation:** When the auditor determines that the plan is architecturally flawed or conceived as a patch that cannot achieve permanent, deep reality, halt execution immediately without producing `walkthrough.md` and escalate directly to the user with the auditor's findings. Do not attempt autonomous remediation.
