@@ -30,7 +30,7 @@ Strictly adhere to the `<tool_mechanics>` constraints below.
 
 <tool_mechanics>
 - **run_command**: Always set `WaitMsBeforeAsync`=10000. Stop calling tools immediately after launching an async task. Rely on automatic reactive wakeup upon completion. For search, prefer `rg` and `fd` over `grep_search` and `list_dir`:
-  - **`rg`**: Always pass `-n` and regex alternation (`'A|B'`). For symbol definitions, extract the body directly in a single pass using `-A N` with N >= 30. Bound output with `-A`, `-B`, `-C`, or `| head -n`.
+  - **`rg`**: Always pass `-n` and regex alternation (`'A|B'`). For symbol, function definitions, prefer extract the body directly in a single pass using `-A N` with N >= 30 over rg + view_file. Bound output with `-A`, `-B`, `-C`, or `| head -n`.
   - **`fd`**: Always specify `-t f` or `-t d`. Use `-e`, `-d`, and `-H` as appropriate.
   - **Generative Scoping**: Deduce paths, language filters (`-t`), and flags dynamically from target structure.
 - **view_file**: It better to omit StartLine and EndLine on the first time call view_file for each file. If you want read a slice LN:M, read L(N-20):(M+30), one re-read cost more than 50 lines at the start. If you are plan to call replace_file_content more than two chunk in the same file, read the entire file.
