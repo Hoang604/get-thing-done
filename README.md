@@ -79,8 +79,8 @@ flowchart TD
 ### 🔍 Code Review & Verification
 *Use before merging PRs or when validating review findings.*
 
-- **[code-review](.gemini/config/skills/code-review/SKILL.md)**: Deep architectural code review across correctness, security, and performance.
-- **[verify-issue](.gemini/config/skills/verify-issue/SKILL.md)**: Trace codepaths to verify whether flagged review findings are real bugs or false positives.
+- **[code-review](.gemini/config/skills/code-review/SKILL.md)**: Blind, language-agnostic code quality review of a confirmed scope, judging structure and runtime behaviour from the code alone.
+- **[verify-issue](.gemini/config/skills/verify-issue/SKILL.md)**: Dispatch the `issue-verifier` subagent to test each review finding against the whole codebase (true / false positive) and classify confirmed ones as LOCAL or ARCHITECTURAL.
 - **[verify-spec-alignment](.gemini/config/skills/verify-spec-alignment/SKILL.md)**: Audit implemented code against `SPEC.md` to catch rogue fabrications or missed requirements.
 
 ### 🧭 Codebase Exploration & Orientation

@@ -20,7 +20,7 @@ Classify input bugs into two groups based on **Seam Sufficiency**:
 
 ### The Decision Test
 
-Ask: **Can the defect be resolved completely behind the seam with zero seam changes, zero caller modifications, and zero downstream defensive workarounds?**
+Ask: **Can the defect be fixed behind the seam alone, leaving every caller correct without touching it?**
 
 - **YES** $\rightarrow$ **`LOCAL`**: The seam is sound. The internal implementation failed its contract.
 - **NO** $\rightarrow$ **`ARCHITECTURAL`**: The seam is inadequate.
