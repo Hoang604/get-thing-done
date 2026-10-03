@@ -14,14 +14,14 @@ description: Execute an implementation plan. Read before starting to implement a
    - **Missing External Input**: Missing secrets, unresolvable credentials, or ambiguous business decisions that cannot be deduced from codebase context.
    - **Oscillation Stalemate**: An unresolvable ping-pong loop (e.g., reverting code $A \to B \to A$ across audit rounds) where resolution is ambiguous or involves conflicting architectural constraints.
 4. **Accountability Contract**: Any deviation from the explicit plan—unlisted files modified, interface adaptations, or pragmatic fixes—must be fully recorded in the final report.
-5. **The Job as Scope**: The **job** is what the user is trying to get done with the contracted deliverables; the **user** is whoever consumes the outcome (a person or a calling program). **Friction** is any moment where the user must know, guess, or do something the job itself does not require. A deliverable is finished when the user completes the job without friction. Removing friction from the job is contracted work; serving a different job is scope creep.
+5. **The Users' Jobs as Scope**: The **users** are everything that consumes an outcome of the contracted deliverables: whatever invokes them and whatever receives what they produce. A user is not necessarily a person; programs that call them, parse their output, or read what they store are users too. Each user's **job** is what it is trying to get done with that outcome. **Friction** is any moment where a user must know, guess, or do something its job does not require. A deliverable is finished when every user completes its job without friction. Removing friction from a user's job is contracted work; serving a different job is scope creep.
 
 ## Execution Steps
 
 1. **Build**: Implement each milestone, resolving every unlisted adjacent file the contracted objective requires cleanly at the root cause and logging the adaptation.
    - *Completion criterion*: Every contracted deliverable implemented and self-consistent across the codebase.
-2. **Dogfood**: Use the product as its user, through its real entrypoint, along every use scenario the plan declares. When the plan declares no scenarios, derive them from the plan's objective by walking the user's path through every state the product can be in when the job is attempted. For each scenario, invoke it literally and compare the observed response with the expected one. Every mismatch and every friction is a defect: fix it at the root cause and re-run the scenario. Run baseline checks as often as fixes require.
-   - *Completion criterion*: A final pass over every scenario in which every observed response matches its expectation and no friction is found, with each invocation and its observed response recorded for the report.
+2. **Dogfood**: Use the product as each of its users, through its real entrypoint, along every use scenario the plan declares. Take each user's position: want only what that user wants and know only what that user knows, setting aside what you know about the internals. When the plan declares no scenarios, derive them from the plan's objective: follow every outcome to whatever invokes it and whatever receives it to find the users, then walk each user's path through every state the product can be in when its job is attempted. For each scenario, invoke it literally and compare the observed response with the expected one. Every mismatch and every friction is a defect: fix it at the root cause and re-run the scenario. Run baseline checks as often as fixes require.
+   - *Completion criterion*: A final pass over every scenario of every user in which every observed response matches its expectation and no friction is found, with each invocation and its observed response recorded for the report.
 3. **Verify & Remediate (Red Loop)**: Execute verification declared in the contract:
    - Execute baseline check commands directly to verify system invariants and runtime execution.
    - **Subagent Audit Gate**: Dispatch the auditor subagent for independent passive code inspection ONLY IF a `Subagent Spawn Directive` is explicitly declared in the approved plan. On initial run (Round 1), dispatch requesting `audit_report_round_1.md`. If directive is absent, do NOT invoke subagents.
@@ -48,10 +48,10 @@ description: Execute an implementation plan. Read before starting to implement a
    - **Correct**: Fix the real issue cleanly at the source and disclose it in `Deviations & Adjustments`, or Hard Stop if the blast radius represents an uncontrollable architectural redesign.
 3. *"Just a quick 1-line hack or fallback to bypass"* $\rightarrow$ **Incorrect**. Defensive fallbacks (`??`, `||`, `?.`) mask invariant violations and corrupt downstream state.
    - **Correct**: Fail fast; trace and fix the upstream root cause cleanly.
-4. *"The user might also want this other capability"* $\rightarrow$ **Incorrect** when it serves a different job.
-   - **Correct**: Test it against the job. Friction removed from the job is built; a capability serving a different job is recorded under `Out-of-Job Observations` for the user to decide.
-5. *"Tests pass, so the deliverable is done"* $\rightarrow$ **Incorrect**. Tests prove the contract; dogfooding proves the job.
-   - **Correct**: Dogfood every scenario through the real entrypoint and fix every friction found.
+4. *"A user might also want this other capability"* $\rightarrow$ **Incorrect** when it serves a different job.
+   - **Correct**: Test it against the users' jobs. Friction removed from a user's job is built; a capability serving a different job is recorded under `Out-of-Job Observations` for the user to decide.
+5. *"Tests pass, so the deliverable is done"* $\rightarrow$ **Incorrect**. Tests prove the contract; dogfooding proves the jobs.
+   - **Correct**: Dogfood every scenario of every user through the real entrypoint and fix every friction found.
 6. *"This is a broken past migration; I must fix it to unblock verification"* $\rightarrow$ **Incorrect**. Modifying historical migrations corrupts deployment history and breaks database parity.
    - **Correct**: Hard Stop immediately; report the broken legacy migration and ask the user how to proceed.
 7. *"Fix out-of-scope tests by weakening assertions or masking failures"* $\rightarrow$ **Incorrect**. Weakening assertions or silently skipping tests creates false confidence.
@@ -81,11 +81,12 @@ description: Execute an implementation plan. Read before starting to implement a
 - **Subagent Audit:** <[audit_report_round_<N>.md](file://<appDataDir>/brain/<conversation-id>/audit_report_round_<N>.md) -> `<Verdict: PASS / FAIL / PLAN VETO>` | "N/A (Not declared in plan)">
 
 #### 3. Dogfood Record
-- **Job:** <The user and what they get done>
+- **Users & Jobs:**
+  - <User>: <The job this user gets done>
 
-| # | Product State | Invocation | Observed Response (final pass) | Friction Found -> Fix |
-| :--- | :--- | :--- | :--- | :--- |
-| S-01 | <State on the user's path> | `<Literal invocation>` | <Observed response> | <Friction and root-cause fix with [file](file:///path#L...)> \| "None" |
+| # | User | Product State | Invocation | Observed Response (final pass) | Friction Found -> Fix |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| S-01 | <User> | <State on the user's path> | `<Literal invocation>` | <Observed response> | <Friction and root-cause fix with [file](file:///path#L...)> \| "None" |
 
 - **Out-of-Job Observations:**
   <!-- Capabilities noticed while dogfooding that serve a different job, left for the user to decide. If none: "None". -->

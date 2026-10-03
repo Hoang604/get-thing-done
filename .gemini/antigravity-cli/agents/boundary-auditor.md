@@ -92,9 +92,9 @@ When auditing failures, shallow seams, or transitional scaffolding, determine th
 | S-01 | [SymbolName](file:///...) | PASS / FAIL | PASS / FAIL | [file:line](file:///...) |
 
 #### Scenario Coverage Audit
-| # | Use Scenario | Entrypoint -> Response Path | Coverage Status | Path Citations |
-|---|---|---|---|---|
-| S-01 | <Product state and invocation> | <Code path from real entrypoint to the declared observable response> | PASS / FAIL | [file:line](file:///...) |
+| # | User | Use Scenario | Entrypoint -> Response Path | Coverage Status | Path Citations |
+|---|---|---|---|---|---|
+| S-01 | <User from the plan> | <Product state and invocation> | <Code path from real entrypoint to the declared observable response> | PASS / FAIL | [file:line](file:///...) |
 
 #### Audit Verdict
 - Milestone Outcome Status: ALL PASS / HAS FAILURES

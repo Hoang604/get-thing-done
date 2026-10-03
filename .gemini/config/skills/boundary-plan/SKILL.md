@@ -17,13 +17,13 @@ Every boundary milestone is governed strictly by two invariant tiers:
    >
    > *Maximal yield pairs maximal delivered value with minimal system entropy.*
    >
-   > *Maximal value means the user finishes the **job** without friction.*
+   > *Maximal value means every user finishes its **job** without friction.*
 
 > [!IMPORTANT]
 > **The Job Principle (Scope Definition):**
-> The **job** is what the user is trying to get done by using what the spec describes. The **user** is whoever consumes the product's outcome: a person or a calling program.
-> Scope is the job, not the sentences of the spec. Everything the user needs to finish the job is in scope, including what the spec author left unwritten. Anything that serves a different job is out of scope.
-> **Friction** is any moment where the user must know, guess, or do something the job itself does not require.
+> The **users** are everything that consumes an outcome of what the spec describes: whatever invokes it and whatever receives what it produces. A user is not necessarily a person; programs that call it, parse its output, or read what it stores are users too. Each user's **job** is what it is trying to get done with that outcome.
+> Scope is the users' jobs, not the sentences of the spec. Everything the users need to finish their jobs is in scope, including what the spec author left unwritten. Anything that serves a different job is out of scope.
+> **Friction** is any moment where a user must know, guess, or do something its job does not require.
 
 > [!IMPORTANT]
 > **Minimal System Entropy is not minimal diff.**
@@ -32,7 +32,7 @@ Every boundary milestone is governed strictly by two invariant tiers:
 > **The Scaffolding Principle:**
 > Every structure introduced solely to facilitate transition is an invalid state in the final product. A boundary milestone is complete only when all construction scaffolding is fully dismantled: the codebase reaches a natural state as if it was designed this way from day one.
 
-The sum of all observable outcomes must compose cleanly into the complete job.
+The sum of all observable outcomes must compose cleanly into every user's complete job.
 
 ---
 
@@ -42,7 +42,7 @@ Every technical decision answers to one principle:
 
 > **Each change leaves everything outside the boundary with less to know and less to change than before.**
 
-Outside the boundary is anything that interacts with it without seeing inside it, the user included.
+Outside the boundary is anything that interacts with it without seeing inside it, the users included.
 
 - **Less to know.** A boundary's interface is everything a caller must know to use it correctly. Keep that equal to what its signature states: if correct use requires knowing anything the signature does not say, the boundary leaks. The strongest boundary does a great deal of work behind a signature that tells the whole truth.
 - **Less to change.** When behaviour varies or evolves, code outside the boundary stays as it is; the change lands inside the boundary or as a new addition beside existing code.
@@ -54,11 +54,11 @@ Reuse of what the system already has is governed by Minimal System Entropy above
 
 ## 1. Intent Reconstruction & Reality Anchoring
 
-Reconstruct the job behind the spec, then ground it in physical codebase reality. Both run together: the job tells legwork where to look, and the codebase tells the job what already exists.
+Reconstruct the users and jobs behind the spec, then ground them in physical codebase reality. Both run together: the jobs tell legwork where to look, and the codebase tells the jobs what already exists.
 
-### Job & Use Scenarios
-- **Job Statement:** One sentence naming the user and what they get done.
-- **Use Scenarios:** Walk the user's path through the product across every state it can be in when the job is attempted, and record each distinct path as a scenario. Each scenario is a literal stimulus through the product's real entrypoint and the exact observable response the user receives.
+### Users, Jobs & Use Scenarios
+- **Users & Jobs:** Follow every outcome the spec describes to whatever invokes it and whatever receives it; each of those is a user. Name every user and the job it gets done, one line per user.
+- **Use Scenarios:** Take each user's position in turn: want only what that user wants and know only what that user knows, setting aside what the spec author intends and what the implementer knows about the internals. From that position, walk the user's path across every state the product can be in when its job is attempted, and record each distinct path as a scenario: a literal stimulus through the product's real entrypoint and the exact observable response that user receives.
 - **Observable Response** is the literal text, value, or error the user receives, written so that comparing it with the real response yields yes or no.
 - **Implied Requirements:** Every requirement a scenario exposes that the spec leaves unwritten, each traced to the scenario that exposed it.
 
@@ -68,13 +68,13 @@ Starting from the entrypoints the scenarios pass through, trace callers and cons
 ### Zero-Read Closed Scope
 Every type, structure, or interface crossing a seam has its definition written into the plan. For read-only dependencies outside the mutation scope, extract their relevant structural definitions and inline them so execution requires zero secondary lookups.
 
-**Completion Criterion:** A job statement; a scenario set where every reachable product state on the user's path appears in at least one scenario as a literal invocation with its exact observable response; implied requirements each traced to a scenario; an exhaustive manifest of affected files derived via fixed-point discovery; resolved definitions for all external references; and documented system invariants.
+**Completion Criterion:** Every user named with its job; every user covered by at least one scenario; every reachable product state on each user's path present in at least one scenario as a literal invocation with its exact observable response; implied requirements each traced to a scenario; an exhaustive manifest of affected files derived via fixed-point discovery; resolved definitions for all external references; and documented system invariants.
 
 ---
 
 ## 2. Topological Boundary Decomposition
 
-Partition the job into an ordered dependency graph of system boundaries: $B_1, B_2, \dots, B_n$.
+Partition the users' jobs into an ordered dependency graph of system boundaries: $B_1, B_2, \dots, B_n$.
 
 ### Topological Enablement Rule
 Execution order follows dependency order. For every milestone $B_m$:
@@ -86,7 +86,7 @@ Formulate every milestone's **Observable Outcome** by the standard stated in the
 
 ### Lineage Justification & Composability
 - **Lineage & Justification:** Every milestone exists for an explicit reason: either making one or more use scenarios runnable, or providing an unavoidable prerequisite required to implement later milestones cleanly and correctly.
-- **Composability Gate:** Every use scenario is made runnable by exactly one milestone, and no milestone serves anything outside the job.
+- **Composability Gate:** Every use scenario is made runnable by exactly one milestone, and no milestone serves anything outside the users' jobs.
 
 **Completion Criterion:** An ordered sequence of boundaries where each milestone has documented lineage justification, satisfies topological enablement, and every use scenario is assigned to the milestone that makes it runnable.
 
@@ -117,22 +117,23 @@ For every milestone in the graph, declare the physical blueprint across two cohe
 
 ## 4. In-Line Structural Anchor
 
-Every `implementation_plan.md` begins with the job, then the overall strategy, then the milestone sequence:
+Every `implementation_plan.md` begins with the users and their jobs, then the overall strategy, then the milestone sequence:
 
 ````markdown
-## Job & Use Scenarios
+## Users, Jobs & Use Scenarios
 
-- **Job:** <Who the user is and what they get done, in one sentence>
+- **Users & Jobs:**
+  - <User>: <The job this user gets done, in one sentence>
 - **Implied Requirements:** <Requirement the spec leaves unwritten> (exposed by S-xx)
 
-| # | Product State | Invocation | Observable Response |
-|---|---|---|---|
-| S-01 | <The situation the user and product are in when the user acts> | `<Exact command, request, or call the user makes>` | <Exact output, return value, or error the user receives> |
+| # | User | Product State | Invocation | Observable Response |
+|---|---|---|---|---|
+| S-01 | <User from the list above> | <The situation the user and product are in when the user acts> | `<Exact command, request, or call the user makes>` | <Exact output, return value, or error the user receives> |
 
 ## Minimal Entropy & Maximal Value Strategy
 
 - **Minimal Entropy:** <How each touched concept keeps one canonical form, what callers no longer need to know, and what outside code stays unchanged, across the whole system>
-- **Maximal Value:** <Decisions that remove friction across the job, each tied to the scenarios it serves>
+- **Maximal Value:** <Decisions that remove friction across the users' jobs, each tied to the scenarios it serves>
 
 ### Milestone 1: <Descriptive Title>
 
@@ -204,4 +205,4 @@ Declare execution bounds directly in `implementation_plan.md`:
   - Configures the maximum audit cycles before a Hard Stop. Set to `unlimited` to cycle until a clean pass or Plan Veto, or specify an integer limit (e.g., `1`, `3`).
 - **Plan Veto Escalation:** When the auditor determines that the plan is architecturally flawed or conceived as a patch that cannot be made permanent and scaffolding-free, halt execution immediately without producing `walkthrough.md` and escalate directly to the user with the auditor's findings. Do not attempt autonomous remediation.
 
-**Completion Criterion:** `implementation_plan.md` exists with the job and scenario table, the strategy, every milestone, the Verification Matrix (baseline checks and dogfood scenarios), the verbatim Subagent Spawn Directive, and the declared Audit Budget.
+**Completion Criterion:** `implementation_plan.md` exists with the users-and-jobs list and scenario table, the strategy, every milestone, the Verification Matrix (baseline checks and dogfood scenarios), the verbatim Subagent Spawn Directive, and the declared Audit Budget.
