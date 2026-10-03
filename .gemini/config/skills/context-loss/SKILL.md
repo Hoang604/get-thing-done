@@ -18,18 +18,18 @@ This skill is activated immediately when context has been compacted or previous 
 
 Assess execution state and inspect the most recent visible user request in full detail (not compacted).
 
-### Case 1: Currently Executing an Implementation Plan
+### Case 1: Currently in Execution (Guided Task / Plan)
 
-If currently in the middle of executing an implementation plan:
+If currently in the middle of executing a task guided by an instruction file, audit report, or implementation plan:
 
-1. **Read Implementation Plan & Execute Skill**:
-   - Locate the approved implementation plan artifact (`implementation_plan.md` in `<appDataDir>/brain/<conversation-id>/implementation_plan.md` or referenced in workspace).
-   - Read the implementation plan file completely using `view_file` then read everything the implementation plan references.
-   - Read the `execute` skill instructions using `view_file`.
+1. **Read Guiding Document**:
+   - Locate and read the file currently guiding the execution (e.g., `implementation_plan.md`, audit report, task spec, checklist, or instruction file in workspace/artifacts) completely in full without line limits using `view_file` (must read all lines from beginning to end; if the file exceeds 800 lines, page through with `StartLine`/`EndLine` until completely read).
+   - Read all referenced files or context documents specified in the guiding file completely in full without line limits.
+   - If executing an implementation plan, also read the `execute` skill instructions using `view_file`.
 2. **Continue Execution**:
-   - Assess implemented deliverables versus remaining work based on the codebase state.
+   - Assess implemented deliverables versus remaining work based on the guiding document and codebase state.
    - Continue execution immediately without stopping or waiting for user instructions.
-   - Deliver the execution report strictly adhering to the `execute` skill format upon completion.
+   - Deliver the execution report strictly adhering to the guiding format (or `execute` skill) upon completion.
 
 ---
 
