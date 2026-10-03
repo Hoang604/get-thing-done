@@ -175,19 +175,27 @@ Compile the plan into `<Artifact Directory>/implementation_plan.md`.
 ### Verification Matrix
 Specify baseline validation commands (typecheck, lint, unit tests, integration tests) to certify system invariants across all milestones.
 
+### Audit Ledger Artifact Specification
+When an audit round fails, execution maintains an append-only `<plan-dir>/audit_ledger.md`:
+- **Round `<N>`**:
+  - **Audit Report**: `[audit_report_round_<N>.md](file:///path/to/audit_report_round_<N>.md)`
+  - **Verdict**: `FAIL` | `PASS` | `PLAN VETO`
+  - **Remediations**: `<observed issue>` -> `<code fix applied & target file>`
+  - **Oscillation Status**: `None` | `<description of cyclic change (A -> B -> A) and resolution>`
+
 ### Subagent Dual Audit Directive
 Embed the audit directive verbatim into `implementation_plan.md`.
-**Single Variable Rule:** When invoking `boundary-auditor`, dispatch the exact prompt below without adding, modifying, or appending instructions. The only permitted dynamic value is substituting `<plan-link>` with the clickable file link `[implementation_plan.md](file:///path/to/implementation_plan.md)`.
+**Dynamic Parameter Rule:** Permitted substitutions in the prompt are `<plan-link>`, `<round-number>` (1, 2, ...), and optional `<ledger-link>` (included when re-auditing after remediation).
 
 ````markdown
 #### Subagent Spawn Directive (Post-Implementation)
 > [!IMPORTANT]
-> After completing all code implementation, spawn the standalone `boundary-auditor` subagent via `invoke_subagent`:
+> After completing code implementation or remediation, spawn `boundary-auditor` via `invoke_subagent`:
 > - **TypeName**: `boundary-auditor`
 > - **Role**: `Boundary Auditor`
-> - **Prompt**: `Audit boundary implementation plan at <plan-link>. Execute your passive code inspection protocol and deliver audit_report.md to the directory containing <plan-link>.`
+> - **Prompt**: `Audit boundary implementation plan at <plan-link>[ with audit ledger at <ledger-link>]. Execute your passive code inspection protocol and deliver audit_report_round_<N>.md to the directory containing <plan-link>.`
 >
-> *Invocation Contract:* Dispatch with this exact prompt. Do NOT append custom instructions, context summaries, or conversational steering.
+> *Invocation Contract:* Dispatch with this exact prompt structure. Do NOT append custom conversational steering.
 ````
 
 ### Convergence & Circuit Breaker Protocol

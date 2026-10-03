@@ -12,6 +12,7 @@ description: Execute a implemenation plan. read before start implementing a plan
    - **Plan Veto**: The auditor issues a PLAN VETO identifying an architectural flaw in the plan.
    - **Destructive Blast Radius**: Required actions cause irreversible state loss, corrupt historical schema/data parity, or break contracts outside target scope.
    - **Missing External Input**: Missing secrets, unresolvable credentials, or ambiguous business decisions that cannot be deduced from codebase context.
+   - **Oscillation Stalemate**: An unresolvable ping-pong loop (e.g., reverting code $A \to B \to A$ across audit rounds) where resolution is ambiguous or involves conflicting architectural constraints.
 4. **Accountability Contract**: Any deviation from the explicit plan—unlisted files modified, interface adaptations, or pragmatic fixes—must be fully recorded in the final report.
 5. **Generative Realization (Craftsmanship over Nominal Compliance)**: A deliverable is finished only when it works smoothly in real use, without pushing hassle onto the user or adding unrequested features. A contract defines functional intent, not permission to deliver raw scaffolding.
 
@@ -21,7 +22,12 @@ description: Execute a implemenation plan. read before start implementing a plan
    - *Completion criterion*: All contracted deliverables implemented as complete, working tools self-consistent across the codebase.
 2. **Verify & Remediate (Red Loop)**: Execute verification declared in the contract:
    - Execute baseline check commands directly to verify system invariants and runtime execution.
-   - **Subagent Audit Gate**: Dispatch the auditor subagent for independent passive code inspection ONLY IF a `Subagent Spawn Directive` is explicitly declared in the approved plan. If absent, do NOT invoke subagents.
+   - **Subagent Audit Gate**: Dispatch the auditor subagent for independent passive code inspection ONLY IF a `Subagent Spawn Directive` is explicitly declared in the approved plan. On initial run (Round 1), dispatch requesting `audit_report_round_1.md`. If directive is absent, do NOT invoke subagents.
+   - **Audit Failure & Ledger Protocol**:
+     - *Round 1 Failure*: Create `<plan-dir>/audit_ledger.md` logging Round 1: link to `audit_report_round_1.md`, issues addressed, and remediation actions taken.
+     - *Subsequent Failures (Round N)*: Append Round N entry to `audit_ledger.md` (**Append-only**: never edit prior entries).
+     - *Oscillation Check (Ping-Pong Guard)*: If current remediation reverts an earlier turn's change (e.g., $A \to B \to A$), log the conflict in `audit_ledger.md`. If straightforward, fix and continue; if ambiguous or complex, trigger a Hard Stop and escalate to user.
+     - *Re-invocation*: Dispatch `boundary-auditor` for Round $N+1$ passing `<plan-link>`, `audit_report_round_<N+1>.md`, and `[audit_ledger.md](file:///path/to/audit_ledger.md)`.
    - Track cycles against the plan's declared **Audit Budget** (`<integer> | unlimited`). If the budget is exhausted without a pass, trigger an immediate Hard Stop.
    - When checks fail, fix the root cause immediately—whether within primary targets or in adjacent unlisted files.
    - If a True Blocker is reached or the auditor issues a PLAN VETO, halt execution immediately without writing or updating `walkthrough.md`. Report findings directly to the user without attempting autonomous remediation.
@@ -69,7 +75,7 @@ description: Execute a implemenation plan. read before start implementing a plan
 
 #### 2. Verification Proof
 - **Baseline Check:** `<Exact command(s) executed for verification>` -> `<Passing output summary line / exit code>`
-- **Subagent Audit:** <[audit_report.md](file://<appDataDir>/brain/<conversation-id>/audit_report.md) -> `<Verdict: PASS / FAIL / PLAN VETO>` | "N/A (Not declared in plan)">
+- **Subagent Audit:** <[audit_report_round_<N>.md](file://<appDataDir>/brain/<conversation-id>/audit_report_round_<N>.md) -> `<Verdict: PASS / FAIL / PLAN VETO>` | "N/A (Not declared in plan)">
 
 #### 3. Deviations & Diagnostics
 
