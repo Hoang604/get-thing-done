@@ -1,6 +1,6 @@
 ---
 name: execute
-description: Execute a implemenation plan. read before start implementing a plan.
+description: Execute an implementation plan. Read before starting to implement a plan.
 ---
 
 ## Core Principles
@@ -14,13 +14,15 @@ description: Execute a implemenation plan. read before start implementing a plan
    - **Missing External Input**: Missing secrets, unresolvable credentials, or ambiguous business decisions that cannot be deduced from codebase context.
    - **Oscillation Stalemate**: An unresolvable ping-pong loop (e.g., reverting code $A \to B \to A$ across audit rounds) where resolution is ambiguous or involves conflicting architectural constraints.
 4. **Accountability Contract**: Any deviation from the explicit plan—unlisted files modified, interface adaptations, or pragmatic fixes—must be fully recorded in the final report.
-5. **Generative Realization (Craftsmanship over Nominal Compliance)**: A deliverable is finished only when it works smoothly in real use, without pushing hassle onto the user or adding unrequested features. A contract defines functional intent, not permission to deliver raw scaffolding.
+5. **The Job as Scope**: The **job** is what the user is trying to get done with the contracted deliverables; the **user** is whoever consumes the outcome (a person or a calling program). **Friction** is any moment where the user must know, guess, or do something the job itself does not require. A deliverable is finished when the user completes the job without friction. Removing friction from the job is contracted work; serving a different job is scope creep.
 
 ## Execution Steps
 
-1. **Execute Planned Work**: Build each milestone as a finished tool ready for immediate use, so callers and users never have to deal with missing pieces. Fulfill the contract completely by handling all practical details inside. If completing the contracted objective requires touching unlisted adjacent files, resolve them cleanly at the root cause and log the adaptation.
-   - *Completion criterion*: All contracted deliverables implemented as complete, working tools self-consistent across the codebase.
-2. **Verify & Remediate (Red Loop)**: Execute verification declared in the contract:
+1. **Build**: Implement each milestone, resolving every unlisted adjacent file the contracted objective requires cleanly at the root cause and logging the adaptation.
+   - *Completion criterion*: Every contracted deliverable implemented and self-consistent across the codebase.
+2. **Dogfood**: Use the product as its user, through its real entrypoint, along every use scenario the plan declares. When the plan declares no scenarios, derive them from the plan's objective by walking the user's path through every state the product can be in when the job is attempted. For each scenario, invoke it literally and compare the observed response with the expected one. Every mismatch and every friction is a defect: fix it at the root cause and re-run the scenario. Run baseline checks as often as fixes require.
+   - *Completion criterion*: A final pass over every scenario in which every observed response matches its expectation and no friction is found, with each invocation and its observed response recorded for the report.
+3. **Verify & Remediate (Red Loop)**: Execute verification declared in the contract:
    - Execute baseline check commands directly to verify system invariants and runtime execution.
    - **Subagent Audit Gate**: Dispatch the auditor subagent for independent passive code inspection ONLY IF a `Subagent Spawn Directive` is explicitly declared in the approved plan. On initial run (Round 1), dispatch requesting `audit_report_round_1.md`. If directive is absent, do NOT invoke subagents.
    - **Audit Failure & Ledger Protocol**:
@@ -30,10 +32,11 @@ description: Execute a implemenation plan. read before start implementing a plan
      - *Re-invocation*: Dispatch `boundary-auditor` for Round $N+1$ passing `<plan-link>`, `audit_report_round_<N+1>.md`, and `[audit_ledger.md](file:///path/to/audit_ledger.md)`.
    - Track cycles against the plan's declared **Audit Budget** (`<integer> | unlimited`). If the budget is exhausted without a pass, trigger an immediate Hard Stop.
    - When checks fail, fix the root cause immediately—whether within primary targets or in adjacent unlisted files.
+   - When a remediation changes behavior on a scenario's path, re-run that scenario before the next audit round.
    - If a True Blocker is reached or the auditor issues a PLAN VETO, halt execution immediately without writing or updating `walkthrough.md`. Report findings directly to the user without attempting autonomous remediation.
-   - *Completion criterion*: Verification commands pass and declared audit reports confirm contract compliance with zero plan vetoes.
-3. **Report**: Overwrite `<appDataDir>/brain/<conversation-id>/walkthrough.md` strictly upon successful verification pass. Never create or update `walkthrough.md` on Plan Veto or unverified halts.
-   - *Completion criterion*: `walkthrough.md` exists and matches the mandatory schema with all delivered changes, verification proofs, deviations & adjustments, and diagnostics recorded.
+   - *Completion criterion*: Verification commands pass, declared audit reports confirm contract compliance with zero plan vetoes, and every scenario touched by remediation has been re-run clean.
+4. **Report**: Overwrite `<appDataDir>/brain/<conversation-id>/walkthrough.md` strictly upon successful verification pass. Never create or update `walkthrough.md` on Plan Veto or unverified halts.
+   - *Completion criterion*: `walkthrough.md` exists and matches the mandatory schema with all delivered changes, verification proofs, the dogfood record, deviations & adjustments, and diagnostics recorded.
 
 ## Constraints & Anti-Rationalization
 
@@ -45,10 +48,10 @@ description: Execute a implemenation plan. read before start implementing a plan
    - **Correct**: Fix the real issue cleanly at the source and disclose it in `Deviations & Adjustments`, or Hard Stop if the blast radius represents an uncontrollable architectural redesign.
 3. *"Just a quick 1-line hack or fallback to bypass"* $\rightarrow$ **Incorrect**. Defensive fallbacks (`??`, `||`, `?.`) mask invariant violations and corrupt downstream state.
    - **Correct**: Fail fast; trace and fix the upstream root cause cleanly.
-4. *"I will add this extra capability because the user might need it"* $\rightarrow$ **Incorrect**. Introducing unrequested business features is scope creep.
-   - **Correct**: Scope is an upper bound. Direct all initiative strictly into perfecting the contracted deliverables.
-5. *"The plan only asked for the core function, so raw scaffolding is fine"* $\rightarrow$ **Incorrect**. Contracts define intent, not permission to leave rough edges.
-   - **Correct**: Build every deliverable to production standards, fully finished so it works smoothly out of the box.
+4. *"The user might also want this other capability"* $\rightarrow$ **Incorrect** when it serves a different job.
+   - **Correct**: Test it against the job. Friction removed from the job is built; a capability serving a different job is recorded under `Out-of-Job Observations` for the user to decide.
+5. *"Tests pass, so the deliverable is done"* $\rightarrow$ **Incorrect**. Tests prove the contract; dogfooding proves the job.
+   - **Correct**: Dogfood every scenario through the real entrypoint and fix every friction found.
 6. *"This is a broken past migration; I must fix it to unblock verification"* $\rightarrow$ **Incorrect**. Modifying historical migrations corrupts deployment history and breaks database parity.
    - **Correct**: Hard Stop immediately; report the broken legacy migration and ask the user how to proceed.
 7. *"Fix out-of-scope tests by weakening assertions or masking failures"* $\rightarrow$ **Incorrect**. Weakening assertions or silently skipping tests creates false confidence.
@@ -77,7 +80,18 @@ description: Execute a implemenation plan. read before start implementing a plan
 - **Baseline Check:** `<Exact command(s) executed for verification>` -> `<Passing output summary line / exit code>`
 - **Subagent Audit:** <[audit_report_round_<N>.md](file://<appDataDir>/brain/<conversation-id>/audit_report_round_<N>.md) -> `<Verdict: PASS / FAIL / PLAN VETO>` | "N/A (Not declared in plan)">
 
-#### 3. Deviations & Diagnostics
+#### 3. Dogfood Record
+- **Job:** <The user and what they get done>
+
+| # | Product State | Invocation | Observed Response (final pass) | Friction Found -> Fix |
+| :--- | :--- | :--- | :--- | :--- |
+| S-01 | <State on the user's path> | `<Literal invocation>` | <Observed response> | <Friction and root-cause fix with [file](file:///path#L...)> \| "None" |
+
+- **Out-of-Job Observations:**
+  <!-- Capabilities noticed while dogfooding that serve a different job, left for the user to decide. If none: "None". -->
+  - <Observation and the job it would serve>
+
+#### 4. Deviations & Diagnostics
 
 - **Scope Deviations & Adjustments:**
   <!-- List every out-of-plan change, unlisted file touched, or pragmatic adjustment made to avoid blocking. If none: "None (Strict adherence to plan)". -->
@@ -86,9 +100,4 @@ description: Execute a implemenation plan. read before start implementing a plan
 - **Diagnostics & Fixes:**
   <!-- Concise log of failures encountered during verification and remediation applied. If clean on first run: "None (Clean pass)". -->
   - `<Target or Command>`: `<Failure/Error summary>` -> <Root cause and remediation applied>
-
-#### 4. Proactive Value Additions
-
-<!-- Record thoughtful touches added to make the feature better to use within the contracted boundary, and why they helped. If none: "None (Strict contract only)". -->
-- [<file>](file:///path/to/file#L...): <Thoughtful touch added to make the feature better to use, and why it helped>
 ```

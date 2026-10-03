@@ -33,14 +33,14 @@ Evaluate the implementation across two concurrent planes:
 - For every boundary milestone, verify that the code implements the declared **Observable Outcome** (*what it makes possible rather than how it operates*).
 - Verify **Working Parts**: verify the code actually has the working parts needed to deliver the outcome.
 - Verify **Lineage & Justification**: ensure the boundary fulfills an authorized requirement or an unavoidable prerequisite for downstream milestones without introducing orphaned logic.
+- Verify **Scenario Coverage**: for every use scenario declared in the plan, trace the code path from the product's real entrypoint to the declared observable response. A scenario whose invocation cannot reach its declared response in code is FAIL. Judge only the declared response, never product preference.
 
 ### B. Seam & Dataflow Audit (Contracts, Ingress, and Terminal Sink)
 - **Literal Contracts & Bound Structures**: Verify that target classes, functions, and models strictly match the literal signatures, docstrings, and non-nullable type annotations declared in the plan.
 - **Ingress Caller Audit**: Trace from declared callers to verify that incoming execution paths correctly route into the new/modified seam without dead branches.
 - **Terminal Sink Audit**: Trace return values, emitted events, and state mutations downstream to ensure data reaches its terminal sink (persistent store, external transport, or UI surface) without dropping or stalling state.
 - **Composition Break**: If seam logic succeeds in isolation but dataflow fails to reach its terminal sink, mark FAIL.
-- **Deep Modules & The Deletion Test**: Verify that every boundary maximizes the ratio of encapsulated behavior to interface surface area, rejecting shallow pass-through abstractions that fail the Deletion Test.
-- **Caller Autonomy & High-Yield Design**: Verify that callers achieve their complete intent through a simple contract without managing callee state, coordinating internal sequencing, or creating parallel sources of truth.
+- **Maximal Yield Principle**: Verify that each change leaves everything outside the boundary with less to know and less to change. A boundary's interface is everything a caller must know to use it correctly: if correct use requires knowing anything its signature does not state, mark FAIL. If the change forced edits onto code outside the boundary that a change inside the boundary would have avoided, mark FAIL. Every structure the change introduces must pass the Deletion Test: if removing it makes complexity collapse rather than reappear across callers, it is accidental and FAIL.
 - **Zero Scaffolding & Permanent Reality**: Verify that the boundary contains no transitional scaffolding introduced solely to facilitate change. The resulting code must integrate naturally into the system, indistinguishable from code designed this way from day one.
 
 ### C. Production Reality & Pattern Fidelity
@@ -91,10 +91,16 @@ When auditing failures, shallow seams, or transitional scaffolding, determine th
 |---|---|---|---|---|
 | S-01 | [SymbolName](file:///...) | PASS / FAIL | PASS / FAIL | [file:line](file:///...) |
 
+#### Scenario Coverage Audit
+| # | Use Scenario | Entrypoint -> Response Path | Coverage Status | Path Citations |
+|---|---|---|---|---|
+| S-01 | <Product state and invocation> | <Code path from real entrypoint to the declared observable response> | PASS / FAIL | [file:line](file:///...) |
+
 #### Audit Verdict
 - Milestone Outcome Status: ALL PASS / HAS FAILURES
 - Seam & Dataflow Status: ALL PASS / HAS FAILURES
-- Final Delivery Gate: PASS (100% across both) / FAIL / PLAN VETO
+- Scenario Coverage Status: ALL PASS / HAS FAILURES
+- Final Delivery Gate: PASS (100% across all three) / FAIL / PLAN VETO
 
 ### Ambiguities & Business Assumptions
 <!-- If none found, write: "None" -->

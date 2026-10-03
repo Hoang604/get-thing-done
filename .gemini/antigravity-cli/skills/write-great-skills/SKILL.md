@@ -44,8 +44,9 @@ Steer reasoning exclusively through **generality**.
 
 A general instruction provides a **generative principle**: from one compact definition, the agent deduces every valid variation across any domain or scale.
 
-- **Checklists are cognitive pollution**: A checklist is an admission that the unifying principle was not found. Listing categories degrades the agent into a clerk ticking boxes, hallucinating relevance for inapplicable items instead of reasoning from structure.
-- **Examples anchor and blind**: An illustrative instance triggers **exemplar anchoring**: attention collapses onto the surface traits of the sample, mistaking it for the outer boundary of the problem.
+- **A checklist standing in for a principle is cognitive pollution**: A checklist is an admission that the unifying principle was not found. Listing categories degrades the agent into a clerk ticking boxes, hallucinating relevance for inapplicable items and stopping at the edge of the list instead of reasoning from structure.
+- **Detail is sharpness, not count**: When a principle feels too thin to steer, the cure is sharper wording: rewrite it until the cases it must cover become visible inside the words themselves, so the agent meets them while reasoning from the principle. Cases live in authoring (the Scaffolding step of the protocol), where they test the principle; the skill text carries only the principle. A case earns a place in the skill text solely as a boundary clip against a strong pretraining attractor that the principle's wording does not overcome.
+- **Examples anchor and blind in the thought plane**: An illustrative instance inside a reasoning directive triggers **exemplar anchoring**: attention collapses onto the surface traits of the sample, mistaking it for the outer boundary of the problem. In the action plane the same move is an **in-line anchor** (see _Constructive contracts_): one example of the output teaches its shape. An anchor uses a situation any reader understands without domain knowledge, so the only traits it carries are the shape being taught.
 
 ## When to split
 
@@ -81,7 +82,7 @@ You win twice over: fewer tokens, _and_ a sharper hook for the agent to hang its
 Steering by prohibition (**negation**) is a symptom of underspecification: it names what failed without defining the target grammar. Prefer **constructive contracts** that make the desired shape unambiguous:
 
 - **Physical shape over adjectives** — qualitative requests (_"be concise"_) are no-ops. Define the physical contract positively through observable, mechanically verifiable constraints on the output, eliminating all qualitative degrees of freedom.
-- **In-line anchors** — a single concrete, realistic example in the prompt anchors generation density and tone far more reliably than paragraphs of abstract rules.
+- **In-line anchors** — in the action plane, a single concrete, realistic example of the output anchors generation density and tone far more reliably than paragraphs of abstract rules. Anchors teach output shape only; reasoning directives stay general (see _Examples anchor and blind_).
 - **Boundary repulsion** — use negative guardrails (`Do NOT`) strictly as secondary boundary clips to suppress strong pre-training attractors, never as the primary generator.
 
 ## Failure modes
