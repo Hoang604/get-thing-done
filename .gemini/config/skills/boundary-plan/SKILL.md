@@ -29,8 +29,8 @@ Every boundary milestone is governed strictly by two invariant tiers:
 > **Minimal System Entropy is not minimal diff.**
 > Diff measures transition cost; entropy measures structural disorder. A change achieves minimal entropy only when the resulting codebase has exactly one canonical way to represent and execute the concept, leaving zero structural residue from the transition.
 >
-> **The Scaffolding Principle:**
-> Every structure introduced solely to facilitate transition is an invalid state in the final product. A boundary milestone is complete only when all construction scaffolding is fully dismantled: the codebase reaches a natural state as if it was designed this way from day one.
+> **The Day-One Test:**
+> Everything the change touches or makes obsolete must take the form it would have had if the system had been designed for its current requirements from day one. Any form whose justification needs the code's past instead of the system's present requirements is **residue**. A boundary milestone is complete only when it leaves no residue.
 
 The sum of all observable outcomes must compose cleanly into every user's complete job.
 
@@ -45,7 +45,7 @@ Every technical decision answers to one principle:
 Outside the boundary is anything that interacts with it without seeing inside it, the users included.
 
 - **Less to know.** A boundary's interface is everything a caller must know to use it correctly. Keep that equal to what its signature states: if correct use requires knowing anything the signature does not say, the boundary leaks. The strongest boundary does a great deal of work behind a signature that tells the whole truth.
-- **Less to change.** When behaviour varies or evolves, code outside the boundary stays as it is; the change lands inside the boundary or as a new addition beside existing code.
+- **Less to change.** When behaviour later varies or evolves, the change lands inside the boundary and code outside stays as it is. This judges the shape the change leaves behind, never the size of the change itself: edits outside the boundary that remove a pre-change form are what the Day-One Test demands.
 - **The Deletion Test.** For every structure the change introduces, imagine deleting it. If complexity reappears across its callers, the structure earns its place. If complexity collapses, the structure was accidental and must not exist.
 
 Reuse of what the system already has is governed by Minimal System Entropy above (exactly one canonical way); type and contract rigor by the global type safety and invariant policies. This principle restates neither.
@@ -63,12 +63,15 @@ Reconstruct the users and jobs behind the spec, then ground them in physical cod
 - **Implied Requirements:** Every requirement a scenario exposes that the spec leaves unwritten, each traced to the scenario that exposed it.
 
 ### Fixed-Point Scope Discovery
-Starting from the entrypoints the scenarios pass through, trace callers and consumers outward using `rg` and `view_file`. At each trace hop, determine whether the file requires changes. Scope discovery is complete when one more trace hop adds no file that needs changing.
+Starting from the entrypoints the scenarios pass through, trace callers and consumers outward using `rg` and `view_file`. At each trace hop, determine whether the file requires changes: it requires changes when it breaks under the change, or when its form would fail the Day-One Test afterward. Scope discovery is complete when one more trace hop adds no file that needs changing.
+
+### Retirement Inventory
+For every concept the change touches, name its pre-change form: the exact names and shapes the change replaces or makes redundant. Search the whole workspace for each with `rg` and record every place whose content still depends on that form, not only its callers, each with its fate: deleted, rewritten to the new form, or kept with a justification drawn from present requirements alone.
 
 ### Zero-Read Closed Scope
 Every type, structure, or interface crossing a seam has its definition written into the plan. For read-only dependencies outside the mutation scope, extract their relevant structural definitions and inline them so execution requires zero secondary lookups.
 
-**Completion Criterion:** Every user named with its job; every user covered by at least one scenario; every reachable product state on each user's path present in at least one scenario as a literal invocation with its exact observable response; implied requirements each traced to a scenario; an exhaustive manifest of affected files derived via fixed-point discovery; resolved definitions for all external references; and documented system invariants.
+**Completion Criterion:** Every user named with its job; every user covered by at least one scenario; every reachable product state on each user's path present in at least one scenario as a literal invocation with its exact observable response; implied requirements each traced to a scenario; an exhaustive manifest of affected files derived via fixed-point discovery; a Retirement Inventory in which every place still depending on a pre-change form has a fate; resolved definitions for all external references; and documented system invariants.
 
 ---
 
@@ -103,15 +106,16 @@ For every milestone in the graph, declare the physical blueprint across two cohe
 
 ### Tier 2: Technical Decisions & Physical Contracts (How)
 - **Key Decisions (10-Minute Review Standard):** Record the load-bearing engineering choices, argued through Minimal System Entropy and the Maximal Yield Principle, so a senior engineer with only 10 minutes can confidently approve the boundary before implementation begins.
-  - *Minimal Entropy:* How each touched concept keeps exactly one canonical form, what callers no longer need to know, and what outside code stays unchanged.
+  - *Minimal Entropy:* How each touched concept keeps exactly one canonical form, what callers no longer need to know, and which pre-change forms this milestone retires.
   - *Maximal Value:* Choices that remove friction from this milestone's scenarios, each tied to the scenario state it serves.
 - **Literal Contracts & Strict Types:** Declare literal non-nullable domain models and boundary interfaces crossing the seam (`class` / `def` signatures with complete type annotations, docstrings, and `...` ellipses method bodies).
 - **Ingress Caller & Terminal Sink Audit:**
   - *Caller Audit (Ingress):* Audit all existing callers across the workspace. List every caller requiring updates, or certify: *"Caller Audit: 0 production callers found via search."*
   - *Terminal Sink Audit (Dataflow):* Trace return values, state mutations, or emitted events downstream to their terminal sink to prove data reaches its final destination.
+- **Retired Forms:** The Retirement Inventory entries this milestone makes obsolete, each at its location with its fate and the count of references that remain.
 - **File Manifest:** List every file affected using clickable links `[basename](file:///path#L1-L20)` demarcated with `[NEW]`, `[MODIFY]`, or `[DELETE]`.
 
-**Completion Criterion:** Every milestone declares every field of both tiers, and every Maximal Value decision names the scenario state it serves.
+**Completion Criterion:** Every milestone declares every field of both tiers, every Maximal Value decision names the scenario state it serves, and every Retirement Inventory entry is resolved by the milestone that makes its form obsolete.
 
 ---
 
@@ -132,7 +136,7 @@ Every `implementation_plan.md` begins with the users and their jobs, then the ov
 
 ## Minimal Entropy & Maximal Value Strategy
 
-- **Minimal Entropy:** <How each touched concept keeps one canonical form, what callers no longer need to know, and what outside code stays unchanged, across the whole system>
+- **Minimal Entropy:** <How each touched concept keeps one canonical form, what callers no longer need to know, and which pre-change forms are retired, across the whole system>
 - **Maximal Value:** <Decisions that remove friction across the users' jobs, each tied to the scenarios it serves>
 
 ### Milestone 1: <Descriptive Title>
@@ -143,7 +147,7 @@ Every `implementation_plan.md` begins with the users and their jobs, then the ov
 
 #### Technical Decisions & Physical Contracts
 - **Key Decisions:** <Load-bearing choices argued through Minimal System Entropy and the Maximal Yield Principle, articulated for a 10-minute senior approval>
-  - **Minimal Entropy:** <Canonical form kept, knowledge removed from callers, outside code left unchanged>
+  - **Minimal Entropy:** <Canonical form kept, knowledge removed from callers, pre-change forms retired>
   - **Maximal Value:** <Friction removed from scenario S-xx and how>
 - **Literal Contracts & Bound Structures:**
   ```python
@@ -160,6 +164,8 @@ Every `implementation_plan.md` begins with the users and their jobs, then the ov
 - **Caller & Sink Audit:**
   - Ingress: Called by `[NoteController.create](file:///src/controllers/notes.py#L45)`
   - Terminal Sink: Persisted via `[NoteRepository.insert](file:///src/storage/notes.py#L88)`
+- **Retired Forms:**
+  - `save_note(title, body, store=None)` at [notes.py](file:///src/controllers/notes.py#L52): deleted; its 3 call sites rewritten to `NoteStore.save`; 0 references remain
 
 #### File Mutations
 - `[MODIFY]` [notes.py](file:///src/controllers/notes.py#L30-L65)
@@ -203,6 +209,6 @@ Embed the audit directive verbatim into `implementation_plan.md`.
 Declare execution bounds directly in `implementation_plan.md`:
 - **Audit Budget:** `<integer (default: 2) | unlimited>`
   - Configures the maximum audit cycles before a Hard Stop. Set to `unlimited` to cycle until a clean pass or Plan Veto, or specify an integer limit (e.g., `1`, `3`).
-- **Plan Veto Escalation:** When the auditor determines that the plan is architecturally flawed or conceived as a patch that cannot be made permanent and scaffolding-free, halt execution immediately without producing `walkthrough.md` and escalate directly to the user with the auditor's findings. Do not attempt autonomous remediation.
+- **Plan Veto Escalation:** When the auditor determines that the plan is architecturally flawed or conceived as a patch that cannot be made permanent and residue-free, halt execution immediately without producing `walkthrough.md` and escalate directly to the user with the auditor's findings. Do not attempt autonomous remediation.
 
 **Completion Criterion:** `implementation_plan.md` exists with the users-and-jobs list and scenario table, the strategy, every milestone, the Verification Matrix (baseline checks and dogfood scenarios), the verbatim Subagent Spawn Directive, and the declared Audit Budget.
