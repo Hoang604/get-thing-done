@@ -40,13 +40,13 @@ Where execution requires exact conformity, eliminate all degrees of freedom. Spe
 
 Steer reasoning exclusively through **generality**.
 
-**Generality** is the extraction of the essential, invariant principle that governs an entire class of problems. It is not vagueness (*"be thorough"* is empty noise). It is the universal common denominator that remains true across every instance without naming any single one.
+**Generality** is a relation between an instruction and a class of cases, never a property of its wording read alone. An instruction is general for its class when it names the **cause** the cases share — the reason the right action is right in each of them — because a cause *decides* every case it produces, including cases the author never saw. Being true in every case is not enough: *"be thorough"* is true everywhere and decides nothing.
 
-A general instruction provides a **generative principle**: from one compact definition, the agent deduces every valid variation across any domain or scale.
+Generality is measured the way any learned rule is measured — by fit. An instruction is general when it gives the right action in every case it was written from, gives the right action in a **held-out** case it was not written from, and in every case rules out the tempting wrong action. Missing the held-out case is **overfit**: the instruction memorized its cases. Admitting the wrong action is **underfit**: the instruction steers nothing. A general instruction is a **generative principle** — compact, and fit on both counts.
 
-- **A checklist standing in for a principle is cognitive pollution**: A checklist is an admission that the unifying principle was not found. Listing categories degrades the agent into a clerk ticking boxes, hallucinating relevance for inapplicable items and stopping at the edge of the list instead of reasoning from structure.
-- **Detail is sharpness, not count**: When a principle feels too thin to steer, the cure is sharper wording: rewrite it until the cases it must cover become visible inside the words themselves, so the agent meets them while reasoning from the principle. Cases live in authoring (the Scaffolding step of the protocol), where they test the principle; the skill text carries only the principle. A case earns a place in the skill text solely as a boundary clip against a strong pretraining attractor that the principle's wording does not overcome.
-- **Examples anchor and blind in the thought plane**: An illustrative instance inside a reasoning directive triggers **exemplar anchoring**: attention collapses onto the surface traits of the sample, mistaking it for the outer boundary of the problem. In the action plane the same move is an **in-line anchor** (see _Constructive contracts_): one example of the output teaches its shape. An anchor uses a situation any reader understands without domain knowledge, so the only traits it carries are the shape being taught.
+- **A checklist standing in for a principle is overfit**: it decides exactly its listed items and nothing beyond — an admission that the shared cause was not found. Listing categories degrades the agent into a clerk ticking boxes, hallucinating relevance for inapplicable items and stopping at the edge of the list instead of reasoning from structure.
+- **Detail is sharpness, not count**: A principle too thin to steer is underfit; the cure is sharper wording, rewritten until it rules out the tempting wrong action in every case — never added cases. Cases live in authoring (the Scaffolding step of the protocol), where they test the principle; the skill text carries only the principle. A case earns a place in the skill text solely as a boundary clip against a strong pretraining attractor that the principle's wording does not overcome.
+- **Examples anchor and blind in the thought plane**: An illustrative instance inside a reasoning directive triggers **exemplar anchoring** — overfit induced in the reader: attention collapses onto the surface traits of the sample, mistaking it for the outer boundary of the problem. In the action plane the same move is an **in-line anchor** (see _Constructive contracts_): one example of the output teaches its shape. An anchor uses a situation any reader understands without domain knowledge, so the only traits it carries are the shape being taught.
 
 ## When to split
 
@@ -95,9 +95,9 @@ Use these to diagnose issues the user may be having with the skill.
 - **Sprawl** — a skill simply too long, even when every line is live and unique. Cure: disclose **reference** behind pointers, and split by **branch** or sequence. **Guardrail**: Inline material required by all branches; only put behind a pointer what some branches reach.
 - **No-op** — a line the model already obeys by default, so you pay load to say nothing. The test: does it change behaviour versus the default? A weak leading word (_be thorough_ when the agent is already thorough-ish) is a no-op; the fix is a stronger word (_relentless_), not a different technique.
 - **Negation** — steering by prohibition backfires: _don't think of an elephant_ makes the elephant more available. Reframe prohibitions into constructive physical contracts; keep negative rules solely as boundary guardrails.
-- **Disguised enumeration** — the cosmetic retreat when forbidden from using checklists. Rather than deriving a general principle, the model collapses bulleted items into a comma-separated clause within prose. The underlying structure remains an enumerated checklist, still forcing the agent to audit irrelevant nouns instead of reasoning from structure.
+- **Disguised enumeration** — the cosmetic retreat when forbidden from using checklists. Rather than deriving a general principle, the model collapses bulleted items into a comma-separated clause within prose. The structure is still overfit — the held-out case exposes it whatever the formatting — still forcing the agent to audit irrelevant nouns instead of reasoning from structure.
 - **Exemplar anchoring** — supplying illustrative instances within reasoning directives. The model anchors on the accidental properties of the example, blinding it to valid architectures outside the example's shadow.
-- **Pseudo-generality** — using big words to fake generality. Plain language exposes bad logic immediately; heavy jargon hides it. If an instruction cannot be stated simply, the unifying principle was not found.
+- **Pseudo-generality** — underfit disguised by vocabulary: abstract words make an instruction sound like it covers every case while deciding none. Plain language exposes bad logic immediately; heavy jargon hides it. If an instruction cannot be stated simply, the unifying principle was not found.
 
 ## Authoring protocol
 
@@ -115,6 +115,7 @@ When authoring, refactoring, or updating any target skill, the agent must execut
    - `Leading words`
    - `In-line anchors`
 3. **Map planes**: Classify every instruction into either **Action Direction** (what the agent executes) or **Thought Direction** (how the agent reasons).
-   For every instruction in **Thought Direction**, follow these two steps before drafting:
-   - **Scaffolding:** List all distinct concrete cases the instruction must handle.
-   - **Synthesis:** Construct the single common principle behind all those cases, then synthesize a single generative instruction that strictly covers them all, without containing any checklists.
+   For every instruction in **Thought Direction**, follow these three steps before drafting:
+   - **Scaffolding:** List the distinct concrete cases the instruction must handle, drawn from observed evidence rather than imagined. For each case, write the right action and the tempting wrong action.
+   - **Synthesis:** Find the cause that makes the right action right in every case, and write a single instruction that names it, without containing any checklists.
+   - **Fit test:** Construct one held-out case absent from the Scaffolding list, then apply the fit test from *Direction of thought must be general* to the instruction alone, against every case. Overfit → return to Synthesis for a deeper cause. Underfit → sharpen the wording. Draft only once it passes.
