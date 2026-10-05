@@ -18,7 +18,7 @@ description: Execute an implementation plan. Read before starting to implement a
 
 ## Implementation Ledger
 
-`<plan-dir>/implementation_ledger.md` is the single record of how the implementation departs from the plan. Create it when Build starts and only append to it: never edit or remove an entry. Round 0 holds every deviation made before the first audit round, through Build and Dogfood: each file modified outside the plan's File Manifest and each declared contract adapted. Each audit round appends its own entry, whose Remediations hold the deviations made after it.
+`<plan-dir>/implementation_ledger.md` is the single record of how the implementation departs from the plan. Create it when Build starts and only append to it: never edit or remove an entry. Round 0 holds every deviation made before the first audit round, through Build and Scenario Evaluation: each file modified outside the plan's File Manifest and each declared contract adapted. Each audit round appends its own entry, whose Remediations hold the deviations made after it.
 
 ```markdown
 - **Round 0 — Build Deviations**:
@@ -34,10 +34,10 @@ When nothing departs from the File Manifest before Round 1, Round 0 holds the si
 
 ## Execution Steps
 
-1. **Build**: Implement each milestone sequentially. Upon completing milestone $N$, notify the user that milestone $N$ is finished, and for milestone $N+1$, explicitly list the files to be created or modified and what will be done (or state the transition to Dogfood if completing the final milestone). Resolve every unlisted adjacent file the contracted objective requires cleanly at the root cause and record the adaptation in the Implementation Ledger.
+1. **Build**: Implement each milestone sequentially. Upon completing milestone $N$, notify the user that milestone $N$ is finished, and for milestone $N+1$, explicitly list the files to be created or modified and what will be done (or state the transition to Scenario Evaluation if completing the final milestone). Resolve every unlisted adjacent file the contracted objective requires cleanly at the root cause and record the adaptation in the Implementation Ledger.
    - *Completion criterion*: Every contracted deliverable implemented and self-consistent across the codebase.
-2. **Dogfood**: Use the product as each of its users, through its real entrypoint, along every use scenario the plan declares. Take each user's position: want only what that user wants and know only what that user knows, setting aside what you know about the internals. When the plan declares no scenarios, derive them from the plan's objective: follow every outcome to whatever invokes it and whatever receives it to find the users, then walk each user's path through every state the product can be in when its job is attempted. For each scenario, invoke it literally and compare the observed response with the expected one. For each invariant the plan declares, probe it through the same entrypoint with the inputs most likely to break it, beyond the literal inputs of the scenarios it spans. Every mismatch, every violated invariant, and every friction is a defect: fix it at the root cause and re-run what exposed it. Run baseline checks as often as fixes require.
-   - *Completion criterion*: A final pass over every scenario of every user in which every observed response matches its expectation and no friction is found, and over every invariant in which every probed input upholds it, with each invocation and its observed response recorded for the report, and the ledger's Round 0 lists every deviation made through Build and Dogfood.
+2. **Scenario Evaluation**: Evaluate the system from the position of each user along every scenario and invariant declared in the plan. Take each user's position: want only what that user wants and know only what that user knows, setting aside internal implementation details. Mentally trace the path from the user's stimulus through the entrypoint to the observable response (or verify via existing automated test commands if available, without launching ad-hoc manual shell environments). Ensure the user receives exactly the expected response and encounters no friction (unnecessary knowledge, confusing errors, or awkward parameters). If an invariant is broken or friction is discovered, fix it at the root cause. Run baseline checks as often as fixes require.
+   - *Completion criterion*: Every scenario and invariant verified to produce its expected observable response without user friction, and the ledger's Round 0 lists every deviation made through Build and Scenario Evaluation.
 3. **Verify & Remediate (Red Loop)**: Execute verification declared in the contract:
    - Execute baseline check commands directly to verify system invariants and runtime execution.
    - **Subagent Audit Gate**: Dispatch the auditor subagent for independent passive code inspection ONLY IF a `Subagent Spawn Directive` is explicitly declared in the approved plan. On initial run (Round 1), dispatch requesting `audit_report_round_1.md` with the ledger link. If directive is absent, do NOT invoke subagents.
@@ -51,7 +51,7 @@ When nothing departs from the File Manifest before Round 1, Round 0 holds the si
    - If a True Blocker is reached or the auditor issues a PLAN VETO, halt execution immediately without writing or updating `walkthrough.md`. Report findings directly to the user without attempting autonomous remediation.
    - *Completion criterion*: Verification commands pass, declared audit reports confirm contract compliance with zero plan vetoes, and every scenario touched by remediation, with the invariants spanning it, has been re-run clean.
 4. **Report**: Overwrite `<appDataDir>/brain/<conversation-id>/walkthrough.md` strictly upon successful verification pass. Never create or update `walkthrough.md` on Plan Veto or unverified halts.
-   - *Completion criterion*: `walkthrough.md` exists and matches the mandatory schema with all delivered changes, verification proofs, the dogfood record, deviations & adjustments, and diagnostics recorded.
+   - *Completion criterion*: `walkthrough.md` exists and matches the mandatory schema with all delivered changes, verification proofs, the scenario record, deviations & adjustments, and diagnostics recorded.
 
 ## Constraints & Anti-Rationalization
 
@@ -65,8 +65,8 @@ When nothing departs from the File Manifest before Round 1, Round 0 holds the si
    - **Correct**: Fail fast; trace and fix the upstream root cause cleanly.
 4. *"A user might also want this other capability"* $\rightarrow$ **Incorrect** when it serves a different job.
    - **Correct**: Test it against the users' jobs. Friction removed from a user's job is built; a capability serving a different job is recorded under `Out-of-Job Observations` for the user to decide.
-5. *"Tests pass, so the deliverable is done"* $\rightarrow$ **Incorrect**. Tests prove the contract; dogfooding proves the jobs.
-   - **Correct**: Dogfood every scenario of every user through the real entrypoint and fix every friction found.
+5. *"Tests pass, so the deliverable is done"* $\rightarrow$ **Incorrect**. Tests prove the contract; user perspective proves the jobs.
+   - **Correct**: Evaluate every scenario and invariant from the outside-in user perspective and fix every friction found.
 6. *"This is a broken past migration; I must fix it to unblock verification"* $\rightarrow$ **Incorrect**. Modifying historical migrations corrupts deployment history and breaks database parity.
    - **Correct**: Hard Stop immediately; report the broken legacy migration and ask the user how to proceed.
 7. *"Fix out-of-scope tests by weakening assertions or masking failures"* $\rightarrow$ **Incorrect**. Weakening assertions or silently skipping tests creates false confidence.
@@ -95,7 +95,7 @@ When nothing departs from the File Manifest before Round 1, Round 0 holds the si
 - **Baseline Check:** `<Exact command(s) executed for verification>` -> `<Passing output summary line / exit code>`
 - **Subagent Audit:** <[audit_report_round_<N>.md](file://<appDataDir>/brain/<conversation-id>/audit_report_round_<N>.md) -> `<Verdict: PASS / FAIL / PLAN VETO>` | "N/A (Not declared in plan)">
 
-#### 3. Dogfood Record
+#### 3. Scenario & Invariant Record
 - **Users & Jobs:**
   - <User>: <The job this user gets done>
 
@@ -108,7 +108,7 @@ When nothing departs from the File Manifest before Round 1, Round 0 holds the si
 | I-01 | <Rule from the plan> | `<Inputs chosen to break it>` | <Observed responses> | <Violation and root-cause fix with [file](file:///path#L...)> \| "None" |
 
 - **Out-of-Job Observations:**
-  <!-- Capabilities noticed while dogfooding that serve a different job, left for the user to decide. If none: "None". -->
+  <!-- Capabilities noticed while evaluating user scenarios that serve a different job, left for the user to decide. If none: "None". -->
   - <Observation and the job it would serve>
 
 #### 4. Deviations & Diagnostics
