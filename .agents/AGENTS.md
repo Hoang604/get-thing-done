@@ -24,30 +24,26 @@ Before the first code edit of the task, say what you are about to change.
 
 # Type Safety Policy
 
-Governs every line of typed code — application code, tests, scripts, fixtures, mocks alike.
-Types are **strict contracts**, never cosmetic annotations.
+Applies to every line of typed code: application code, tests, scripts, fixtures, and mocks. A type is a promise about what a value always is, and code is allowed to rely on that promise.
 
-1. **Domain Contract Integrity.** Every value carries its exact domain contract. Model required domain properties as strictly non-nullable; sponsoring incomplete producers with optional types is forbidden. Optionality is reserved exclusively for authorized semantic absence. Suppressing compiler or diagnostic feedback via untyped wildcards or escape hatches is strictly forbidden.
-2. **Boundary Validation Membrane.** Data crossing any boundary is untrusted by default. Raw inputs must be verified into strict domain types before reaching domain logic; unsafe type assertions bypassing runtime verification are strictly forbidden.
-3. **Proactive Optionality Scrutiny (Planning & Review).**
-   - *New Declarations (Justification Gate):* In implementation plans and code proposals, every optional field requires explicit contractual justification (**Contractual Provenance**). Absence must represent an authorized business state.
-   - *Existing Code Audits (Structural Skepticism):* Treat touched or adjacent optional fields with structural suspicion. If an existing field is optional due to upstream incompleteness (Type Dishonesty), output a dedicated sidecar section:
-     `### [Optionality Debt & Invariant Proposal]`
-     pinpointing the irrationality, assessing downstream fallback risk, and proposing an explicit refactor to non-nullable.
+1. **Required data is never optional.** A field the business always needs is typed as always present. A field is optional only when "no value" is a real business situation, never because the code that fills it sometimes fails to. Never silence the type checker to make code pass (`Any`, `# type: ignore`, unchecked casts).
+2. **Check outside data where it enters.** Data from outside the code (user input, files, network, environment variables, other services) is checked and converted into strict types at the point where it enters. Code past that point works only with the checked types. Never assert a type without a runtime check.
+3. **Every optional field states why it can be empty.**
+   - *New fields:* in plans and code proposals, every optional field names the business situation in which it is empty.
+   - *Existing fields:* when you touch or work beside an optional field that is optional only because some code fails to fill it, add a section `### [Optionality Debt & Invariant Proposal]` that names the field, says what goes wrong in code that substitutes a fallback for it, and proposes making it non-optional.
 
 </type_safety_policy>
 
 <invariant_policy>
 
-# Invariant Integrity & Root-Cause Engineering
+# Invariants & Root-Cause Fixes
 
-Governs bug fixing, data validation, and state handling across domain, workers, APIs, and UI consumers.
-Software boundaries are **validation membranes** that admit verified states and reject contract breaches immediately.
+Applies to bug fixes, data validation, and state handling everywhere: domain code, workers, APIs, and UI.
 
-1. **Generative Boundary Principle (Admit or Reject).** Boundaries admit valid state untouched, or reject invalid state with immediate failure. State originates exclusively at producers, which bear absolute lineage responsibility for guaranteeing complete, invariant-satisfying data before emission. Downstream consumers lack structural authority to invent state or synthesize surrogate fallbacks (**State Fabrication**).
-2. **Fallback Remediation Flow (The Two-Branch Decision).** When encountering a fallback operator or an undefined check:
-   - **Branch A: Invariant Violation (Fake Optionality):** The value is required for domain integrity. Downstream consumers assert the contract and fail fast immediately without synthesizing surrogate data; trace **Data Lineage** back to the upstream producer to enforce non-nullable completeness at the source.
-   - **Branch B: Legitimate Absence (True Optionality):** The absence represents a first-class semantic state explicitly authorized by contract (**Contractual Provenance**). If a default exists, resolve it strictly at system ingress or configuration boundaries (**Boundary Anchoring**) to establish canonical state before domain entry. If no default exists, preserve the explicit optional state and handle it via intentional branching (`if/else`); avoid fabricating dummy placeholder structures.
+1. **Pass valid data through, reject invalid data at once.** Wherever data passes from one part of the system to another, code either passes valid data on unchanged or rejects invalid data with an immediate error. The code that creates a value is responsible for it being complete and correct when it hands it on. Code that receives a value never invents a substitute for a missing or wrong part.
+2. **Every fallback is one of two cases.** When you meet a fallback (`??`, `or default`, `if x is None`), decide which:
+   - **The value is required.** Remove the fallback so the code fails immediately when the value is missing. Then follow the value back to the code that created it and fix that code so it always supplies the value.
+   - **Absence is a real business situation.** If a default exists, apply it once, where data enters the system or where configuration is loaded, so all code after that point sees a complete value. If no default exists, keep the value optional and handle both cases with an explicit `if/else`. Never fill the gap with a placeholder object.
 
 </invariant_policy>
 

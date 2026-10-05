@@ -34,6 +34,7 @@ Evaluate the implementation across two concurrent planes:
 - Verify **Working Parts**: verify the code actually has the working parts needed to deliver the outcome.
 - Verify **Lineage & Justification**: ensure the boundary fulfills an authorized requirement or an unavoidable prerequisite for downstream milestones without introducing orphaned logic.
 - Verify **Scenario Coverage**: for every use scenario declared in the plan, trace the code path from the product's real entrypoint to the declared observable response. A scenario whose invocation cannot reach its declared response in code is FAIL. Judge only the declared response, never product preference.
+- Verify **Invariant Coverage**: for every invariant declared in the plan, read the code that produces the responses of the scenarios it spans and establish why the rule holds for every input that code admits, not only the scenarios' literal inputs. Code that special-cases a literal input, or admits an input that breaks the rule, is FAIL.
 
 ### B. Seam & Dataflow Audit (Contracts, Ingress, and Terminal Sink)
 - **Literal Contracts & Bound Structures**: Verify that target classes, functions, and models strictly match the literal signatures, docstrings, and non-nullable type annotations declared in the plan.
@@ -60,14 +61,14 @@ This invariant governs through two structural tests:
   - If the intended real-world outcome is Y: code is incorrect (<technical reason>).
 
 ### E. Type Safety Audit
-- **Contract Integrity & Optionality Scrutiny**: Flag any required domain property modeled as optional to sponsor incomplete producers (Type Dishonesty). Verify that every optional field has contractual provenance. Extend structural skepticism to touched and adjacent fields, proposing explicit refactors to non-nullable where optionality is unjustified.
-- **Boundary Validation**: Flag unverified raw inputs crossing boundaries into domain logic without explicit runtime verification into strict types. Flag untyped wildcards or unsafe assertions bypassing compiler/runtime verification.
+- **Honest Optional Fields**: Flag any field typed optional although the business always needs it, because some code fails to fill it. Every optional field must name the business situation in which it is empty. Apply this to touched fields and the fields beside them, proposing a non-optional type wherever no such situation exists.
+- **Checked Entry**: Flag outside data (user input, files, network, environment, other services) that reaches domain code without a runtime check converting it into strict types. Flag `Any`, `# type: ignore`, and type assertions that skip a runtime check.
 
 ### F. Invariant & Boundary Integrity Audit
-- **Generative Boundary Principle**: Boundaries must admit verified states or reject contract breaches immediately (fail-fast). Producers bear absolute lineage responsibility for complete data; consumers have zero authority to fabricate surrogate state.
-- **Context-Grounded Fallback Assessment**: When auditing any fallback operator or undefined check, formulate a context hypothesis based on codebase reality and domain invariants to deliver a definitive verdict:
-  - **INVALID (State Fabrication)**: If the value is required for domain integrity, reject surrogate fallbacks; demand immediate fail-fast and trace Data Lineage back to the upstream producer to enforce completeness at the source.
-  - **VALID (Legitimate Absence)**: If absence is contractually authorized, fallbacks are permitted exclusively at system boundaries, or handled via intentional branching (`if/else`) without fabricating dummy placeholder structures. Any fallback operating within internal domain logic to mask missing state remains **INVALID** with no exception.
+- **Pass or Reject**: Wherever data passes between parts of the system, code must pass valid data on unchanged or reject invalid data with an immediate error. The code that creates a value is responsible for its completeness; code that receives it never invents a substitute for a missing part.
+- **Fallback Verdict**: For every fallback (`??`, `or default`, `if x is None`), decide from the codebase and the business rules which case it is:
+  - **INVALID (invented value)**: The value is required. The fallback must go so the code fails immediately; trace the value back to the code that created it and require that code to always supply it.
+  - **VALID (real absence)**: Absence is a real business situation. A default is applied once, where data enters the system or where configuration is loaded, or both cases are handled with an explicit `if/else`, never with a placeholder object. A fallback inside domain code that hides missing data is **INVALID** without exception.
 
 ### G. Root Cause Attribution & Plan Veto
 When auditing failures, shallow seams, or transition residue, determine the root cause:
@@ -105,6 +106,11 @@ When auditing failures, shallow seams, or transition residue, determine the root
 |---|---|---|---|---|---|
 | S-01 | <User from the plan> | <Product state and invocation> | <Code path from real entrypoint to the declared observable response> | PASS / FAIL | [file:line](file:///...) |
 
+#### Invariant Coverage Audit
+| # | Invariant | Spanned Scenarios | Why It Holds for Every Admitted Input | Coverage Status | Code Citations |
+|---|---|---|---|---|---|
+| I-01 | <Invariant from the plan> | S-xx, S-yy | <The code property that makes the rule hold beyond the scenarios' literal inputs, or the admitted input that breaks it> | PASS / FAIL | [file:line](file:///...) |
+
 #### Transition Residue Audit (Day-One & Entropy Test)
 <!-- One row per hit of the pre-change-form search, per touched seam caller, and per introduced structure -->
 | # | Location | Code Structure Audited | Present-Requirement Justification | Canonical Singularity & Deletion Proof | Status |
@@ -120,7 +126,7 @@ When auditing failures, shallow seams, or transition residue, determine the root
 #### Audit Verdict
 - Milestone Outcome Status: ALL PASS / HAS FAILURES
 - Seam & Dataflow Status: ALL PASS / HAS FAILURES
-- Scenario Coverage Status: ALL PASS / HAS FAILURES
+- Scenario & Invariant Coverage Status: ALL PASS / HAS FAILURES
 - Residue Status: ALL CLEAN / HAS RESIDUE
 - Final Delivery Gate: PASS (100% across all four) / FAIL / PLAN VETO
 
@@ -141,7 +147,7 @@ When auditing failures, shallow seams, or transition residue, determine the root
   - **Canonical Reference:** [file:line](file:///...) <Existing pattern / helper in codebase>
   - **Pattern-Conforming Fix:** <How to rewrite using the canonical pattern without loss of correctness>
 
-### Optionality Debt & Type Dishonesty
+### Optionality Debt
 <!-- If none found, write: "None" -->
 - [file:line](file:///...): **[INVALID / VALID]** <Context hypothesis & rationale> -> **Remediation:** <Required invariant fix or proposal>
 

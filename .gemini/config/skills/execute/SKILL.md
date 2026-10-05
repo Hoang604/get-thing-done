@@ -34,10 +34,10 @@ When nothing departs from the File Manifest before Round 1, Round 0 holds the si
 
 ## Execution Steps
 
-1. **Build**: Implement each milestone, resolving every unlisted adjacent file the contracted objective requires cleanly at the root cause and recording the adaptation in the Implementation Ledger.
+1. **Build**: Implement each milestone sequentially. Upon completing milestone $N$, notify the user that milestone $N$ is finished and what will be done next for milestone $N+1$ (or the transition to Dogfood if completing the final milestone). Resolve every unlisted adjacent file the contracted objective requires cleanly at the root cause and record the adaptation in the Implementation Ledger.
    - *Completion criterion*: Every contracted deliverable implemented and self-consistent across the codebase.
-2. **Dogfood**: Use the product as each of its users, through its real entrypoint, along every use scenario the plan declares. Take each user's position: want only what that user wants and know only what that user knows, setting aside what you know about the internals. When the plan declares no scenarios, derive them from the plan's objective: follow every outcome to whatever invokes it and whatever receives it to find the users, then walk each user's path through every state the product can be in when its job is attempted. For each scenario, invoke it literally and compare the observed response with the expected one. Every mismatch and every friction is a defect: fix it at the root cause and re-run the scenario. Run baseline checks as often as fixes require.
-   - *Completion criterion*: A final pass over every scenario of every user in which every observed response matches its expectation and no friction is found, with each invocation and its observed response recorded for the report, and the ledger's Round 0 lists every deviation made through Build and Dogfood.
+2. **Dogfood**: Use the product as each of its users, through its real entrypoint, along every use scenario the plan declares. Take each user's position: want only what that user wants and know only what that user knows, setting aside what you know about the internals. When the plan declares no scenarios, derive them from the plan's objective: follow every outcome to whatever invokes it and whatever receives it to find the users, then walk each user's path through every state the product can be in when its job is attempted. For each scenario, invoke it literally and compare the observed response with the expected one. For each invariant the plan declares, probe it through the same entrypoint with the inputs most likely to break it, beyond the literal inputs of the scenarios it spans. Every mismatch, every violated invariant, and every friction is a defect: fix it at the root cause and re-run what exposed it. Run baseline checks as often as fixes require.
+   - *Completion criterion*: A final pass over every scenario of every user in which every observed response matches its expectation and no friction is found, and over every invariant in which every probed input upholds it, with each invocation and its observed response recorded for the report, and the ledger's Round 0 lists every deviation made through Build and Dogfood.
 3. **Verify & Remediate (Red Loop)**: Execute verification declared in the contract:
    - Execute baseline check commands directly to verify system invariants and runtime execution.
    - **Subagent Audit Gate**: Dispatch the auditor subagent for independent passive code inspection ONLY IF a `Subagent Spawn Directive` is explicitly declared in the approved plan. On initial run (Round 1), dispatch requesting `audit_report_round_1.md` with the ledger link. If directive is absent, do NOT invoke subagents.
@@ -47,9 +47,9 @@ When nothing departs from the File Manifest before Round 1, Round 0 holds the si
      - *Re-invocation*: Dispatch `boundary-auditor` for Round $N+1$ passing `<plan-link>`, `audit_report_round_<N+1>.md`, and the ledger link.
    - Track cycles against the plan's declared **Audit Budget** (`<integer> | unlimited`). If the budget is exhausted without a pass, trigger an immediate Hard Stop.
    - When checks fail, fix the root cause immediately—whether within primary targets or in adjacent unlisted files.
-   - When a remediation changes behavior on a scenario's path, re-run that scenario before the next audit round.
+   - When a remediation changes behavior on a scenario's path, re-run that scenario and re-probe the invariants spanning it before the next audit round.
    - If a True Blocker is reached or the auditor issues a PLAN VETO, halt execution immediately without writing or updating `walkthrough.md`. Report findings directly to the user without attempting autonomous remediation.
-   - *Completion criterion*: Verification commands pass, declared audit reports confirm contract compliance with zero plan vetoes, and every scenario touched by remediation has been re-run clean.
+   - *Completion criterion*: Verification commands pass, declared audit reports confirm contract compliance with zero plan vetoes, and every scenario touched by remediation, with the invariants spanning it, has been re-run clean.
 4. **Report**: Overwrite `<appDataDir>/brain/<conversation-id>/walkthrough.md` strictly upon successful verification pass. Never create or update `walkthrough.md` on Plan Veto or unverified halts.
    - *Completion criterion*: `walkthrough.md` exists and matches the mandatory schema with all delivered changes, verification proofs, the dogfood record, deviations & adjustments, and diagnostics recorded.
 
@@ -102,6 +102,10 @@ When nothing departs from the File Manifest before Round 1, Round 0 holds the si
 | # | User | Product State | Invocation | Observed Response (final pass) | Friction Found -> Fix |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | S-01 | <User> | <State on the user's path> | `<Literal invocation>` | <Observed response> | <Friction and root-cause fix with [file](file:///path#L...)> \| "None" |
+
+| # | Invariant | Inputs Probed | Observed Responses (final pass) | Violation Found -> Fix |
+| :--- | :--- | :--- | :--- | :--- |
+| I-01 | <Rule from the plan> | `<Inputs chosen to break it>` | <Observed responses> | <Violation and root-cause fix with [file](file:///path#L...)> \| "None" |
 
 - **Out-of-Job Observations:**
   <!-- Capabilities noticed while dogfooding that serve a different job, left for the user to decide. If none: "None". -->

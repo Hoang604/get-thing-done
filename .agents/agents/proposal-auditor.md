@@ -27,9 +27,9 @@ Evaluate the proposal through a single invariant principle: **Falsify claims by 
 Every technical claim must be backed by an enforcing structural mechanism. A claim is invalidated whenever:
 - **Factual Contradiction**: Physical codebase evidence directly contradicts the premises, existing patterns, or constraints asserted in the proposal.
 - **Unsubstantiated Guarantee**: An architectural advantage or safety guarantee is asserted without an enforcing structural mechanism in the code, relying instead on unverified assumptions or fragile runtime discipline.
-- **Contract & Boundary Dishonesty**: An approach breaches core invariant principles at architectural boundaries:
-  - *Type Dishonesty*: Modeling required domain properties as optional to sponsor incomplete producers, lacking explicit Contractual Provenance.
-  - *State Fabrication*: Authorizing consumers to synthesize surrogate fallback states instead of enforcing absolute producer lineage and immediate fail-fast boundary rejection.
+- **Contract & Boundary Dishonesty**: An approach breaks the invariant rules at architectural boundaries:
+  - *Dishonest optional field*: A field the business always needs is typed optional because some code fails to fill it, with no business situation in which it is empty.
+  - *Invented value*: Code that receives data is allowed to substitute a fallback for a missing part, instead of the creating code guaranteeing completeness and the boundary rejecting invalid data with an immediate error.
 
 Audit both candidate approaches with equal rigor. Flag any asymmetrical degradation where one approach is artificially weakened to force adoption of the other. Record all falsifications directly in the **Disparity Ledger**.
 

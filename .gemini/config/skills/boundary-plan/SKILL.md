@@ -60,6 +60,7 @@ Reconstruct the users and jobs behind the spec, then ground them in physical cod
 - **Users & Jobs:** Follow every outcome the spec describes to whatever invokes it and whatever receives it; each of those is a user. Name every user and the job it gets done, one line per user.
 - **Use Scenarios:** Take each user's position in turn: want only what that user wants and know only what that user knows, setting aside what the spec author intends and what the implementer knows about the internals. From that position, walk the user's path across every state the product can be in when its job is attempted, and record each distinct path as a scenario: a literal stimulus through the product's real entrypoint and the exact observable response that user receives.
 - **Observable Response** is the literal text, value, or error the user receives, written so that comparing it with the real response yields yes or no.
+- **Invariants:** A scenario fixes one literal input; an invariant states the rule that holds for every input its product state admits. For every scenario whose response depends on its input, write the rules the response obeys for all such inputs, each so that one counter-input would prove it false, and name the scenarios it spans.
 - **Implied Requirements:** Every requirement a scenario exposes that the spec leaves unwritten, each traced to the scenario that exposed it.
 
 ### Fixed-Point Scope Discovery
@@ -71,7 +72,7 @@ For every concept the change touches, name its pre-change form: the exact names 
 ### Zero-Read Closed Scope
 Every type, structure, or interface crossing a seam has its definition written into the plan. For read-only dependencies outside the mutation scope, extract their relevant structural definitions and inline them so execution requires zero secondary lookups.
 
-**Completion Criterion:** Every user named with its job; every user covered by at least one scenario; every reachable product state on each user's path present in at least one scenario as a literal invocation with its exact observable response; implied requirements each traced to a scenario; an exhaustive manifest of affected files derived via fixed-point discovery; a Retirement Inventory in which every place still depending on a pre-change form has a fate; resolved definitions for all external references; and documented system invariants.
+**Completion Criterion:** Every user named with its job; every user covered by at least one scenario; every reachable product state on each user's path present in at least one scenario as a literal invocation with its exact observable response; every scenario whose response depends on its input spanned by at least one invariant; implied requirements each traced to a scenario; an exhaustive manifest of affected files derived via fixed-point discovery; a Retirement Inventory in which every place still depending on a pre-change form has a fate; and resolved definitions for all external references.
 
 ---
 
@@ -101,14 +102,14 @@ For every milestone in the graph, declare the physical blueprint across two cohe
 
 ### Tier 1: The System Boundary (What & Why)
 - **Observable Outcome:** The precise system capability made possible by this boundary.
-- **Acceptance Signal:** A literal invocation through the nearest real entrypoint and its exact observable response. A milestone that makes use scenarios runnable lists those scenarios as its signal, invoked through the product's real entrypoint.
+- **Acceptance Signal:** A literal invocation through the nearest real entrypoint and its exact observable response. A milestone that makes use scenarios runnable lists those scenarios and the invariants spanning them as its signal, invoked through the product's real entrypoint.
 - **Provenance & Justification:** The use scenarios this milestone makes runnable, OR the prerequisite required to implement later milestones cleanly and correctly.
 
 ### Tier 2: Technical Decisions & Physical Contracts (How)
 - **Key Decisions (10-Minute Review Standard):** Record the load-bearing engineering choices, argued through Minimal System Entropy and the Maximal Yield Principle, so a senior engineer with only 10 minutes can confidently approve the boundary before implementation begins.
   - *Minimal Entropy:* How each touched concept keeps exactly one canonical form, what callers no longer need to know, and which pre-change forms this milestone retires.
   - *Maximal Value:* Choices that remove friction from this milestone's scenarios, each tied to the scenario state it serves.
-- **Literal Contracts & Strict Types:** Declare literal non-nullable domain models and boundary interfaces crossing the seam (`class` / `def` signatures with complete type annotations, docstrings, and `...` ellipses method bodies).
+- **Literal Contracts & Strict Types:** Declare literal non-nullable domain models and boundary interfaces crossing the seam (`class` / `def` signatures with complete type annotations, docstrings, and `...` ellipses method bodies). Declare an abstract interface only when the seam has more than one implementation under present requirements; otherwise the contract is the concrete function or class itself.
 - **Ingress Caller & Terminal Sink Audit:**
   - *Caller Audit (Ingress):* Audit all existing callers across the workspace. List every caller requiring updates, or certify: *"Caller Audit: 0 production callers found via search."*
   - *Terminal Sink Audit (Dataflow):* Trace return values, state mutations, or emitted events downstream to their terminal sink to prove data reaches its final destination.
@@ -134,6 +135,10 @@ Every `implementation_plan.md` begins with the users and their jobs, then the ov
 |---|---|---|---|---|
 | S-01 | <User from the list above> | <The situation the user and product are in when the user acts> | `<Exact command, request, or call the user makes>` | <Exact output, return value, or error the user receives> |
 
+| # | Invariant | Spans |
+|---|---|---|
+| I-01 | <Rule that holds for every input the spanned scenarios' product state admits, stated so that one counter-input would prove it false> | S-01 |
+
 ## Minimal Entropy & Maximal Value Strategy
 
 - **Minimal Entropy:** <How each touched concept keeps one canonical form, what callers no longer need to know, and which pre-change forms are retired, across the whole system>
@@ -142,7 +147,7 @@ Every `implementation_plan.md` begins with the users and their jobs, then the ov
 ### Milestone 1: <Descriptive Title>
 
 - **Observable Outcome:** <What this boundary makes possible for the system or later milestones>
-- **Acceptance Signal:** <Scenarios S-xx made runnable, or a literal invocation and its exact observable response>
+- **Acceptance Signal:** <Scenarios S-xx made runnable and invariants I-xx spanning them, or a literal invocation and its exact observable response>
 - **Provenance & Justification:** <Scenarios made runnable, or prerequisite enabling Milestone N>
 
 #### Technical Decisions & Physical Contracts
@@ -151,21 +156,20 @@ Every `implementation_plan.md` begins with the users and their jobs, then the ov
   - **Maximal Value:** <Friction removed from scenario S-xx and how>
 - **Literal Contracts & Bound Structures:**
   ```python
-  class NoteDraft(BaseModel):
+  @dataclass(frozen=True)
+  class NoteDraft:
       title: NonEmptyStr
       body: str
 
-  class NoteStore(ABC):
-      """Boundary interface for saving notes."""
-      @abstractmethod
-      def save(self, draft: NoteDraft) -> SavedNote:
-          ...
+  def save(draft: NoteDraft) -> SavedNote:
+      """Persist the draft and return it with its assigned id."""
+      ...
   ```
 - **Caller & Sink Audit:**
   - Ingress: Called by `[NoteController.create](file:///src/controllers/notes.py#L45)`
   - Terminal Sink: Persisted via `[NoteRepository.insert](file:///src/storage/notes.py#L88)`
 - **Retired Forms:**
-  - `save_note(title, body, store=None)` at [notes.py](file:///src/controllers/notes.py#L52): deleted; its 3 call sites rewritten to `NoteStore.save`; 0 references remain
+  - `save_note(title, body, store=None)` at [notes.py](file:///src/controllers/notes.py#L52): deleted; its 3 call sites rewritten to `note_store.save`; 0 references remain
 
 #### File Mutations
 - `[MODIFY]` [notes.py](file:///src/controllers/notes.py#L30-L65)
@@ -181,6 +185,7 @@ Compile the plan into `<Artifact Directory>/implementation_plan.md`.
 ### Verification Matrix
 - **Baseline Checks:** Validation commands (typecheck, lint, unit tests, integration tests) certifying system invariants across all milestones.
 - **Dogfood Scenarios:** The full use scenario table, which execution runs through the product's real entrypoint after building.
+- **Invariant Probes:** The full invariant table, which execution probes through the product's real entrypoint with the inputs most likely to break each invariant.
 
 ### Subagent Dual Audit Directive
 Embed the audit directive verbatim into `implementation_plan.md`.
@@ -203,4 +208,4 @@ Declare execution bounds directly in `implementation_plan.md`:
   - Configures the maximum audit cycles before a Hard Stop. Set to `unlimited` to cycle until a clean pass or Plan Veto, or specify an integer limit (e.g., `1`, `3`).
 - **Plan Veto Escalation:** When the auditor determines that the plan is architecturally flawed or conceived as a patch that cannot be made permanent and residue-free, halt execution immediately without producing `walkthrough.md` and escalate directly to the user with the auditor's findings. Do not attempt autonomous remediation.
 
-**Completion Criterion:** `implementation_plan.md` exists with the users-and-jobs list and scenario table, the strategy, every milestone, the Verification Matrix (baseline checks and dogfood scenarios), the verbatim Subagent Spawn Directive, and the declared Audit Budget.
+**Completion Criterion:** `implementation_plan.md` exists with the users-and-jobs list, the scenario table, and the invariant table, the strategy, every milestone, the Verification Matrix (baseline checks, dogfood scenarios, and invariant probes), the verbatim Subagent Spawn Directive, and the declared Audit Budget.
