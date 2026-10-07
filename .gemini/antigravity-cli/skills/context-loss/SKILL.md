@@ -1,6 +1,6 @@
 ---
 name: context-loss
-description: You must read this skill immediately via view_file whenever context compaction occurs before calling any other tool or executing any task.
+description: You must read this skill immediately via view_file whenever context compaction occurs before calling any other tool or executing any task, unless the user's message prior to compaction explicitly instructed what to do upon compaction.
 ---
 
 # Context Loss Recovery Protocol
@@ -11,6 +11,10 @@ This skill is activated immediately when context has been compacted or previous 
 
 1. **Transcript Inspection Prohibition**: NEVER run any command or tool to inspect, search, or read `transcript.jsonl`, `transcript_full.jsonl`, or conversation logs under any circumstances unless the user explicitly asks for it.
 2. **Git Command Prohibition**: NEVER run any `git` command (`git status`, `git diff`, `git log`, etc.) unless the user explicitly asks for it.
+
+## Bypass Condition
+
+You may bypass reading and executing this skill if and only if the user's message prior to compaction explicitly specified what actions to take when context compaction occurs. In that case, follow the user's explicit instructions directly.
 
 ---
 

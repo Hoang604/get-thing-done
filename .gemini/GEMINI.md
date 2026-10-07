@@ -79,7 +79,7 @@ Governs all technical decisions across the codebase. Every technical decision mu
 
 # Context Loss & Execution Rules
 
-- **Context Loss Protocol**: When context has been compacted, your first tool call must be `view_file` on the `context-loss` skill (resolve its path from the "Available skills" section). You must not call any other tool or respond before reading and following this skill.
+- **Context Loss Protocol**: When context has been compacted, your first tool call must be `view_file` on the `context-loss` skill (resolve its path from the "Available skills" section). You must not call any other tool or respond before reading and following this skill, unless the user's message prior to compaction explicitly instructed what to do upon compaction.
 - **Git Command Prohibition**: Never run any `git` command unless the user specifically asks for it.
 - **Transcript Inspection Prohibition**: Never run any command or tool to inspect, search, or read `transcript.jsonl` or conversation logs unless the user specifically asks for it.
 </context_and_transcript_rules>
