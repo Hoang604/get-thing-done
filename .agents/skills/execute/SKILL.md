@@ -18,7 +18,7 @@ description: Execute an implementation plan. Read before starting to implement a
 
 ## Implementation Ledger
 
-`<plan-dir>/implementation_ledger.md` is the single record of how the implementation departs from the plan. Create it when Build starts and only append to it: never edit or remove an entry. Round 0 holds every deviation made before the first audit round, through Build and Scenario Evaluation: each file modified outside the plan's File Manifest and each declared contract adapted. Each audit round appends its own entry, whose Remediations hold the deviations made after it.
+`<plan-dir>/implementation_ledger.md` is the single record of how the implementation departs from the plan. Create it when Build starts and only append to it: never edit or remove an entry. Round 0 holds every deviation made before the first audit round, through Build and Scenario Evaluation: each file modified outside the plan's File Manifest and each declared contract adapted. Each audit round appends its own entry, whose Remediations hold the deviations made after it. **When** the user interrupts execution and changes how it proceeds, append a User Direction entry at that moment: what the user directed, written so it reads without the conversation, and the reason the user gave, or `None given` when the user gave none.
 
 ```markdown
 - **Round 0 — Build Deviations**:
@@ -27,7 +27,11 @@ description: Execute an implementation plan. Read before starting to implement a
   - **Audit Report**: [audit_report_round_<N>.md](file:///path/to/audit_report_round_<N>.md)
   - **Verdict**: `FAIL` | `PASS` | `PLAN VETO`
   - **Remediations**: `<observed issue>` -> `<code fix applied & target file>`
+  - **Rejections**: `<finding>` -> `<evidence it fails, with file:line>` | `None`
   - **Oscillation Status**: `None` | `<description of cyclic change (A -> B -> A) and resolution>`
+- **User Direction** (during <Build milestone N | Scenario Evaluation | Round N>):
+  - **Directed**: <what the user told you to do instead, and what it replaces in the plan>
+  - **Reason**: <the reason the user gave> | `None given`
 ```
 
 When nothing departs from the File Manifest before Round 1, Round 0 holds the single line `None (strict adherence to File Manifest)`.
@@ -42,7 +46,8 @@ When nothing departs from the File Manifest before Round 1, Round 0 holds the si
    - Execute baseline check commands directly to verify system invariants and runtime execution.
    - **Subagent Audit Gate**: Dispatch the auditor subagent for independent passive code inspection ONLY IF a `Subagent Spawn Directive` is explicitly declared in the approved plan. On initial run (Round 1), dispatch requesting `audit_report_round_1.md` with the ledger link. If directive is absent, do NOT invoke subagents.
    - **Audit Round Protocol**:
-     - *Round Entry*: When audit round N returns, append its Round N entry to the Implementation Ledger.
+     - *Round Summary*: When audit round N returns, check each of its findings against the code before changing anything, then give the user a summary of the round: the verdict, and for each finding what the auditor claims and whether it holds, fails, or partly holds, with the evidence that decided it (`file:line`). Proceed without waiting: remediate what holds and keep the code against the rest. A PLAN VETO halts as stated below.
+     - *Round Entry*: Append the round's Round N entry to the Implementation Ledger, with every finding kept against under Rejections, so the next round's auditor sees the reason.
      - *Oscillation Check (Ping-Pong Guard)*: If current remediation reverts an earlier turn's change (e.g., $A \to B \to A$), log the conflict in the round's Oscillation Status. If straightforward, fix and continue; if ambiguous or complex, trigger a Hard Stop and escalate to user.
      - *Re-invocation*: Dispatch `boundary-auditor` for Round $N+1$ passing `<plan-link>`, `audit_report_round_<N+1>.md`, and the ledger link.
    - Track cycles against the plan's declared **Audit Budget** (`<integer> | unlimited`). If the budget is exhausted without a pass, trigger an immediate Hard Stop.
@@ -114,7 +119,7 @@ When nothing departs from the File Manifest before Round 1, Round 0 holds the si
 #### 4. Deviations & Diagnostics
 
 - **Scope Deviations & Adjustments:**
-  <!-- Every Round 0 entry and every Remediation outside the File Manifest from [implementation_ledger.md](file:///path/to/implementation_ledger.md). If none: "None (Strict adherence to plan)". -->
+  <!-- Every Round 0 entry, every User Direction, and every Remediation outside the File Manifest from [implementation_ledger.md](file:///path/to/implementation_ledger.md). If none: "None (Strict adherence to plan)". -->
   - [<file>](file:///path/to/file#L...): <What was adjusted beyond initial plan and rationale for resolving autonomously>
 
 - **Diagnostics & Fixes:**

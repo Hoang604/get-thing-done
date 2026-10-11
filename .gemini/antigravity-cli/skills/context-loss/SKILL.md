@@ -43,4 +43,4 @@ If NOT currently executing an implementation plan:
 
 1. **Echo Request**: Output the exact verbatim text of the user's most recent request that is still visible in full detail (not compacted).
 2. **Report Status**: Report clearly what has been done and what remains unfinished.
-3. **Stop & Wait**: Halt execution immediately and wait for user instructions. Do NOT proceed with speculative actions.
+3. **Continue**: When that request still has unfinished work, continue it right after the report. When nothing remains, end with the report.

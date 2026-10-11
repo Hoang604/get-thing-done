@@ -4,118 +4,130 @@ description: Write or update skill
 disable-model-invocation: true
 ---
 
-A skill exists to wrangle determinism out of a stochastic system. **Predictability** — the agent taking the same _process_ every run, not producing the same output — is the root virtue; every lever below serves it.
+A skill exists to make a stochastic agent **predictable**, taking the same process every run rather than producing the same output: for every situation a run can meet, its text decides one process, the intended one, and the point where that process is done, spending the agent's attention only where and when that decision needs it. Below, the **target skill** is the skill being written, updated, or reviewed with this one, and every section applies to every sentence of it, frontmatter included.
 
-## Invocation
+The principles below are not peers. Two are **roots**: skip one and a family of failures follows. The rest are **independent**: each has its own failure, unrelated to the roots.
 
-All skills are user-invoked (`disable-model-invocation: true`). `description` is a human-facing summary.
+| Principle | Failures when it is skipped | Sections |
+|---|---|---|
+| **Root 1, the decision**: each question gets a judge, a closed or open form, and for an open one a cause, which generality measures | enumeration (checklist, disguised enumeration), overfit, underfit, pseudo-generality, fabricated authority, exemplar anchoring | *Generality*, *Examples* |
+| **Root 2, the goal**: each instruction states the state to reach, and each condition can be decided when it must be | negation, premature completion, a rule never reached | *Goals and conditions*, *Steps and reference*, *Splitting* |
+| **Independent**: attention spent only where it is needed | sprawl, duplication, contradiction, no-op, sediment | *Words*, *Placement*, *Pruning* |
 
-## Information hierarchy
+**Root 1 comes first.** It carries the skill's value: a run meets situations no author saw, and only a general instruction decides them. An agent gets the independent principles mostly right on its own and fails root 1 in almost every first draft; a skill that loses root 1 is worthless whatever else it gets right. Root 2 ranks between them.
 
-A skill is built from two content types — **steps** (ordered actions in `SKILL.md`, primary tier) and **reference** (definitions, rules, parameters, or facts consulted on demand, secondary tier) — that mix freely: a skill can be all steps, all reference, or both. The core decision is which to use and where each sits on the **information hierarchy**, a ladder ranked by how immediately the agent needs the material:
+**When** a skill shows one of these failures, fix it at the principle in its row: **fix the root, not the symptom**. A root's failures are its symptoms, and reworking a symptom's surface leaves its cause in place: a list rewritten as prose is still enumeration, and a prohibition reworded is still negation. An independent failure is fixed where it shows. A problem that fits no row is a gap in this skill, to report to the user.
 
-1. **In-skill step** — an ordered action in `SKILL.md`, the primary tier: what the agent does, in order. Each step ends on a **completion criterion** (the condition that tells the agent the work is done). Make it _checkable_ (can the agent tell done from not-done?) and, where it matters, _exhaustive_ ("every modified model accounted for", setting high demand) — a vague criterion invites **premature completion** (ending a step before it is genuinely done).
-2. **In-skill reference** — a definition, rule, or fact in `SKILL.md`, consulted on demand. Often a legitimately flat peer-set (every rule of a review on one rung) — a fine arrangement, not a smell.
-3. **External reference** — plain reference file outside any skill, reached via **context pointer**. Home for shared reference.
+## Generality
 
-A demanding completion criterion drives thorough **legwork** — the behind-the-scenes digging the agent does within the work (reading files, exploring codebase, verifying state) — whether the skill has steps or not, since "every rule applied" binds flat reference just as "every step done" binds a sequence.
+Every question the target skill answers goes through one chain: its judge decides whether it gets a rule and whether that rule can be closed; an open rule names a cause; generality measures whether what it names is a cause.
 
-Push too little down and the top bloats; push too much and you hide material the agent actually needs. That tension is the whole decision.
+### Judges
 
-**Progressive disclosure** is the move down the ladder — out of `SKILL.md` into a linked file — so the top stays legible. Mechanics: a linked `.md` file in the skill folder, named for what it holds. Some skills are used in more than one way, and each distinct way is a **branch** — different runs taking different paths through the skill. Branching is the cleanest disclosure test: inline what every branch needs, and push behind a pointer what only some branches reach.
+A rule is intended only if something outside the agent can tell when it is wrong. For every question the target skill answers, that something is the question's **judge**, and it is one of two kinds:
 
-Writing a **context pointer**: Wording, not target file, decides reliability. Combine an explicit trigger condition (WHEN), target name (WHAT), and imperative action verb (DO) with shared **leading words** (e.g., "When [condition], read [file] to [goal]"). A missed target behind a weak pointer is a wording bug — sharpen trigger wording before pulling material back inline.
+- **the user**, when the user confirms they can tell a right answer to that question from a wrong one;
+- **a source**, a document, standard, or file in the codebase that the agent can open and quote, whose text states the answer.
 
-Where the ladder decides _how far down_ a piece sits, **co-location** decides _what sits beside it_ once there: keep a concept's definition, rules, and caveats under one heading rather than scattered, so reading one part brings its neighbours with it.
+A judge's answer reaches the target skill only as the judge's own words, quoted: the source's text with where it sits, or what the user said. An answer credited to a judge without that quote is the agent's own judgment dressed as authority (**fabricated authority**), and so is any rule for a question with no judge: no one in the loop can catch it when it is wrong. A question with no judge gets no rule; the target skill stays silent on it and leaves it to the agent's default.
 
-## Generality and the action-thought split
+### Closed and open sets
 
-A skill steers an agent across two distinct planes with opposite demands: **action** (what the agent executes) and **thought** (how the agent reasons). Confusing the two breaks the skill.
+What is right for a question depends on situations no text can list in full, unless the question's judge, in words quoted as *Judges* requires, lists those situations.
 
-### Direction of action must be deterministic
+- **Closed** (the judge lists them): what is right is fixed, or varies only across the situations the judge lists. Write a literal contract that names each of them and leaves the agent no choice; nothing unlisted needs judgment, so any choice left is variance between runs.
+- **Open** (no judge lists them): name the **cause**, whatever decides every situation the text governs, listed or not: the reason an action is right, the trait that makes something a member of a defined term, what makes a condition hold or a step done.
 
-Where execution requires exact conformity, eliminate all degrees of freedom. Specify the literal physical contract without variance. Generality in action is workflow entropy.
+One instruction can be both, a closed form with open content; write each part by its own kind.
 
-### Direction of thought must be general
+### Fit
 
-Steer reasoning exclusively through **generality**.
+**Generality** is a relation between an instruction and its cases, not a property of its wording read alone. Its cases are **observed cases**: runs that went wrong, or situations the user describes from their own work. An agent left to pick its own cases imagines them, and an imagined case carries its author's guess at the right action, so an instruction that fits it proves only that it fits the guess: the agent has graded its work against itself. An instruction with no observed case has no evidence of generality yet; get its cases from the user. Cases test the instruction and stay out of the target skill's text (*Examples*).
 
-**Generality** is a relation between an instruction and a class of cases, never a property of its wording read alone. An instruction is general for its class when it names the **cause** the cases share — the reason the right action is right in each of them — because a cause *decides* every case it produces, including cases the author never saw. Being true in every case is not enough: *"be thorough"* is true everywhere and decides nothing.
+An open-set instruction is **general** when it names the cause its cases share, and so, in one sentence, picks the right action in every case it was written from, picks it in a **held-out** case it was not written from, and rules out the tempting wrong action in all of them. Being true in every case is not enough: an instruction that holds everywhere but rules out no wrong action decides nothing. A general instruction is a **generative principle**: compact, and neither overfit nor underfit. The raincoat in *Enumeration* shows all three failures below in one situation.
 
-Generality is measured the way any learned rule is measured — by fit. An instruction is general when it gives the right action in every case it was written from, gives the right action in a **held-out** case it was not written from, and in every case rules out the tempting wrong action. Missing the held-out case is **overfit**: the instruction memorized its cases. Admitting the wrong action is **underfit**: the instruction steers nothing. A general instruction is a **generative principle** — compact, and fit on both counts.
+- Missing the held-out case is **overfit**: the instruction memorized its cases, and the cure is a cause that also decides the held-out case.
+- Admitting the wrong action is **underfit**: the instruction does not steer away from it. Detail is sharpness, not count: the cure is to find the word that lets the wrong action through and replace it with a test the agent can run on its own work, one that fails the wrong action and passes the right one; a word that names a recurring idea keeps its place, and the test becomes its definition (*Words*). Added cases are no cure: they turn the instruction into an enumeration.
+- Abstract vocabulary hides underfit (**pseudo-generality**): restate the instruction in plain words, and if it then picks no action in a concrete case, it is underfit whatever its wording.
 
-- **A checklist standing in for a principle is overfit**: it decides exactly its listed items and nothing beyond — an admission that the shared cause was not found. Listing categories degrades the agent into a clerk ticking boxes, hallucinating relevance for inapplicable items and stopping at the edge of the list instead of reasoning from structure.
-- **Detail is sharpness, not count**: A principle too thin to steer is underfit; the cure is sharper wording, rewritten until it rules out the tempting wrong action in every case — never added cases. Cases live in authoring (the Scaffolding step of the protocol), where they test the principle; the skill text carries only the principle. A case earns a place in the skill text solely as a boundary clip against a strong pretraining attractor that the principle's wording does not overcome.
-- **Examples anchor and blind in the thought plane**: An illustrative instance inside a reasoning directive triggers **exemplar anchoring** — overfit induced in the reader: attention collapses onto the surface traits of the sample, mistaking it for the outer boundary of the problem. In the action plane the same move is an **in-line anchor** (see _Constructive contracts_): one example of the output teaches its shape. An anchor uses a situation any reader understands without domain knowledge, so the only traits it carries are the shape being taught.
+### Enumeration
 
-## When to split
+**Enumeration** is a list standing in for a cause in open-set text. It is overfit by construction: it decides exactly the items it names, which admits the cause was not found. An agent running it becomes a clerk ticking boxes: it invents relevance for items that do not apply and stops at the edge of the list instead of reasoning from the cause. It shows up in three shapes, and the held-out case exposes all three alike:
 
-**Granularity** is how finely skills are divided. Splitting user-invoked skills spends **cognitive load** (more skills for the human to remember), so split only when sequence isolation earns it:
+- a **checklist**: the items as bullets;
+- **disguised enumeration**: the same items folded into a prose clause joined by commas or *or*, which is what a checklist turns into when lists are forbidden;
+- a clause that changes the action in only one case: that case written in, however abstract its wording.
 
-- **By sequence** — split a run of **steps** when steps ahead (**post-completion steps**) tempt the agent into **premature completion**, **AND** the earlier step does not need to know the later step's details to make sense.
-  - _Can split_: `propose method` and `draft plan` — evaluating technical trade-offs does not require knowing plan document structure.
-  - _Cannot split_: `legwork` and `propose method` — legwork needs proposal context (otherwise in a vacuum). Even when the model envisions the proposal early, attention anchors on confirming that outcome, shortcutting investigation into thin legwork.
+Every shape is a symptom of the same missing cause, so the fix is the cause (**fix the root, not the symptom**). The difference, shown in a situation unrelated to any skill:
+
+- Enumeration: *Pack a raincoat for Da Lat, Sapa, or Hue in the rainy season.*
+- Cause: *Pack a raincoat when the forecast shows rain where you are going, on the days you are there.*
+- Held-out case, exposing **overfit**: a September trip to Phu Quoc. The list does not name Phu Quoc and packs nothing; the cause reads the forecast and packs the raincoat.
+- Wrong action the list lets through, exposing **underfit**: Da Lat in the rainy season, during a dry week. The list packs the raincoat anyway; the cause leaves it home.
+- **Pseudo-generality**: *Pack appropriately for the climate.* It sounds general and is true everywhere, but in plain words it says *pack the right things*, which decides neither trip.
+
+A list of rules, each general on its own, is not enumeration: every item names its own cause, and none stands in for a cause that was not found. Such a flat set of peer rules is often the right shape for reference.
+
+## Examples
+
+**When** the target skill prescribes the shape of an output, show the shape with one example of that output, an **anchor**: one example teaches shape more reliably than rules describing it. Set the anchor in a situation any reader understands without domain knowledge, so the only traits it carries are the shape.
+
+**When** an example would sit inside open-set text, leave it out: the reader takes its surface traits for the boundary of the set (**exemplar anchoring**). An example earns a place there only as a guardrail (*Goals and conditions*).
+
+## Goals and conditions
+
+Every instruction states its **goal**, the output or state the agent must reach, in a form the agent can check its own work against.
+
+Every condition the agent must evaluate is stated so the agent can decide it from what it can see at the moment it must decide.
+
+Every rule is reached one of two ways: a step applies it, or it opens with **When** and its condition. A rule reached neither way is read, then never applied at the moment it governs.
+
+**Negation** is steering by prohibition. A prohibition says what is wrong and leaves what is right unsaid, so the agent learns only where not to go; and naming the failure makes it more available: tell the agent not to think of an elephant, and the elephant is what it thinks of. Test a text by deleting its prohibitions: if what remains no longer tells the agent what to produce, the prohibitions were doing the steering. Rewrite each such prohibition as the goal it was guarding, the state in which the forbidden thing does not occur.
+
+A prohibition earns a place only as a **guardrail**: right after the goal it protects, naming a failure that runs carrying that goal still showed.
+
+## Steps and reference
+
+A skill holds **steps**, actions the agent executes in order, and **reference**, material it consults when a situation calls for it; a skill can be either or both.
+
+Every step ends on a **completion criterion** that tells done from not done. The criterion also sets the **legwork**, the digging the agent does inside the work before it claims done: the agent gathers the evidence the criterion makes it show, and stops there. So the criterion names evidence covering everything the step's result depends on; a criterion that covers part of it lets the agent stop after that part. A skill made only of reference binds legwork the same way: every rule applied to everything it governs. The last step's criterion is the deliverable's: the run ends when what its user receives is finished and checked, not when a precondition for producing it is met.
+
+**Premature completion**, ending a step before it is done, happens where the criterion leaves done undecided; the defence is a criterion decidable as *Goals and conditions* requires, then *Splitting* if runs still end early.
+
+## Splitting
+
+Each split adds a skill the user must remember and invoke. **When** runs keep ending a step early although its completion criterion is decidable, and the step makes sense without the details of the steps after it, split the skill right before those later steps.
+
+## Words
+
+Use an existing word that already carries the meaning, a plain word or a concept the model knows from pretraining. Coin a term only for a meaning that recurs and that no existing word carries; define it where it first appears and use it unchanged after.
+
+A word steers only when the agent can tell whether what it names is present in its own work. A word that names only the degree of a quality cannot be told present or absent: replace it with the observable state that degree should reach.
+
+**When** one meaning is spelled out at more than one site, or a passage explains what a pretrained concept already carries, collapse it into a **leading word**: that concept, used wherever the meaning recurs, so the agent reaches for the same behaviour each time it meets the word. Every skill carries restatements a leading word can retire; hunt for them rather than waiting to trip over them. *Fast, deterministic, low-overhead*, restated across a phase, collapses into *tight* (a tight loop); *a loop you believe in* collapses into *red*, which also turns a fuzzy gate into a binary state: the loop goes red on the bug, or it doesn't.
+
+A leading word that does not move the agent past its default is too weak, and the fix is a stronger word, not a different technique: *relentless* where *thorough* changes nothing.
+
+## Placement
+
+Put each piece where exactly the runs that need it read it:
+
+- runs of other skills need it too: a shared file outside any skill;
+- otherwise, every run of the skill needs it: SKILL.md;
+- otherwise, only some runs need it: a file in the skill folder, named for what it holds.
+
+Material read by runs that don't need it costs them attention (**sprawl**); material a run needs but doesn't read is missing for that run.
+
+**When** material sits in a file outside SKILL.md, reach it with a **context pointer**, one sentence worded *When [condition], read [file] to [goal].* Whether a run reaches the file depends on that wording, not on the file: when a run misses a file it needed, rewrite the condition to name what the run could see at the moment it needed the file, before pulling the material back into SKILL.md.
 
 ## Pruning
 
-Keep each meaning in a **single source of truth**: one authoritative place, so changing the behaviour is a one-place edit.
+Every question a run can ask the skill is answered in exactly one place; every other place that touches the question points there, and answers about one concept sit under one heading. Two places answering one question are a defect whether they agree (**duplication**) or disagree (**contradiction**): agreeing copies drift into disagreeing ones on the next edit.
 
-Check every line for **relevance**: does it still bear on what the skill does (not stale or off-topic)?
+A sentence stays only if you can name a situation in which an agent without it would act differently, and how. If what it asks for is already the agent's default, it is a **no-op**: delete the whole sentence. If it asks for what the agent does not yet do and still fails to produce it, it is underfit: sharpen it as *Fit* prescribes, or strengthen its leading word (*Words*).
 
-Then hunt **no-ops** sentence by sentence, not just line by line: run the no-op test (does instruction change behavior versus default?) on each sentence in isolation, and when one fails, delete the whole sentence rather than trim words from it. Be aggressive — most prose that fails should go, not be rewritten.
+A sentence also stays only while it bears on what the skill does now. Sentences that no longer do pile up because adding feels safe and removing feels risky (**sediment**). Deletion is the default for every sentence that fails these tests: rewrite only a sentence whose behaviour the skill still needs, and delete the rest.
 
-## Leading words
+## Invocation
 
-A **leading word** is a compact concept (_Leitwort_) already living in the model's pretraining that the agent thinks with while running the skill (e.g. _lesson_, _fog of war_, _tracer bullets_). Repeated throughout the text (though not necessarily - a strong leading word might only be needed once), it accumulates a distributed definition and anchors a whole region of behaviour in the fewest tokens, by recruiting priors the model already holds.
-
-A leading word anchors _execution_: when repeated across prompts, documentation, and skill steps, the agent consistently reaches for the same behavior every time the word appears.
-
-Hunt for opportunities to refactor skills to use leading words. A triad spelled out at three sites (**duplication** — same meaning in more than one place) or verbose explanatory prose is a passage begging to **collapse** into a single token. Examples include:
-
-- "fast, deterministic, low-overhead" -> _tight_ — one quality restated across a phase — into a single pretrained word (a _tight_ loop).
-- "a loop you believe in" -> _red_ — converts a fuzzy gate into a binary observable state (the loop goes _red_ on the bug, or it doesn't).
-
-You win twice over: fewer tokens, _and_ a sharper hook for the agent to hang its thinking on. Assume every skill is carrying restatements that leading words retire — go find them.
-
-## Constructive contracts
-
-Steering by prohibition (**negation**) is a symptom of underspecification: it names what failed without defining the target grammar. Prefer **constructive contracts** that make the desired shape unambiguous:
-
-- **Physical shape over adjectives** — qualitative requests (_"be concise"_) are no-ops. Define the physical contract positively through observable, mechanically verifiable constraints on the output, eliminating all qualitative degrees of freedom.
-- **In-line anchors** — in the action plane, a single concrete, realistic example of the output anchors generation density and tone far more reliably than paragraphs of abstract rules. Anchors teach output shape only; reasoning directives stay general (see _Examples anchor and blind_).
-- **Boundary repulsion** — use negative guardrails (`Do NOT`) strictly as secondary boundary clips to suppress strong pre-training attractors, never as the primary generator.
-
-## Failure modes
-
-Use these to diagnose issues the user may be having with the skill.
-
-- **Premature completion** — ending a step before it's genuinely done, attention slipping to _being done_. Defence, in order: sharpen the completion criterion first (cheap, local); only if it is irreducibly fuzzy _and_ you observe the rush, hide the post-completion steps by splitting (the sequence cut).
-- **Duplication** — the same meaning in more than one place. Costs maintenance and tokens, and inflates a meaning's prominence on the ladder past its real rank.
-- **Sediment** — stale layers that settle because adding feels safe and removing feels risky. Default fate of any skill without a pruning discipline.
-- **Sprawl** — a skill simply too long, even when every line is live and unique. Cure: disclose **reference** behind pointers, and split by **branch** or sequence. **Guardrail**: Inline material required by all branches; only put behind a pointer what some branches reach.
-- **No-op** — a line the model already obeys by default, so you pay load to say nothing. The test: does it change behaviour versus the default? A weak leading word (_be thorough_ when the agent is already thorough-ish) is a no-op; the fix is a stronger word (_relentless_), not a different technique.
-- **Negation** — steering by prohibition backfires: _don't think of an elephant_ makes the elephant more available. Reframe prohibitions into constructive physical contracts; keep negative rules solely as boundary guardrails.
-- **Disguised enumeration** — the cosmetic retreat when forbidden from using checklists. Rather than deriving a general principle, the model collapses bulleted items into a comma-separated clause within prose. The structure is still overfit — the held-out case exposes it whatever the formatting — still forcing the agent to audit irrelevant nouns instead of reasoning from structure.
-- **Exemplar anchoring** — supplying illustrative instances within reasoning directives. The model anchors on the accidental properties of the example, blinding it to valid architectures outside the example's shadow.
-- **Pseudo-generality** — underfit disguised by vocabulary: abstract words make an instruction sound like it covers every case while deciding none. Plain language exposes bad logic immediately; heavy jargon hides it. If an instruction cannot be stated simply, the unifying principle was not found.
-
-## Authoring protocol
-
-When authoring, refactoring, or updating any target skill, the agent must execute these steps in order before drafting or modifying content:
-
-1. **Recite invariants**: Output the verbatim text of this skill's invariant principles on generality and checklist anti-patterns from the following sections:
-   - `Generality and the action-thought split`
-   - `Disguised enumeration`
-   - `Pseudo-generality`
-2. **Partition conditional mechanisms**: Enumerate the following 6 conditional mechanisms from this skill, partitioning them into **Applicable** vs. **Inapplicable** for the target skill with structural rationale:
-   - `In-skill steps`
-   - `Progressive disclosure`
-   - `Context pointers`
-   - `Sequence splitting`
-   - `Leading words`
-   - `In-line anchors`
-3. **Map planes**: Classify every instruction into either **Action Direction** (what the agent executes) or **Thought Direction** (how the agent reasons).
-   For every instruction in **Thought Direction**, follow these three steps before drafting:
-   - **Scaffolding:** List the distinct concrete cases the instruction must handle, drawn from observed evidence rather than imagined. For each case, write the right action and the tempting wrong action.
-   - **Synthesis:** Find the cause that makes the right action right in every case, and write a single instruction that names it, without containing any checklists.
-   - **Fit test:** Construct one held-out case absent from the Scaffolding list, then apply the fit test from *Direction of thought must be general* to the instruction alone, against every case. Overfit → return to Synthesis for a deeper cause. Underfit → sharpen the wording. Draft only once it passes.
+Every skill is user-invoked: its frontmatter sets `disable-model-invocation: true`, and its `description` is a summary for the human who invokes it.
