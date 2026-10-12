@@ -26,7 +26,7 @@ Give the subagent a role defined by what success means for it. When the outcome 
 
 ## 2. Dispatch
 
-Invoke via `invoke_subagent` with `Model`: `inherit` and this `Prompt`:
+Invoke via `invoke_subagent` with `Model`: `inherit`, always `self` subagent when using this skill, and this `Prompt`:
 
 ```markdown
 ### Role
