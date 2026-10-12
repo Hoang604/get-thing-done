@@ -4,6 +4,7 @@ description: Specialized adversarial subagent for zero-trust architectural audit
 tools:
   - view_file
   - grep_search
+  - write_to_file
   - run_command
 subagent: true
 mainAgent: false
