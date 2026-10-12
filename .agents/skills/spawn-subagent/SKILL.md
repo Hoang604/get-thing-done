@@ -67,6 +67,4 @@ Reply with the result directly.
 
 1. Read the delivered artifact with `view_file`.
 2. To follow up, `send_message` only the new directive, opening with the deliverable. The subagent still holds its own context: point to its prior findings by their identifier. The directive obeys Step 1 — settled facts, no map.
-3. When no follow-up remains, terminate the subagent via `manage_subagents`.
-
-- **Completion Criterion**: Result ingested and the subagent terminated.
+3. When no follow-up remains, keep the agent idle, do not kill it.
