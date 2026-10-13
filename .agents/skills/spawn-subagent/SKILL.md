@@ -12,11 +12,11 @@ A subagent knows nothing but its prompt, and it takes that prompt as both truth 
 
 ## 1. Frame the Problem
 
-De-reference the conversation into a prompt that passes the **cold read**: an engineer holding only the prompt — no chat history, no thoughts, no git log — can start work without asking anything back. Every reference to this conversation is expanded into its full content; orchestration words about delegating are dropped.
+De-reference the conversation into a prompt that passes the **cold read**: an engineer holding only the prompt — no chat history, no thoughts, no git log — can start work without asking anything back. A **reference** points at one thing the conversation already pinned down: replace it with its full content. A **category** names a set whose members the work must find or act on: carry it over in the user's own words, with where its members live. Orchestration words about delegating are dropped.
 
 Assert only what is **settled** — what stays true whatever the subagent finds. What you observed is settled; what you concluded from it is not. What the user decided is settled; a constraint you invented is not. When the task is to judge something, that thing enters the prompt as a claim under judgment, never as a verdict.
 
-Draw the boundary of the problem without marking any spot inside it. Do NOT tell the subagent what you changed, where you looked, or which cases you already covered: that is your map, and it will follow it into your blind spot.
+The subagent finds every member of a category itself; its value is the members you missed. A list of members you found claims completeness without stating it — a conclusion, not an observation — and the subagent searches that list and stops at its edge. When the user named the members, their list is the category: carry it over verbatim.
 
 Give the subagent a role defined by what success means for it. When the outcome is a judgment, success is finding what is wrong — state it, because by default a subagent agrees with whoever asked.
 
@@ -65,6 +65,8 @@ Reply with the result directly.
 
 ## 3. Receive & Follow Up
 
-1. Read the delivered artifact with `view_file`.
-2. To follow up, `send_message` only the new directive, opening with the deliverable. The subagent still holds its own context: point to its prior findings by their identifier. The directive obeys Step 1 — settled facts, no map.
-3. When no follow-up remains, keep the agent idle, do not kill it.
+1. When the subagent delivered an artifact, read it in full with `view_file`; when it replied directly, its reply is the result.
+2. To follow up, `send_message` only the new directive, opening with the deliverable. The subagent still holds its own context: point to its prior findings by their identifier. The directive obeys Step 1 — settled facts, categories carried over whole.
+3. When no follow-up remains, keep the agent idle so it can take a later follow-up.
+
+- **Completion Criterion**: The result is read in full and meets every point of the prompt's `Objective`; each point it misses has a follow-up sent for it.
