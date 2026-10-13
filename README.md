@@ -2,7 +2,7 @@
 
 Systematic agent workflows that enforce deep architectural reasoning over fast code generation—ensuring AI builds exactly what you want with zero-regression reliability.
 
-## Antigravity Installation
+## Installation & Architecture
 
 ### Global Install (available everywhere)
 
@@ -19,92 +19,146 @@ cd .. && rm -rf gtd-temp
 > [!NOTE]
 > Windows does not have a default/native install script. On Windows, run the installation inside **WSL (Windows Subsystem for Linux)** or a POSIX-compatible environment using the Linux/macOS command above.
 
+### Single Source of Truth (SSoT) & Synchronization
+- **Source of Truth (`.gemini/antigravity-cli/`)**: The definitive home for all **Skills** (`skills/`) and **Custom Subagents** (`agents/`).
+- **Sync Script (`./sync_workflows.sh`)**: Synchronizes skills and agents from `.gemini/antigravity-cli/` to the packaging directories (`.gemini/config/` for global and `.agents/` for workspace).
+- **Global Deployment (`./install.sh`)**: Copies the framework into `~/.gemini/` and `~/.agents/` for machine-wide availability.
+
 ---
 
-## 1. Core Execution Pipelines (Daily Delivery)
+## 1. Modular Execution Model
 
-The GTD framework splits execution into **two primary tracks** depending on task blast-radius and complexity:
+The GTD framework is **not an inflexible waterfall pipeline**. Each skill and custom subagent is an **autonomous, loosely coupled building block** with clean input/output boundaries. You can enter at any point based on the problem at hand:
 
 ```mermaid
 %%{init: {"flowchart": {"defaultRenderer": "elk"}}}%%
 flowchart TD
-    Start["User Request"] --> Decision{"Requires deep planning or multi-module changes?"}
-    
-    %% Track 1: Fast-Track
-    Decision -- "NO (Fast-Track)" --> F1["Chat / Quick Alignment"]
-    F1 --> F2["/confirm (Freeze 6-point Contract & Quality Defenses)"]
-    F2 --> F3["/execute (Mutate & Test)"]
-    F3 --> F4["/propose-commit (Conventional Commit)"]
-    
-    %% Track 2: Deep Architecture
-    Decision -- "YES (Deep Planning)" --> D1["/interview (4-Tab Alignment Gate)"]
-    D1 --> D2["/propose-plan (Pragmatic vs. Robust Trade-offs)"]
-    D2 --> D3["/draft-plan (implementation_plan.md in EARS syntax)"]
-    D3 --> D4["/test-increment (Adversarial Test Seams)"]
-    D4 --> D5["Proceed Button (Execute implementation_plan.md)"]
-    D5 --> F4
+    subgraph Entrypoints["Flexible Entrypoints (Choose Any Based on Need)"]
+        E1["Direct Task / Local Bug"]
+        E2["Ambiguous Requirements"]
+        E3["Architectural Dilemma"]
+        E4["Ready to Plan (Known Scope)"]
+        E5["Existing Plan / Contract"]
+        E6["Audit & Code Hygiene"]
+    end
+
+    subgraph FastTrack["The Fast Track (Lean Delivery)"]
+        F1["/prove-understanding OR /interview (Skip Override)"]
+        F2["/bug-classification (Check if LOCAL)"]
+        F3["/execute (Direct Build & Tests, No Audit Subagent)"]
+        F4["/propose-commit (Subject-Only)"]
+    end
+
+    subgraph MainTrack["The Main Track (Deep Planning & Boundary Rigor)"]
+        M1["/interview (5 Lenses & 4-Tab Playback)"]
+        M2["/craft-solution OR /propose-architecture (Optional)"]
+        M3["/boundary-plan (Zero-Read implementation_plan.md)"]
+        M4["/review-plan OR /test-increment (Optional Hardening)"]
+        M5["/execute (Build + Ledger + boundary-auditor Red Loop)"]
+        M6["/propose-commit (Full Conventional Commit)"]
+    end
+
+    subgraph Standalone["Isolated Toolkits"]
+        S_Spec["Domain Spec Engine<br/>(/initial-proposal → /trace-flow → /product-interview → /entropy-hunt)"]
+        S_Rev["Code Review & Verification<br/>(/code-review → /verify-issue)"]
+        S_Debt["Residue & Test Triage<br/>(/residue-hunt, /test-triage)"]
+        S_Craft["Targeted Craft<br/>(/create-test, /create-postman-collection, /frontend-design)"]
+    end
+
+    E1 --> F2 --> F3 --> F4
+    E1 --> F1 --> F3
+    E2 --> M1 --> M3
+    E3 --> M2 --> M3
+    E4 --> M3 --> M5 --> M6
+    E5 --> M5
+    E6 --> Standalone
 ```
-
-> [!NOTE]
-> Every skill listed below has an identical corresponding slash command available in `.gemini/antigravity-cli/skills/` and `.agents/skills/` (synced to `.gemini/config/skills/`).
-
-### Track 1: Fast-Track Execution (Direct Contract)
-*For focused bug fixes, single-module enhancements, or well-understood tasks without planning artifact overhead.*
-
-- **[confirm](.gemini/config/skills/confirm/SKILL.md)**: Freeze the 6-point technical contract (intent, user outcomes, target files, deterministic choices, verification command) and 8 Quality Defenses before execution.
-- **[execute](.gemini/config/skills/execute/SKILL.md)**: Execute an approved contract with continuous verification.
-- **[propose-commit](.gemini/config/skills/propose-commit/SKILL.md)**: Propose a high-signal conventional commit message for the completed changes.
-
-### Track 2: Deep Architectural Planning (Full Engineering Rigor)
-*For complex subsystems, high-risk refactors, cross-cutting migrations, or new domain features.*
-
-- **[interview](.gemini/config/skills/interview/SKILL.md)**: Interactive alignment interview with a 4-tab playback gate to guarantee 100% shared understanding before any plan or code is written.
-- **[propose-plan](.gemini/config/skills/propose-plan/SKILL.md)**: Gather context, classify quality tiers (Tier 1–5), and propose two architectural approaches (Pragmatic vs. Robust) with clear trade-offs.
-- **[draft-plan](.gemini/config/skills/draft-plan/SKILL.md)**: Draft formal `implementation_plan.md` artifact using EARS syntax with zero-prose literal contracts and seam test matrix.
-- **[test-increment](.gemini/config/skills/test-increment/SKILL.md)**: Design adversarial test seams and update the implementation plan immediately.
-- **Proceed Button**: Click the interactive **Proceed** button directly on the approved `implementation_plan.md` artifact to execute changes step-by-step with verified test proofs.
-- **[propose-commit](.gemini/config/skills/propose-commit/SKILL.md)**: Propose a conventional commit message once verified.
 
 ---
 
-## 2. Specialized Engineering Toolkits (On-Demand)
+## 2. Core Tracks
 
-### 🐛 Bug Hunting & Remediation
-*Use when investigating regressions, production defects, or stress-testing resilience.*
+### ⚡ The Fast Track (Lean Delivery)
+*For focused bug fixes, single-module enhancements, or straightforward tasks with minimal ceremony and zero subagent latency.*
 
-- **[fix-bug](.gemini/config/skills/fix-bug/SKILL.md)**: Probe-driven root cause diagnosis and verified zero-regression remediation.
-- **[bug-hunt](.gemini/config/skills/bug-hunt/SKILL.md)**: Autonomous iterative red/green hunting loop driven by blind audit subagents.
-- **[stress-test](.gemini/config/skills/stress-test/SKILL.md)**: Audit and harden agent-produced code across edge regimes and concurrency boundaries.
+- **[prove-understanding](.gemini/antigravity-cli/skills/prove-understanding/SKILL.md)**: 1-shot confirmation to prove understanding before building, bypassing exploratory questioning.
+- **[interview](.gemini/antigravity-cli/skills/interview/SKILL.md)** (Skip Override): Saying *"skip it"* or *"just build"* outputs `[ALIGNED-SKIPPED]` and proceeds immediately without questioning rounds.
+- **[bug-classification](.gemini/antigravity-cli/skills/bug-classification/SKILL.md)**: Runs the Seam Sufficiency Test. If `LOCAL`, the fix is internal to a sound seam—remediate directly with zero planning overhead.
+- **[execute](.gemini/antigravity-cli/skills/execute/SKILL.md)**: Runs against any contract or simple plan. Bypasses subagents when no `Subagent Spawn Directive` is declared, executing build and baseline verification directly.
+- **[propose-commit](.gemini/antigravity-cli/skills/propose-commit/SKILL.md)**: Outputs a concise single-line subject for simple changes.
 
-### 🔍 Code Review & Verification
-*Use before merging PRs or when validating review findings.*
+### 🏛️ The Main Track (Deep Planning & Boundary Rigor)
+*For high-blast-radius changes, multi-module refactors, or new subsystems where leaking boundaries or hidden assumptions cause failure.*
 
-- **[code-review](.gemini/config/skills/code-review/SKILL.md)**: Blind, language-agnostic code quality review of a confirmed scope, judging structure and runtime behaviour from the code alone.
-- **[verify-issue](.gemini/config/skills/verify-issue/SKILL.md)**: Dispatch the `issue-verifier` subagent to test each review finding against the whole codebase (true / false positive) and classify confirmed ones as LOCAL or ARCHITECTURAL.
-- **[verify-spec-alignment](.gemini/config/skills/verify-spec-alignment/SKILL.md)**: Audit implemented code against `SPEC.md` to catch rogue fabrications or missed requirements.
+1. **[interview](.gemini/antigravity-cli/skills/interview/SKILL.md)**: Explores callees and callers across 5 Universal Lenses and enforces the 4-Tab Playback Gate (`[ALIGNED]`).
+2. **Architectural Exploration** *(Optional)*:
+   - **[craft-solution](.gemini/antigravity-cli/skills/craft-solution/SKILL.md)**: Autonomous `Solution Architect` drafts Approach A (Pragmatic) vs Approach B (Robust) across Quality Tiers 1–5.5, falsified by `proposal-auditor`.
+   - **[propose-architecture](.gemini/antigravity-cli/skills/propose-architecture/SKILL.md)**: Decomposes macro subsystems into a boundary DAG, arbitrated per node by `architecture-adjudicator`.
+3. **[boundary-plan](.gemini/antigravity-cli/skills/boundary-plan/SKILL.md)**: Generates a zero-read `implementation_plan.md` artifact with Users, Jobs, Use Scenarios (`S-xx`), Invariants (`I-xx`), non-nullable contracts, and embedded auditor directives.
+4. **Pre-Execution Hardening** *(Optional)*:
+   - **[review-plan](.gemini/antigravity-cli/skills/review-plan/SKILL.md)**: Dispatches `plan-reviewer` to independently reconstruct Day-One Design and audit against Maximal Value, Day-One Test, and Boundary Principles.
+   - **[test-increment](.gemini/antigravity-cli/skills/test-increment/SKILL.md)**: Injects adversarial test seams with `Breaks-If Mutation` failure triggers into Sections 4.B and 5 of the plan.
+5. **[execute](.gemini/antigravity-cli/skills/execute/SKILL.md)**: Builds milestones sequentially (`implementation_ledger.md`), evaluates user scenarios, and runs the Verify & Remediate loop with `boundary-auditor` up to the declared budget.
+6. **[propose-commit](.gemini/antigravity-cli/skills/propose-commit/SKILL.md)**: Synthesizes final state into subject + Context sentence + 2–3 key achievement bullets.
 
-### 🧭 Codebase Exploration & Orientation
-*Use when exploring an unfamiliar codebase or ramping up on architecture.*
+---
 
-- **[explain](.gemini/config/skills/explain/SKILL.md)**: Causal walk-through of a specific feature slice, data flow, or lifecycle.
-- **[explain-architecture](.gemini/config/skills/explain-architecture/SKILL.md)**: Map the global architectural skeleton, module boundaries, and seams.
+## 3. Specialized Custom Subagents (Air-Gapped Delegation)
 
-### 📋 Large Feature Intake & Decomposition
-*Use upstream of Track 2 for complex enterprise features requiring formal requirement decomposition.*
+GTD delegates complex audits to autonomous subagents in `.gemini/antigravity-cli/agents/`:
 
-- **[spec](.gemini/config/skills/spec/SKILL.md)**: Relentlessly interview to extract domain requirements and edge cases in EARS syntax.
-- **[audit-spec](.gemini/config/skills/audit-spec/SKILL.md)**: Adversarially audit `SPEC.md` and interactively repair missing fallbacks and domain entropy.
-- **[to-ticket](.gemini/config/skills/to-ticket/SKILL.md)**: Break a confirmed `SPEC.md` into dependency-ordered tracer-bullet tickets.
+| Subagent | Role | Primary Responsibility |
+|---|---|---|
+| **[plan-reviewer](.gemini/antigravity-cli/agents/plan-reviewer.md)** | Plan Standards Auditor | Reconstructs Day-One Design and audits plans against Maximal Value, Day-One Test, and Boundary Principle (`review-plan`). |
+| **[boundary-auditor](.gemini/antigravity-cli/agents/boundary-auditor.md)** | Systems Code Auditor | Audits code against milestone outcomes, scenario coverage, and transition residue (`execute` Red Loop). |
+| **[codebase-auditor](.gemini/antigravity-cli/agents/codebase-auditor.md)** | Spec Feasibility Auditor | Audits product drafts against codebase reality to block unintegrable requirements and speculation traps (`entropy-hunt`). |
+| **[issue-verifier](.gemini/antigravity-cli/agents/issue-verifier.md)** | Review Finding Tester | Tests code-review findings against whole codebase (True/False Positive) and classifies by seam sufficiency (`verify-issue`). |
+| **[residue-hunter](.gemini/antigravity-cli/agents/residue-hunter.md)** | Past Residue Auditor | Hunts obsolete code forms and bridges under a 5-minute budget, classifying `LAZY` vs `WEAK` author failure (`residue-hunt`). |
+| **[test-triager](.gemini/antigravity-cli/agents/test-triager.md)** | Test Contract Auditor | Evaluates test suites across Contract, Mutant Killing, Refactor Survival, and Reach to classify tests as `REAL` vs `JUNK` (`test-triage`). |
+| **[architecture-adjudicator](.gemini/antigravity-cli/agents/architecture-adjudicator.md)** | DAG Boundary Arbiter | Arbitrates competing boundary proposals, enforces non-nullable contracts, and prunes DAG branches (`propose-architecture`). |
+| **[proposal-auditor](.gemini/antigravity-cli/agents/proposal-auditor.md)** | Proposal Falsifier | Adversarially checks solution claims against codebase evidence before proposing plans to user (`craft-solution`). |
+| **[ux-auditor](.gemini/antigravity-cli/agents/ux-auditor.md)** | UI Friction Auditor | Audits presentation boundaries for operational economy, stranded context, and architectural subservience. |
 
-### 🧪 Test Strategy & API Verification
-*Use when designing comprehensive testing harnesses or API collections.*
+---
 
-- **[create-test](.gemini/config/skills/create-test/SKILL.md)**: Design deterministic unit and integration test suites at clean external seams.
-- **[create-postman-collection](.gemini/config/skills/create-postman-collection/SKILL.md)**: Design executable, schema-validated Postman test collections.
+## 4. Standalone Toolkits (On-Demand)
 
-### 🤖 Autonomous Loops & Craft Foundations
-*Autonomous agent execution patterns and core craft references.*
+These capabilities run independently of any delivery pipeline:
 
-- **[awareness](.gemini/config/skills/awareness/SKILL.md)**: Run autonomous multi-turn `goal.md` self-review loops (Antigravity CLI).
-- **[frontend-design](.gemini/config/skills/frontend-design/SKILL.md)**: Create distinctive, production-grade frontend interfaces with high visual quality.
-- **[write-great-skills](.gemini/config/skills/write-great-skills/SKILL.md)**: Reference vocabulary and principles for writing predictable, high-signal skills.
+### 📐 Domain Specification Engine
+*Used upstream for complex or ambiguous requirements before writing code:*
+- **[initial-proposal](.gemini/antigravity-cli/skills/initial-proposal/SKILL.md)**: Zero-code domain interview extracting raw business intent into `proposal.md`.
+- **[trace-flow](.gemini/antigravity-cli/skills/trace-flow/SKILL.md)**: Traces causal execution paths from ingress membrane to terminal egress into `codebase-trace.md`.
+- **[product-interview](.gemini/antigravity-cli/skills/product-interview/SKILL.md)**: Reconciles domain proposals with codebase realities into `product-draft.md`.
+- **[entropy-hunt](.gemini/antigravity-cli/skills/entropy-hunt/SKILL.md)**: Spawns `codebase-auditor` to eliminate domain ambiguities and lock `product-spec-locked.md` (`[ENTROPY = 0: LOCKED]`).
+
+### 🔍 Code Quality & Review
+*Used to evaluate pull requests, commits, or existing code:*
+- **[code-review](.gemini/antigravity-cli/skills/code-review/SKILL.md)**: Blind code quality review judging structure and runtime behavior from the source alone.
+- **[verify-issue](.gemini/antigravity-cli/skills/verify-issue/SKILL.md)**: Dispatches `issue-verifier` to test review findings across the codebase and classify confirmed defects as `LOCAL` or `ARCHITECTURAL`.
+
+### 🧹 Debt Hunting & Test Triage
+*Used for codebase maintenance and test suite hygiene:*
+- **[residue-hunt](.gemini/antigravity-cli/skills/residue-hunt/SKILL.md)**: Dispatches `residue-hunter` with a 5-minute budget to surface transition residue and obsolete bridges.
+- **[test-triage](.gemini/antigravity-cli/skills/test-triage/SKILL.md)**: Dispatches `test-triager` to classify tests as `REAL` (guards true invariants) or `JUNK` (pins fragile outcomes).
+
+### 🛠️ Targeted Craft & Testing Utilities
+- **[create-test](.gemini/antigravity-cli/skills/create-test/SKILL.md)**: Designs interactive test plans with mutation proofs (fault injection red → green).
+- **[create-postman-collection](.gemini/antigravity-cli/skills/create-postman-collection/SKILL.md)**: Generates schema-validated Postman v2.1 JSON collections with automated token setup and `Breaks-If` assertions.
+- **[frontend-design](.gemini/antigravity-cli/skills/frontend-design/SKILL.md)**: Guidance for distinctive, production-grade frontend aesthetics avoiding generic AI templates.
+- **[spawn-subagent](.gemini/antigravity-cli/skills/spawn-subagent/SKILL.md)**: Cold-read delegation primitive enforcing the Problem-Solution Boundary Principle.
+- **[short](.gemini/antigravity-cli/skills/short/SKILL.md)**: Utility to force concise, 1-sentence answers.
+- **[write-great-skills](.gemini/antigravity-cli/skills/write-great-skills/SKILL.md)**: Meta-framework enforcing Root 1 (Causes), Root 2 (Goals), and Independent rules for authoring skills.
+
+---
+
+## 5. Hook-ins & Interceptors (Safeguards & Circuit Breakers)
+
+Dynamic interceptors that plug into execution upon specific events or risk conditions:
+
+- **[context-loss](.gemini/antigravity-cli/skills/context-loss/SKILL.md) (Compaction Recovery Hook)**: Automatically triggered upon context compaction. Re-anchors to `implementation_plan.md` or active audit artifacts and resumes execution seamlessly without re-asking questions.
+- **[safe](.gemini/antigravity-cli/skills/safe/SKILL.md) (High-Risk Operation Interceptor)**: Intercepts destructive commands, bulk mutations, speculative domain code, semantic git conflicts, and delete collisions. Emits a `### 🛡️ Safe Guard` report and halts execution until explicit user approval.
+- **Circuit Breakers in [execute](.gemini/antigravity-cli/skills/execute/SKILL.md)**:
+  - **`PLAN VETO`**: Triggered by `boundary-auditor` if the plan itself contains structural flaws or transition residue. Halts execution immediately.
+  - **`Audit Budget`**: Hard stop when maximum remediation cycles are exhausted.
+  - **`Oscillation Check`**: Detects ping-pong loops ($A \to B \to A$) and halts for human intervention.
