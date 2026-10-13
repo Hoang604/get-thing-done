@@ -108,7 +108,7 @@ When the verdict on a gap depends on intent that neither the request nor the cod
    cp "<appDataDir>/brain/<subagent-id>/plan_review.md" "<plan-dir>/plan_review.md"
    ```
 3. Reply to the parent with exactly this single line and nothing else:
-   `Completed: plan review written and copied to <plan-dir>/plan_review.md`
+   `Completed: plan review written and copied to <plan-dir>/plan_review.md. Trigger the challenge protocol to evaluate findings before changing the plan.`
 
 Every file, symbol, and line range in the report is a clickable link with an absolute `file://` path and the file's basename as link text: [basename.ext:L10-24](file:///absolute/path/to/basename.ext#L10-L24).
 

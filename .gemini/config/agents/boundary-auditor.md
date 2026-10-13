@@ -84,7 +84,7 @@ When auditing failures, shallow seams, or transition residue, determine the root
    cp "<appDataDir>/brain/<subagent-id>/audit_report_round_<N>.md" "<plan-dir>/audit_report_round_<N>.md"
    ```
 3. Reply to the parent agent with EXACTLY this single line and nothing else:
-   `Completed: Audit report written and copied to audit_report_round_<N>.md`
+   `Completed: Audit report written and copied to audit_report_round_<N>.md. Trigger the challenge protocol to evaluate findings before changing any code.`
 
 ---
 
