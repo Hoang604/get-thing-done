@@ -63,7 +63,15 @@ Reply with the result directly.
 
 ---
 
-## 3. Receive & Follow Up
+## 3. Surface Dispatched Prompt
+
+Immediately after dispatching the subagent, output the exact verbatim `Prompt` sent to `invoke_subagent` into the conversation inside a blockquote (`>`), word for word with zero alterations or omissions.
+
+- **Completion Criterion**: The conversation contains the verbatim prompt sent to `invoke_subagent` inside a blockquote (`>`), exactly matching the dispatched text.
+
+---
+
+## 4. Receive & Follow Up
 
 1. When the subagent delivered an artifact, read it in full with `view_file`; when it replied directly, its reply is the result.
 2. To follow up, `send_message` only the new directive, opening with the deliverable. The subagent still holds its own context: point to its prior findings by their identifier. The directive obeys Step 1 — settled facts, categories carried over whole.

@@ -20,6 +20,10 @@ disable-model-invocation: true
      ```
 
    `<plan-link>` is the absolute `file://` path of the plan. The prompt carries only the plan and the request; the subagent's definition carries the whole protocol.
-4. When the subagent replies, read the review it names and give the user its link, the verdict, and the count of findings for each principle.
+4. Surface Dispatched Prompt:
+   Immediately after dispatching, output the exact verbatim prompt sent to `invoke_subagent` into the conversation inside a blockquote (`>`), word for word with zero alterations or omissions.
+
+   *Completion criterion*: the conversation contains the verbatim prompt sent to `invoke_subagent` inside a blockquote (`>`), exactly matching the dispatched text.
+5. When the subagent replies, read the review it names and give the user its link, the verdict, and the count of findings for each principle.
 
 *Completion criterion*: the review exists and the user has its link, verdict, and counts.

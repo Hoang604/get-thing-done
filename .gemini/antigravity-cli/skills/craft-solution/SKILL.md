@@ -49,7 +49,15 @@ Delegate architectural solution design to an autonomous `self` subagent. The sub
 
 ---
 
-## 2. Silent Handoff & Hard Stop
+## 2. Surface Dispatched Prompt
+
+Immediately after dispatching the subagent, output the exact verbatim `Prompt` sent to `invoke_subagent` into the conversation stream inside a blockquote (`>`), word for word with zero alterations or omissions.
+
+- **Completion Criterion**: The conversation stream contains the verbatim prompt sent to `invoke_subagent` inside a blockquote (`>`), exactly matching the dispatched text.
+
+---
+
+## 3. Silent Handoff & Hard Stop
 
 When `self` subagent completes and returns its single confirmation line:
 
