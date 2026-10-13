@@ -1,6 +1,6 @@
 ---
 name: review-plan
-description: Review an implementation plan against boundary-plan principles via plan-reviewer
+description: Review an implementation plan via plan-reviewer, then adjudicate findings through the challenge protocol to remediate or defend the plan
 disable-model-invocation: true
 ---
 
@@ -24,6 +24,19 @@ disable-model-invocation: true
    Immediately after dispatching, output the exact verbatim prompt sent to `invoke_subagent` into the conversation inside a blockquote (`>`), word for word with zero alterations or omissions.
 
    *Completion criterion*: the conversation contains the verbatim prompt sent to `invoke_subagent` inside a blockquote (`>`), exactly matching the dispatched text.
-5. When the subagent replies, read the review it names and give the user its link, the verdict, and the count of findings for each principle.
+5. **Challenge & Adjudicate Findings**:
+   When the subagent replies, read the review report in full with `view_file`. Execute the Challenge Protocol against every finding before reporting:
+   - Check each finding and requested change against codebase reality and the task's requirements.
+   - **Holds**: The finding is verified by code evidence or explicit requirements. Update `implementation_plan.md` to remediate the finding, citing the confirming `file:line` or requirement text.
+   - **Fails**: The finding contradicts code, proposes speculative seams or invalid fallbacks, or misinterprets requirements. Keep the plan unchanged and record the exact refuting code evidence (`file:line`).
+   - **Partly holds**: Remediate only the verified part in `implementation_plan.md`; refute and keep the rest.
 
-*Completion criterion*: the review exists and the user has its link, verdict, and counts.
+6. **Present Adjudication**:
+   Output the final report to the user formatted as follows:
+   - Link to the review report and overall verdict.
+   - Link to `implementation_plan.md` (with line references to remediations).
+   - **Holds**: Each accepted finding and the exact modification made to the plan.
+   - **Fails**: Every rejected finding with its full refutation rationale and code proof, explicitly flagged for potential user overrule.
+   - Request the user's confirmation or overrule decisions.
+
+*Completion criterion*: Every finding in the review report is adjudicated as Holds, Fails, or Partly holds; all verified findings are remediated in `implementation_plan.md`; and all rejected findings are presented with refutation citations for user overrule.
