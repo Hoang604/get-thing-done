@@ -1,7 +1,6 @@
 ---
 name: boundary-plan
 description: Draft sequential implementation plan driven by observable outcomes and boundary engineering decisions
-disable-model-invocation: true
 ---
 
 # CORE DIRECTIVE
