@@ -21,7 +21,9 @@ WARN_RATIO: float = 0.90
 
 
 def build_warning_message(current_tokens: int, threshold_tokens: int) -> str:
-    pct: float = (current_tokens / threshold_tokens) * 100.0 if threshold_tokens > 0 else 90.0
+    pct: float = (
+        (current_tokens / threshold_tokens) * 100.0 if threshold_tokens > 0 else 90.0
+    )
     return (
         "<critical_instructions>\n"
         f"Context usage has reached {pct:.1f}% of the compaction threshold ({current_tokens} / {threshold_tokens} tokens)—volatile context in memory is about to be wiped by compaction.\n"
