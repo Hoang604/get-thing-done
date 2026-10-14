@@ -51,6 +51,8 @@ chmod +x "$TARGET_DIR/config/scripts/verify_recorder.py"
 chmod +x "$TARGET_DIR/config/scripts/verify_injector.py"
 chmod +x "$TARGET_DIR/config/scripts/conditional_tool_guard.py"
 chmod +x "$TARGET_DIR/config/scripts/view_file_guard.py"
+chmod +x "$TARGET_DIR/config/scripts/compact_threshold_tracker.py"
+chmod +x "$TARGET_DIR/config/scripts/context_budget_guard.py"
 
 mkdir -p "$HOME/.local/bin"
 ln -sf "$TARGET_DIR/config/scripts/init-python-agent.sh" "$HOME/.local/bin/init-python-agent"

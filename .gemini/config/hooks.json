@@ -7,6 +7,24 @@
       }
     ]
   },
+  "compact-threshold-tracker": {
+    "PostInvocation": [
+      {
+        "type": "command",
+        "command": "python3 ~/.gemini/config/scripts/compact_threshold_tracker.py",
+        "timeout": 10
+      }
+    ]
+  },
+  "context-budget-guard": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "python3 ~/.gemini/config/scripts/context_budget_guard.py",
+        "timeout": 10
+      }
+    ]
+  },
   "critical-instructions": {
     "PreInvocation": [
       {

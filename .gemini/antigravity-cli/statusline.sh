@@ -72,6 +72,7 @@ if [ -n "$CONV_ID" ]; then
   SAVE_DIR="/tmp/agy_statusline/${CONV_ID}/turn-${TURN_VAL}"
   mkdir -p "$SAVE_DIR" 2>/dev/null || true
   printf "%s\n" "$RAW_INPUT" > "${SAVE_DIR}/statusline_input.json" 2>/dev/null || true
+  printf "%s\n" "$RAW_INPUT" > "/tmp/agy_statusline/${CONV_ID}/latest.json" 2>/dev/null || true
 fi
 
 # ─── Helper Formatters ───────────────────────────────────────────────────────
