@@ -6,7 +6,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-DEFAULT_COMPACT_THRESHOLD: int = 200_000
+DEFAULT_COMPACT_THRESHOLD: int = 240_000
 MIN_AUTO_COMPACT_TOKENS: int = 160_000
 COMPACT_DROP_RATIO: float = 0.65
 
@@ -82,6 +82,11 @@ def parse_snapshot_file(filepath: Path, turn_num: int) -> StatuslineSnapshot:
     )
 
 
+def compute_effective_threshold(max_safe_tokens: int, last_auto_compact_tokens: int) -> int:
+    base: int = last_auto_compact_tokens if last_auto_compact_tokens >= MIN_AUTO_COMPACT_TOKENS else DEFAULT_COMPACT_THRESHOLD
+    return max(base, max_safe_tokens, MIN_AUTO_COMPACT_TOKENS)
+
+
 def load_thresholds_db(thresholds_file: Path) -> dict[str, ModelThresholdEntry]:
     if not thresholds_file.is_file():
         return {}
@@ -100,11 +105,10 @@ def load_thresholds_db(thresholds_file: Path) -> dict[str, ModelThresholdEntry]:
     result: dict[str, ModelThresholdEntry] = {}
     for k, v in models_obj.items():
         if isinstance(k, str) and isinstance(v, dict):
-            compact_t: int = parse_non_negative_int(v.get("compact_threshold"), DEFAULT_COMPACT_THRESHOLD)
             max_safe: int = parse_non_negative_int(v.get("max_safe_tokens"), 0)
             last_auto: int = parse_non_negative_int(v.get("last_auto_compact_tokens"), 0)
             result[k] = ModelThresholdEntry(
-                compact_threshold=max(compact_t, max_safe, MIN_AUTO_COMPACT_TOKENS),
+                compact_threshold=compute_effective_threshold(max_safe, last_auto),
                 max_safe_tokens=max_safe,
                 last_auto_compact_tokens=last_auto,
             )

@@ -54,7 +54,22 @@ def evaluate_budget_guard(
     )
 
     warn_threshold: int = int(entry.compact_threshold * WARN_RATIO)
-    if state.last_tokens >= warn_threshold and not state.warned_in_cycle:
+    if state.last_tokens < warn_threshold:
+        if state.warned_in_cycle:
+            save_conversation_state(
+                state_dir,
+                ConversationTokenState(
+                    conversation_id=state.conversation_id,
+                    model_id=state.model_id,
+                    last_turn=state.last_turn,
+                    last_tokens=state.last_tokens,
+                    warned_in_cycle=False,
+                    warned_at_tokens=0,
+                ),
+            )
+        return {"injectSteps": []}
+
+    if not state.warned_in_cycle:
         updated_state: ConversationTokenState = ConversationTokenState(
             conversation_id=state.conversation_id,
             model_id=state.model_id,

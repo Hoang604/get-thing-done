@@ -94,8 +94,8 @@ class TestContextBudgetHooks(unittest.TestCase):
         self.assertEqual(db["Gemini 4 Argon (High)"].compact_threshold, 192_000)
 
     def test_budget_guard_fires_once_at_90_percent_and_resets_after_compact(self) -> None:
-        # Default threshold is 200,000 -> 90% is 180,000
-        self._write_turn_snapshot(1, 150_000)
+        # Default threshold is 240,000 -> 90% is 216,000
+        self._write_turn_snapshot(1, 180_000)
         res_below = evaluate_budget_guard(
             conv_id=self.conv_id,
             fallback_model_name="Gemini 4 Argon (High)",
@@ -106,8 +106,8 @@ class TestContextBudgetHooks(unittest.TestCase):
         )
         self.assertEqual(res_below, {"injectSteps": []})
 
-        # Reach 182,000 (>= 90%) -> fires warning once
-        self._write_turn_snapshot(2, 182_000)
+        # Reach 218,000 (>= 90% of 240,000) -> fires warning once
+        self._write_turn_snapshot(2, 218_000)
         res_warn = evaluate_budget_guard(
             conv_id=self.conv_id,
             fallback_model_name="Gemini 4 Argon (High)",
@@ -127,8 +127,8 @@ class TestContextBudgetHooks(unittest.TestCase):
         self.assertIn("Persist what is already in hand to safe ground", msg_text)
         self.assertIn("Notify the user", msg_text)
 
-        # Next turn at 188,000 (still in same cycle) -> does NOT fire again (prevents deadlock)
-        self._write_turn_snapshot(3, 188_000)
+        # Next turn at 225,000 (still in same cycle) -> does NOT fire again (prevents deadlock)
+        self._write_turn_snapshot(3, 225_000)
         res_second = evaluate_budget_guard(
             conv_id=self.conv_id,
             fallback_model_name="Gemini 4 Argon (High)",
@@ -139,8 +139,8 @@ class TestContextBudgetHooks(unittest.TestCase):
         )
         self.assertEqual(res_second, {"injectSteps": []})
 
-        # Compaction occurs at 195,000 -> drops to 30,000; threshold becomes 195,000 (90% = 175,500)
-        self._write_turn_snapshot(4, 195_000)
+        # Compaction occurs at 230,000 -> drops to 30,000; threshold becomes 230,000 (90% = 207,000)
+        self._write_turn_snapshot(4, 230_000)
         self._write_turn_snapshot(5, 30_000)
         res_post_compact = evaluate_budget_guard(
             conv_id=self.conv_id,
@@ -152,8 +152,8 @@ class TestContextBudgetHooks(unittest.TestCase):
         )
         self.assertEqual(res_post_compact, {"injectSteps": []})
 
-        # In the new cycle, reaching 176,000 (>= 90% of learned 195,000) fires warning again
-        self._write_turn_snapshot(6, 176_000)
+        # In the new cycle, reaching 208,000 (>= 90% of learned 230,000) fires warning again
+        self._write_turn_snapshot(6, 208_000)
         res_new_cycle = evaluate_budget_guard(
             conv_id=self.conv_id,
             fallback_model_name="Gemini 4 Argon (High)",
