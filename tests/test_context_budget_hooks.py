@@ -166,6 +166,90 @@ class TestContextBudgetHooks(unittest.TestCase):
         assert isinstance(steps_new, list)
         self.assertEqual(len(steps_new), 1)
 
+    def test_subagent_and_antigravity2_transcript_fallback_and_compaction(self) -> None:
+        subagent_conv_id: str = "subagent-conv-999"
+
+        # 1. Subagent starts without any /tmp/agy_statusline/<subagent_conv_id> directory
+        step1 = {
+            "step_index": 2,
+            "type": "PLANNER_RESPONSE",
+            "source": "MODEL",
+            "input_tokens": 18_500,
+            "cache_read_tokens": 0,
+            "output_tokens": 420,
+        }
+        self.transcript_file.write_text(json.dumps(step1) + "\n", encoding="utf-8")
+
+        res_initial = evaluate_budget_guard(
+            conv_id=subagent_conv_id,
+            fallback_model_name="Gemini 4 Argon (High)",
+            transcript_path=str(self.transcript_file),
+            statusline_root=self.statusline_root,
+            state_dir=self.state_dir,
+            thresholds_file=self.thresholds_file,
+        )
+        self.assertEqual(res_initial, {"injectSteps": []})
+
+        # 2. Cache hit step: input_tokens (16,000) + cache_read_tokens (204,000) = 220,000 >= 216,000 (90% of 240,000)
+        step2 = {
+            "step_index": 5,
+            "type": "PLANNER_RESPONSE",
+            "source": "MODEL",
+            "input_tokens": 16_000,
+            "cache_read_tokens": 204_000,
+            "output_tokens": 800,
+        }
+        self.transcript_file.write_text(
+            json.dumps(step1) + "\n" + json.dumps(step2) + "\n",
+            encoding="utf-8",
+        )
+        res_warn = evaluate_budget_guard(
+            conv_id=subagent_conv_id,
+            fallback_model_name="Gemini 4 Argon (High)",
+            transcript_path=str(self.transcript_file),
+            statusline_root=self.statusline_root,
+            state_dir=self.state_dir,
+            thresholds_file=self.thresholds_file,
+        )
+        steps = res_warn.get("injectSteps")
+        assert isinstance(steps, list)
+        self.assertEqual(len(steps), 1)
+
+        # 3. Cache miss step (cache_read_tokens = 0, input_tokens = 228,000) followed by post-compact step (26,000)
+        step3_cache_miss = {
+            "step_index": 8,
+            "type": "PLANNER_RESPONSE",
+            "source": "MODEL",
+            "input_tokens": 228_000,
+            "cache_read_tokens": 0,
+            "output_tokens": 510,
+        }
+        step4_post_compact = {
+            "step_index": 11,
+            "type": "PLANNER_RESPONSE",
+            "source": "MODEL",
+            "input_tokens": 26_000,
+            "cache_read_tokens": 0,
+            "output_tokens": 300,
+        }
+        self.transcript_file.write_text(
+            "\n".join(json.dumps(s) for s in (step1, step2, step3_cache_miss, step4_post_compact)) + "\n",
+            encoding="utf-8",
+        )
+        state_after, entry_after = sync_conversation_and_thresholds(
+            conv_id=subagent_conv_id,
+            fallback_model_name="gemini-4-argon-high",
+            transcript_path=str(self.transcript_file),
+            statusline_root=self.statusline_root,
+            state_dir=self.state_dir,
+            thresholds_file=self.thresholds_file,
+        )
+        self.assertFalse(state_after.warned_in_cycle)
+        self.assertEqual(entry_after.last_auto_compact_tokens, 228_000)
+        self.assertEqual(state_after.last_tokens, 26_000)
+        self.assertEqual(state_after.model_id, "Gemini 4 Argon (High)")
+
 
 if __name__ == "__main__":
     unittest.main()
+
