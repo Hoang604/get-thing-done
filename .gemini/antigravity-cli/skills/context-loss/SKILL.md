@@ -9,8 +9,8 @@ This skill is activated immediately when context has been compacted or previous 
 
 ## Strict Prohibitions
 
-1. **Transcript Inspection Prohibition**: NEVER run any command or tool to inspect, search, or read `transcript.jsonl`, `transcript_full.jsonl`, or conversation logs under any circumstances unless the user explicitly asks for it.
-2. **Git Command Prohibition**: NEVER run any `git` command (`git status`, `git diff`, `git log`, etc.) unless the user explicitly asks for it.
+1. **Transcript Inspection Prohibition**: NEVER access conversation transcripts or logs (`transcript.jsonl`, `transcript_full.jsonl`) under any circumstances unless the user explicitly asks for it.
+2. **Git Command Prohibition**: NEVER run any `git` command unless the user explicitly asks for it.
 
 ## Bypass Condition
 
@@ -20,27 +20,25 @@ You may bypass reading and executing this skill if and only if the user's messag
 
 ## Recovery Workflow
 
-Assess execution state and inspect the most recent visible user request in full detail (not compacted).
+Assess execution state from `<summary>` and inspect the most recent visible `# User Request` in full detail.
 
-### Case 1: Currently in Execution (Guided Task / Plan)
+### Case 1: Guided Execution (A File on Disk Defines the Task's Steps or Deliverables)
 
-If currently in the middle of executing a task guided by an instruction file, audit report, or implementation plan:
+When executing a task governed by a guiding document on disk:
 
-1. **Read Guiding Document**:
-   - Locate and read the file currently guiding the execution (e.g., `implementation_plan.md`, audit report, task spec, checklist, or instruction file in workspace/artifacts) completely in full without line limits using `view_file` (must read all lines from beginning to end; if the file exceeds 800 lines, page through with `StartLine`/`EndLine` until completely read).
-   - Read all referenced files or context documents specified in the guiding file completely in full without line limits.
-   - If executing an implementation plan, also read the `execute` skill instructions using `view_file`.
+1. **Read Guiding Document & Working Set**:
+   - Call `view_file` in one batch on the guiding document (reading all lines from start to end, paging with `StartLine`/`EndLine` if it exceeds 800 lines), every file it references, and every file or `file:start-end` slice listed in `<summary>`'s **Read-next working set**.
+   - When the guiding document is an implementation plan, include the `execute` skill in the same `view_file` batch.
 2. **Continue Execution**:
-   - Assess implemented deliverables versus remaining work based on the guiding document and codebase state.
-   - Continue execution immediately without stopping or waiting for user instructions.
-   - Deliver the execution report strictly adhering to the guiding format (or `execute` skill) upon completion.
+   - Compare implemented deliverables against remaining work from the guiding document, `<summary>`, and loaded working set.
+   - Continue execution immediately without waiting for user input, and deliver the completion report in the format required by the guiding document (or `execute` skill).
 
 ---
 
-### Case 2: Other Situations (Not Executing an Implementation Plan)
+### Case 2: Unguided Execution (No Guiding Document on Disk)
 
-If NOT currently executing an implementation plan:
+When no file on disk defines the task's steps:
 
-1. **Echo Request**: Output the exact verbatim text of the user's most recent request that is still visible in full detail (not compacted).
-2. **Report Status**: Report clearly what has been done and what remains unfinished.
-3. **Continue**: When that request still has unfinished work, continue it right after the report. When nothing remains, end with the report.
+1. **Echo Request**: Output the verbatim text of the user's most recent visible `# User Request`.
+2. **Report Status**: State what has been completed and what remains unfinished based on `<summary>`.
+3. **Continue**: When unfinished work remains, call `view_file` in one batch on every file or `file:start-end` slice in `<summary>`'s **Read-next working set** and continue the work right after the report. When nothing remains, end with the report.
