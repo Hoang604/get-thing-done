@@ -316,6 +316,11 @@ if [ -n "$CONV_ID" ]; then
             PRICE_CACHE=0.15
             PRICE_OUT=7.00
             ;;
+        *"4 Argon"*)
+            PRICE_IN=2.0
+            PRICE_CACHE=0.1
+            PRICE_OUT=10.0
+            ;;
         *"3.7 Flash"*)
             PRICE_IN=0.75
             PRICE_CACHE=0.075
