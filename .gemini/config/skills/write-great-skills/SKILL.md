@@ -11,7 +11,7 @@ The principles below are not peers. Two are **roots**: skip one and a family of 
 | Principle | Failures when it is skipped | Sections |
 |---|---|---|
 | **Root 1, the decision**: each question gets a judge, a closed or open form, and for an open one a cause, which generality measures | enumeration (checklist, disguised enumeration), overfit, underfit, pseudo-generality, fabricated authority, exemplar anchoring | *Generality*, *Examples* |
-| **Root 2, the goal**: each instruction states the state to reach, and each condition can be decided when it must be | negation, premature completion, a rule never reached | *Goals and conditions*, *Steps and reference*, *Splitting* |
+| **Root 2, the goal**: each instruction states the state to reach, and each condition can be decided when it must be | negation, premature completion, a rule never reached | *Goals and conditions*, *Steps and reference*, *Splitting*, *Authoring protocol* |
 | **Independent**: attention spent only where it is needed | sprawl, duplication, contradiction, no-op, sediment | *Words*, *Placement*, *Pruning* |
 
 **Root 1 comes first.** It carries the skill's value: a run meets situations no author saw, and only a general instruction decides them. An agent gets the independent principles mostly right on its own and fails root 1 in almost every first draft; a skill that loses root 1 is worthless whatever else it gets right. Root 2 ranks between them.
@@ -42,7 +42,7 @@ One instruction can be both, a closed form with open content; write each part by
 
 ### Fit
 
-**Generality** is a relation between an instruction and its cases, not a property of its wording read alone. Its cases are **observed cases**: runs that went wrong, or situations the user describes from their own work. An agent left to pick its own cases imagines them, and an imagined case carries its author's guess at the right action, so an instruction that fits it proves only that it fits the guess: the agent has graded its work against itself. An instruction with no observed case has no evidence of generality yet; get its cases from the user. Cases test the instruction and stay out of the target skill's text (*Examples*).
+**Generality** is a relation between an instruction and its cases, not a property of its wording read alone. An agent that picks both a situation and its right action imagines the case: the case carries its author's guess at the right action, so an instruction that fits it proves only that it fits the guess—the agent has graded its work against itself. A case is an **observed case** when its right action comes from the user: either from a run or situation the user already described, or from the user's ruling on a concrete scenario the agent constructed (*Authoring protocol*), where the chosen option becomes the right action and the rejected options become the tempting wrong actions. Cases test the instruction and stay out of the target skill's text (*Examples*).
 
 An open-set instruction is **general** when it names the cause its cases share, and so, in one sentence, picks the right action in every case it was written from, picks it in a **held-out** case it was not written from, and rules out the tempting wrong action in all of them. Being true in every case is not enough: an instruction that holds everywhere but rules out no wrong action decides nothing. A general instruction is a **generative principle**: compact, and neither overfit nor underfit. The raincoat in *Enumeration* shows all three failures below in one situation.
 
@@ -131,3 +131,18 @@ A sentence also stays only while it bears on what the skill does now. Sentences 
 ## Invocation
 
 Every skill is user-invoked: its frontmatter sets `disable-model-invocation: true`, and its `description` is a summary for the human who invokes it.
+
+## Authoring protocol
+
+1. **Settle the judge**: Find every question the target skill must answer where the agent's default does not suffice, and every passage in an existing target skill that fails a principle in this skill. **When** any such question or fix lacks a quoted ruling from its judge, call `ask_question` before drafting or editing:
+   - Each question states the exact context that raised it (quoting the conflicting or broken passage of the existing skill, or naming the gap where the agent's default fails in a new skill) and places the user in a concrete scenario a run can meet, so the user can judge it from the question alone without guessing what is being asked.
+   - The options are distinct, competing actions the target skill could take in that scenario, each stating the behaviour it produces and its consequence.
+   *Completion criterion*: every question the target skill answers has a quoted ruling from its judge; if `ask_question` was called, the turn ends to await the user's answer before Step 2 runs.
+
+2. **Fit and write**: Output to the conversation, then write to `SKILL.md`:
+   - **Question map**: a table of every question the target skill answers, its quoted **judge** (dropping any question with no judge), and whether its set is **Closed** or **Open**.
+   - For every **Open** question:
+     - **Scaffolding**: the observed cases, each with its concrete situation, the judge-ratified right action, and the tempting wrong actions (the rejected options from Step 1 or the failures observed in runs).
+     - **Synthesis**: one instruction naming the cause that makes the right action right and rules out the tempting wrong actions across every case.
+     - **Fit test**: the test of that instruction alone against every case in Scaffolding and one **held-out** case outside Scaffolding, reworking Synthesis on overfit and sharpening wording as *Fit* prescribes on underfit.
+   *Completion criterion*: the question map and every open instruction's Scaffolding, Synthesis, and passing Fit test are shown in the conversation, and `SKILL.md` is written satisfying every section of this skill.

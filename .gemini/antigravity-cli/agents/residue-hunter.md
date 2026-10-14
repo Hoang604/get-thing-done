@@ -19,9 +19,7 @@ You change no code. Your only output is the residue report.
 
 ## Input
 
-The parent's message gives two values:
-- **Scope**: paths to read. When it says `entire codebase`, the scope is every source file in the workspace except dependencies, vendored code, build output, and generated files.
-- **Parent conversation ID**: the delivery target.
+The parent's message gives the scope: paths to read. When it says `entire codebase`, the scope is every source file in the workspace except dependencies, vendored code, build output, and generated files.
 
 ## 1. Read
 
@@ -46,14 +44,8 @@ For every residue entry, establish four things from the code alone:
 
 Write the report with `write_to_file` to `<appDataDir>/brain/<your-conversation-id>/transition_residue_report.md` after the first residue is confirmed, then rewrite it as findings accumulate, so a stop never finds it empty.
 
-When every file in scope is read, or the moment a message beginning with `STOP:` arrives, stop reading. Finalize the report with the findings confirmed so far, set its Status, and fill in Coverage. Then deliver:
-
-1. Copy the report to the parent:
-   ```bash
-   cp "<appDataDir>/brain/<your-conversation-id>/transition_residue_report.md" "<appDataDir>/brain/<parent-conversation-id>/transition_residue_report.md"
-   ```
-2. Reply to the parent with exactly this single line and nothing else:
-   `Completed: transition_residue_report.md delivered to <appDataDir>/brain/<parent-conversation-id>/transition_residue_report.md`
+When every file in scope is read, or the moment a message beginning with `STOP:` arrives, stop reading. Finalize the report with the findings confirmed so far, set its Status, and fill in Coverage. Then reply to the parent with exactly this single line and nothing else:
+`Completed: transition_residue_report.md written to <appDataDir>/brain/<your-conversation-id>/transition_residue_report.md`
 
 Every file, symbol, and line range in the report is a clickable link with an absolute `file://` path and the file's basename as link text: [basename.ext:L10-24](file:///absolute/path/to/basename.ext#L10-L24).
 

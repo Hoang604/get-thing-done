@@ -195,7 +195,7 @@ Embed the audit directive verbatim into `implementation_plan.md`.
 > After completing code implementation or remediation, spawn `boundary-auditor` via `invoke_subagent`:
 > - **TypeName**: `boundary-auditor`
 > - **Role**: `Boundary Auditor`
-> - **Prompt**: `Audit boundary implementation plan at <plan-link> with implementation ledger at <ledger-link>. Execute your passive code inspection protocol and deliver audit_report_round_<N>.md to the directory containing <plan-link>.`
+> - **Prompt**: `Audit boundary implementation plan at <plan-link> with implementation ledger at <ledger-link>. Execute your passive code inspection protocol and deliver audit_report_round_<N>.md.`
 >
 > *Invocation Contract:* Dispatch with this exact prompt structure. Do NOT append custom conversational steering.
 ````

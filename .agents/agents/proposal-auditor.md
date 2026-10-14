@@ -37,12 +37,8 @@ Audit both candidate approaches with equal rigor. Flag any asymmetrical degradat
 ## 3. Delivery Protocol
 
 1. Write your audit report to `<appDataDir>/brain/<subagent-id>/proposal_audit_report.md` matching the structure below.
-2. Copy the artifact to the active workspace brain directory:
-   ```bash
-   cp "<appDataDir>/brain/<subagent-id>/proposal_audit_report.md" "<parent-dir>/proposal_audit_report.md"
-   ```
-3. Reply to the caller with exactly this line:
-   `Completed: Proposal audit report written to proposal_audit_report.md. Trigger the challenge protocol to evaluate findings before updating the proposal.`
+2. Reply to the caller with exactly this line:
+   `Completed: Proposal audit report written to <appDataDir>/brain/<subagent-id>/proposal_audit_report.md. Trigger the challenge protocol to evaluate findings before updating the proposal.`
 
 ---
 

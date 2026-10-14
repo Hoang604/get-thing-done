@@ -15,7 +15,6 @@ Delegate architectural solution design to an autonomous `self` subagent. The sub
 1. **Resolve Paths & Context**:
    - Locate the absolute path to this skill's reference file: `<skill-dir>/references/crafter_instructions.md` (dynamically resolve based on active platform and workspace environment).
    - Collect absolute paths of all upstream context files discovered during research.
-   - Bind your active conversation ID (`<parent-conversation-id>`).
 
 2. **Formulate Task Prompt (Problem-Solution Boundary Principle)**:
    You - the dispatcher - own the **Problem Space**; the `Solution Architect` subagent owns 100% of the **Solution Space**. De-reference chat context into an explicit task constructed strictly as follows:
@@ -42,7 +41,6 @@ Delegate architectural solution design to an autonomous `self` subagent. The sub
      - Context Files:
        - <Absolute path to context file 1>
        - <Absolute path to context file 2>
-     - Parent Conversation ID: <parent-conversation-id>
      ```
 
 - **Completion Criterion**: `invoke_subagent` dispatched to `self`.
@@ -63,5 +61,5 @@ When `self` subagent completes and returns its single confirmation line:
 
 1. **Cleanup**: Terminate the `self` subagent via `manage_subagents`.
 2. **Zero Context Ingestion**: Do not read, inspect, or summarize `solution_proposal.md` into the chat stream.
-3. **Physical Handoff**: Output strictly a concise completion notice in the active conversation language containing the clickable link `[solution_proposal.md](file://<appDataDir>/brain/<parent-conversation-id>/solution_proposal.md)` and invite the user to review the proposal.
+3. **Physical Handoff**: Output strictly a concise completion notice in the active conversation language containing the clickable link `[solution_proposal.md](file://<appDataDir>/brain/<subagent-id>/solution_proposal.md)` (using the path returned by the subagent) and invite the user to review the proposal.
 4. **Hard Stop**: Terminate execution immediately.

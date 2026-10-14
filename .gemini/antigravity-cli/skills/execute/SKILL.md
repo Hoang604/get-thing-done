@@ -98,7 +98,7 @@ When nothing departs from the File Manifest before Round 1, Round 0 holds the si
 
 #### 2. Verification Proof
 - **Baseline Check:** `<Exact command(s) executed for verification>` -> `<Passing output summary line / exit code>`
-- **Subagent Audit:** <[audit_report_round_<N>.md](file://<appDataDir>/brain/<conversation-id>/audit_report_round_<N>.md) -> `<Verdict: PASS / FAIL / PLAN VETO>` | "N/A (Not declared in plan)">
+- **Subagent Audit:** <[audit_report_round_<N>.md](file://<appDataDir>/brain/<subagent-id>/audit_report_round_<N>.md) -> `<Verdict: PASS / FAIL / PLAN VETO>` | "N/A (Not declared in plan)">
 
 #### 3. Scenario & Invariant Record
 - **Users & Jobs:**

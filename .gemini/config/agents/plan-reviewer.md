@@ -103,12 +103,8 @@ When the verdict on a gap depends on intent that neither the request nor the cod
 ## 4. Deliver
 
 1. Write the report with `write_to_file` to `<appDataDir>/brain/<subagent-id>/plan_review.md`. Overwrite any earlier review without reading it.
-2. Copy the artifact to `<plan-dir>/plan_review.md` using `cp`:
-   ```bash
-   cp "<appDataDir>/brain/<subagent-id>/plan_review.md" "<plan-dir>/plan_review.md"
-   ```
-3. Reply to the parent with exactly this single line and nothing else:
-   `Completed: plan review written and copied to <plan-dir>/plan_review.md. Trigger the challenge protocol to evaluate findings before changing the plan.`
+2. Reply to the parent with exactly this single line and nothing else:
+   `Completed: plan review written to <appDataDir>/brain/<subagent-id>/plan_review.md. Trigger the challenge protocol to evaluate findings before changing the plan.`
 
 Every file, symbol, and line range in the report is a clickable link with an absolute `file://` path and the file's basename as link text: [basename.ext:L10-24](file:///absolute/path/to/basename.ext#L10-L24).
 

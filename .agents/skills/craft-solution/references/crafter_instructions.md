@@ -1,13 +1,13 @@
 # CORE DIRECTIVE
 
 Conduct thorough research and present distinct architectural approaches with trade-offs.
-Draft strictly architectural approaches and trade-offs. This request does NOT warrant a plan. You must bypass planning mode entirely. Do NOT create or update any `implementation_plan.md` artifact. Author your complete architectural proposal in your conversation artifact directory: `<appDataDir>/brain/<subagent-id>/solution_proposal.md`, copying only the final approved proposal to the parent directory upon completion.
+Draft strictly architectural approaches and trade-offs. This request does NOT warrant a plan. You must bypass planning mode entirely. Do NOT create or update any `implementation_plan.md` artifact. Author your complete architectural proposal in your conversation artifact directory: `<appDataDir>/brain/<subagent-id>/solution_proposal.md`.
 
 ---
 
 ## 1. Context Ingress & Hot-Start Discovery
 
-1. **Extract Context**: Extract authentic user intent, the parent conversation ID, and the list of related context files provided in the invocation prompt.
+1. **Extract Context**: Extract authentic user intent and the list of related context files provided in the invocation prompt.
 2. **Immediate Ingestion**: Read the provided files as an initial starting point (not an exhaustive boundary) to ground yourself without cold-start delay.
 3. **Trace Dependencies**: Discover and read any additional files needed, recursively inspecting imports, callers, and invariants until hitting external system boundaries or core libraries.
 
@@ -118,8 +118,7 @@ Conclude the proposal with an executive comparison table contrasting Approach A 
      - `Role`: `Proposal Auditor`
      - `Prompt`:
        `Audit the architectural proposal located at: <appDataDir>/brain/<subagent-id>/solution_proposal.md`
-   - Wait for `proposal-auditor` to complete and write its report to:
-     `<appDataDir>/brain/<subagent-id>/proposal_audit_report.md`
+   - Wait for `proposal-auditor` to complete and read the `proposal_audit_report.md` path returned in its reply.
    - Evaluate the audit report:
      - **If Verdict is APPROVED (Zero Disparities)**:
        - Terminate loop immediately. Kill the auditor subagent via `manage_subagents`.
@@ -133,8 +132,5 @@ Conclude the proposal with an executive comparison table contrasting Approach A 
    - **Hard Limit**: Maximum 2 audit cycles (up to 3 drafts total). Terminate loop immediately when zero disparities remain or hard limit is reached. Kill any remaining auditor subagent.
 
 3. **Final Handoff**:
-   - Once the loop terminates and all auditors are cleaned up:
-     1. Copy the final approved proposal to the parent conversation directory via `run_command`:
-        `cp "<appDataDir>/brain/<subagent-id>/solution_proposal.md" "<appDataDir>/brain/<parent-conversation-id>/solution_proposal.md"`
-     2. Reply to the parent agent with strictly this single confirmation line:
-        `Completed: Final solution_proposal.md delivered at <appDataDir>/brain/<parent-conversation-id>/solution_proposal.md`
+   - Once the loop terminates and all auditors are cleaned up, reply to the parent agent with strictly this single confirmation line:
+     `Completed: Final solution_proposal.md delivered at <appDataDir>/brain/<subagent-id>/solution_proposal.md`

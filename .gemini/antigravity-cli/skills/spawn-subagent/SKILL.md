@@ -45,12 +45,11 @@ Invoke via `invoke_subagent` with `Model`: `inherit`, always `self` subagent whe
 <Exactly one of the two blocks below>
 ```
 
-Delivery — write-capable subagent with a deliverable longer than a short answer (its tools create artifacts only in its own directory, hence the copy):
+Delivery — write-capable subagent with a deliverable longer than a short answer:
 
 ```markdown
-1. Write the full result to `<artifact>.md` in your own artifact directory.
-2. Copy it: cp "<your artifact directory>/<artifact>.md" "<appDataDir>/brain/<parent-conversation-id>/<artifact>.md"
-3. Reply with only: Completed: <artifact>.md delivered
+1. Write the full result to `<appDataDir>/brain/<your-conversation-id>/<artifact>.md`.
+2. Reply with only: Completed: <artifact>.md written to <appDataDir>/brain/<your-conversation-id>/<artifact>.md
 ```
 
 Delivery — read-only subagent, or a short answer:
