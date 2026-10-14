@@ -27,7 +27,7 @@ Assess execution state from `<summary>` and inspect the most recent visible `# U
 When executing a task governed by a guiding document on disk:
 
 1. **Read Guiding Document & Working Set**:
-   - Call `view_file` in one batch on the guiding document (reading all lines from start to end, paging with `StartLine`/`EndLine` if it exceeds 800 lines), every file it references, and every file or `file:start-end` slice listed in `<summary>`'s **Read-next working set**.
+   - Call `view_file` in one batch on the guiding document (reading all lines from start to end, paging with `StartLine`/`EndLine` if it exceeds 800 lines) and every file or `file:start-end` slice listed in `<summary>`'s **Read-next working set** (or, if `<summary>` omitted the working set, only the files the guiding document references for the first uncompleted step).
    - When the guiding document is an implementation plan, include the `execute` skill in the same `view_file` batch.
 2. **Continue Execution**:
    - Compare implemented deliverables against remaining work from the guiding document, `<summary>`, and loaded working set.
