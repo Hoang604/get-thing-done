@@ -143,8 +143,9 @@ def evaluate_tool_budget_guard(
         accumulated_turn_tokens: int = max(state.pending_turn_tokens, post_planner_tokens)
         projected_tokens: int = state.last_tokens + accumulated_turn_tokens + incoming_tokens
         block_threshold: int = int(entry.compact_threshold * BLOCK_RATIO)
+        already_blocked_in_turn: bool = state.blocked_at_planner_turn == current_planner_turn
 
-        if projected_tokens < block_threshold:
+        if not already_blocked_in_turn and projected_tokens < block_threshold:
             if accumulated_turn_tokens + incoming_tokens != state.pending_turn_tokens:
                 save_conversation_state(
                     state_dir,
@@ -162,7 +163,8 @@ def evaluate_tool_budget_guard(
                 )
             return {"decision": "allow"}
 
-        is_first_block_in_turn: bool = state.blocked_at_planner_turn != current_planner_turn
+        is_first_block_in_turn: bool = not already_blocked_in_turn
+        display_tokens: int = max(projected_tokens, block_threshold)
         save_conversation_state(
             state_dir,
             ConversationTokenState(
@@ -179,9 +181,9 @@ def evaluate_tool_budget_guard(
         )
 
         if is_first_block_in_turn:
-            reason_msg: str = build_warning_message(projected_tokens, entry.compact_threshold)
+            reason_msg: str = build_warning_message(display_tokens, entry.compact_threshold)
         else:
-            reason_msg = build_subsequent_block_message(projected_tokens, entry.compact_threshold)
+            reason_msg = build_subsequent_block_message(display_tokens, entry.compact_threshold)
 
         return {
             "decision": "deny",
