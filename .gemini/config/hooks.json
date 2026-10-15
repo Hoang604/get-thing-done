@@ -23,6 +23,18 @@
         "command": "python3 ~/.gemini/config/scripts/context_budget_guard.py",
         "timeout": 10
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "view_file|run_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.gemini/config/scripts/context_budget_guard.py",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   },
   "critical-instructions": {

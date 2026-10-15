@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import json
+import os
+import re
 import sys
 from pathlib import Path
 
@@ -8,15 +10,23 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from compact_threshold_tracker import (
+    CHARS_PER_TOKEN,
     DEFAULT_STATE_DIR,
     DEFAULT_THRESHOLDS_FILE,
     ConversationTokenState,
     ModelThresholdEntry,
+    conversation_state_lock,
+    measure_post_planner_transcript_tokens,
+    parse_non_negative_int,
     save_conversation_state,
     sync_conversation_and_thresholds,
 )
 
 WARN_RATIO: float = 0.90
+BLOCK_RATIO: float = 0.95
+MAX_VIEW_FILE_LINES: int = 800
+MAX_VIEW_FILE_BYTES: int = 46_080
+GUARDED_COMMAND_RE: re.Pattern[str] = re.compile(r"\b(?:rg|grep|cat)\b")
 
 
 def build_warning_message(current_tokens: int, threshold_tokens: int) -> str:
@@ -34,6 +44,151 @@ def build_warning_message(current_tokens: int, threshold_tokens: int) -> str:
     )
 
 
+def build_subsequent_block_message(current_tokens: int, threshold_tokens: int) -> str:
+    pct: float = (
+        (current_tokens / threshold_tokens) * 100.0 if threshold_tokens > 0 else 95.0
+    )
+    return (
+        f"BLOCKED (context at {pct:.1f}%: {current_tokens}/{threshold_tokens} tokens): "
+        "Auto-compaction is imminent. Stop reading more context and persist what is already in hand to disk immediately."
+    )
+
+
+def estimate_view_file_tokens(args: dict[str, object]) -> int:
+    filepath_obj: object = args.get("AbsolutePath")
+    if not isinstance(filepath_obj, str) or not os.path.isfile(filepath_obj):
+        return 0
+    try:
+        with open(filepath_obj, "r", encoding="utf-8", errors="ignore") as f:
+            lines: list[str] = f.readlines()
+    except Exception:
+        return 0
+
+    total_lines: int = len(lines)
+    if total_lines == 0:
+        return 0
+
+    start_raw: int = parse_non_negative_int(args.get("StartLine"), 1)
+    start_line: int = max(1, start_raw)
+    end_raw: int = parse_non_negative_int(args.get("EndLine"), total_lines)
+    end_line: int = min(total_lines, max(start_line, end_raw))
+    end_line = min(end_line, start_line + MAX_VIEW_FILE_LINES - 1)
+
+    selected: list[str] = lines[start_line - 1 : end_line]
+    raw_chars: int = sum(len(line) + 6 for line in selected)
+    capped_chars: int = min(raw_chars, MAX_VIEW_FILE_BYTES)
+    return int(capped_chars / CHARS_PER_TOKEN)
+
+
+def is_guarded_run_command(args: dict[str, object]) -> bool:
+    cmd_obj: object = args.get("CommandLine")
+    if not isinstance(cmd_obj, str) or not cmd_obj.strip():
+        return False
+    return bool(GUARDED_COMMAND_RE.search(cmd_obj))
+
+
+def estimate_cat_command_tokens(args: dict[str, object]) -> int:
+    cmd_obj: object = args.get("CommandLine")
+    if not isinstance(cmd_obj, str) or not re.search(r"\bcat\b", cmd_obj):
+        return 0
+    cwd_obj: object = args.get("Cwd")
+    base_dir: Path = Path(cwd_obj) if isinstance(cwd_obj, str) and cwd_obj.strip() else Path.cwd()
+    total_chars: int = 0
+    for token in re.findall(r"[^\s|;&><\"']+", cmd_obj):
+        if token in ("cat", "-") or token.startswith("-"):
+            continue
+        candidate: Path = Path(token) if os.path.isabs(token) else base_dir / token
+        if candidate.is_file():
+            try:
+                total_chars += min(candidate.stat().st_size, MAX_VIEW_FILE_BYTES)
+            except Exception:
+                pass
+    return int(total_chars / CHARS_PER_TOKEN)
+
+
+def evaluate_tool_budget_guard(
+    conv_id: str,
+    fallback_model_name: str,
+    transcript_path: str,
+    tool_call: dict[str, object],
+    state_dir: Path = DEFAULT_STATE_DIR,
+    thresholds_file: Path = DEFAULT_THRESHOLDS_FILE,
+) -> dict[str, object]:
+    if not conv_id.strip():
+        return {"decision": "allow"}
+
+    tool_name_obj: object = tool_call.get("name")
+    tool_name: str = tool_name_obj if isinstance(tool_name_obj, str) else ""
+    args_obj: object = tool_call.get("args")
+    args: dict[str, object] = args_obj if isinstance(args_obj, dict) else {}
+
+    if tool_name == "view_file":
+        incoming_tokens: int = estimate_view_file_tokens(args)
+    elif tool_name == "run_command" and is_guarded_run_command(args):
+        incoming_tokens = estimate_cat_command_tokens(args)
+    else:
+        return {"decision": "allow"}
+
+    with conversation_state_lock(state_dir, conv_id):
+        state, entry = sync_conversation_and_thresholds(
+            conv_id=conv_id,
+            fallback_model_name=fallback_model_name,
+            transcript_path=transcript_path,
+            state_dir=state_dir,
+            thresholds_file=thresholds_file,
+        )
+
+        planner_line, post_planner_tokens = measure_post_planner_transcript_tokens(transcript_path)
+        current_planner_turn: int = max(state.last_turn, planner_line, 1)
+        accumulated_turn_tokens: int = max(state.pending_turn_tokens, post_planner_tokens)
+        projected_tokens: int = state.last_tokens + accumulated_turn_tokens + incoming_tokens
+        block_threshold: int = int(entry.compact_threshold * BLOCK_RATIO)
+
+        if projected_tokens < block_threshold:
+            if accumulated_turn_tokens + incoming_tokens != state.pending_turn_tokens:
+                save_conversation_state(
+                    state_dir,
+                    ConversationTokenState(
+                        conversation_id=state.conversation_id,
+                        model_id=state.model_id,
+                        last_turn=state.last_turn,
+                        last_tokens=state.last_tokens,
+                        warned_in_cycle=state.warned_in_cycle,
+                        warned_at_tokens=state.warned_at_tokens,
+                        blocked_at_planner_turn=state.blocked_at_planner_turn,
+                        pending_turn_tokens=accumulated_turn_tokens + incoming_tokens,
+                        blocked_in_last_turn=state.blocked_in_last_turn,
+                    ),
+                )
+            return {"decision": "allow"}
+
+        is_first_block_in_turn: bool = state.blocked_at_planner_turn != current_planner_turn
+        save_conversation_state(
+            state_dir,
+            ConversationTokenState(
+                conversation_id=state.conversation_id,
+                model_id=state.model_id,
+                last_turn=state.last_turn,
+                last_tokens=state.last_tokens,
+                warned_in_cycle=state.warned_in_cycle,
+                warned_at_tokens=state.warned_at_tokens,
+                blocked_at_planner_turn=current_planner_turn,
+                pending_turn_tokens=accumulated_turn_tokens,
+                blocked_in_last_turn=True,
+            ),
+        )
+
+        if is_first_block_in_turn:
+            reason_msg: str = build_warning_message(projected_tokens, entry.compact_threshold)
+        else:
+            reason_msg = build_subsequent_block_message(projected_tokens, entry.compact_threshold)
+
+        return {
+            "decision": "deny",
+            "reason": reason_msg,
+        }
+
+
 def evaluate_budget_guard(
     conv_id: str,
     fallback_model_name: str,
@@ -44,44 +199,54 @@ def evaluate_budget_guard(
     if not conv_id.strip():
         return {"injectSteps": []}
 
-    state, entry = sync_conversation_and_thresholds(
-        conv_id=conv_id,
-        fallback_model_name=fallback_model_name,
-        transcript_path=transcript_path,
-        state_dir=state_dir,
-        thresholds_file=thresholds_file,
-    )
-
-    warn_threshold: int = int(entry.compact_threshold * WARN_RATIO)
-    if state.last_tokens < warn_threshold:
-        if state.warned_in_cycle:
-            save_conversation_state(
-                state_dir,
-                ConversationTokenState(
-                    conversation_id=state.conversation_id,
-                    model_id=state.model_id,
-                    last_turn=state.last_turn,
-                    last_tokens=state.last_tokens,
-                    warned_in_cycle=False,
-                    warned_at_tokens=0,
-                ),
-            )
-        return {"injectSteps": []}
-
-    if not state.warned_in_cycle:
-        updated_state: ConversationTokenState = ConversationTokenState(
-            conversation_id=state.conversation_id,
-            model_id=state.model_id,
-            last_turn=state.last_turn,
-            last_tokens=state.last_tokens,
-            warned_in_cycle=True,
-            warned_at_tokens=state.last_tokens,
+    with conversation_state_lock(state_dir, conv_id):
+        state, entry = sync_conversation_and_thresholds(
+            conv_id=conv_id,
+            fallback_model_name=fallback_model_name,
+            transcript_path=transcript_path,
+            state_dir=state_dir,
+            thresholds_file=thresholds_file,
         )
-        save_conversation_state(state_dir, updated_state)
-        msg: str = build_warning_message(state.last_tokens, entry.compact_threshold)
-        return {"injectSteps": [{"ephemeralMessage": msg}]}
 
-    return {"injectSteps": []}
+        _, post_planner_tokens = measure_post_planner_transcript_tokens(transcript_path)
+        effective_tokens: int = state.last_tokens + max(state.pending_turn_tokens, post_planner_tokens)
+        warn_threshold: int = int(entry.compact_threshold * WARN_RATIO)
+
+        if effective_tokens < warn_threshold and not state.blocked_in_last_turn:
+            if state.warned_in_cycle:
+                save_conversation_state(
+                    state_dir,
+                    ConversationTokenState(
+                        conversation_id=state.conversation_id,
+                        model_id=state.model_id,
+                        last_turn=state.last_turn,
+                        last_tokens=state.last_tokens,
+                        warned_in_cycle=False,
+                        warned_at_tokens=0,
+                        blocked_at_planner_turn=state.blocked_at_planner_turn,
+                        pending_turn_tokens=state.pending_turn_tokens,
+                        blocked_in_last_turn=False,
+                    ),
+                )
+            return {"injectSteps": []}
+
+        if state.blocked_in_last_turn or not state.warned_in_cycle:
+            updated_state: ConversationTokenState = ConversationTokenState(
+                conversation_id=state.conversation_id,
+                model_id=state.model_id,
+                last_turn=state.last_turn,
+                last_tokens=state.last_tokens,
+                warned_in_cycle=True,
+                warned_at_tokens=effective_tokens,
+                blocked_at_planner_turn=state.blocked_at_planner_turn,
+                pending_turn_tokens=state.pending_turn_tokens,
+                blocked_in_last_turn=False,
+            )
+            save_conversation_state(state_dir, updated_state)
+            msg: str = build_warning_message(effective_tokens, entry.compact_threshold)
+            return {"injectSteps": [{"ephemeralMessage": msg}]}
+
+        return {"injectSteps": []}
 
 
 def main() -> None:
@@ -104,6 +269,17 @@ def main() -> None:
 
     transcript_obj: object = payload.get("transcriptPath")
     transcript_path: str = transcript_obj if isinstance(transcript_obj, str) else ""
+
+    tool_call_obj: object = payload.get("toolCall")
+    if isinstance(tool_call_obj, dict):
+        tool_result: dict[str, object] = evaluate_tool_budget_guard(
+            conv_id=conv_id,
+            fallback_model_name=model_name,
+            transcript_path=transcript_path,
+            tool_call=tool_call_obj,
+        )
+        print(json.dumps(tool_result))
+        return
 
     result: dict[str, object] = evaluate_budget_guard(
         conv_id=conv_id,

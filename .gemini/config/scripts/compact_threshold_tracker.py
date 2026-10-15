@@ -3,12 +3,20 @@ import json
 import os
 import re
 import sys
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Iterator
+
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
 
 DEFAULT_COMPACT_THRESHOLD: int = 240_000
 MIN_AUTO_COMPACT_TOKENS: int = 160_000
 COMPACT_DROP_RATIO: float = 0.65
+CHARS_PER_TOKEN: float = 3.0
 
 DEFAULT_STATE_DIR: Path = Path("/tmp/agy_compact_state")
 DEFAULT_THRESHOLDS_FILE: Path = Path.home() / ".gemini" / "config" / "compact_thresholds.json"
@@ -36,6 +44,27 @@ class ConversationTokenState:
     last_tokens: int
     warned_in_cycle: bool
     warned_at_tokens: int
+    blocked_at_planner_turn: int = 0
+    pending_turn_tokens: int = 0
+    blocked_in_last_turn: bool = False
+
+
+@contextmanager
+def conversation_state_lock(state_dir: Path, conv_id: str) -> Iterator[None]:
+    clean_id: str = sanitize_id(conv_id)
+    try:
+        state_dir.mkdir(parents=True, exist_ok=True)
+        lock_file: Path = state_dir / f"{clean_id}.lock"
+        with open(lock_file, "a", encoding="utf-8") as f:
+            if fcntl is not None:
+                fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                if fcntl is not None:
+                    fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+    except Exception:
+        yield
 
 
 def sanitize_id(raw_id: object) -> str:
@@ -117,6 +146,9 @@ def load_conversation_state(state_dir: Path, conv_id: str) -> ConversationTokenS
             last_tokens=0,
             warned_in_cycle=False,
             warned_at_tokens=0,
+            blocked_at_planner_turn=0,
+            pending_turn_tokens=0,
+            blocked_in_last_turn=False,
         )
     try:
         raw: object = json.loads(state_file.read_text(encoding="utf-8", errors="ignore"))
@@ -128,6 +160,9 @@ def load_conversation_state(state_dir: Path, conv_id: str) -> ConversationTokenS
             last_tokens=0,
             warned_in_cycle=False,
             warned_at_tokens=0,
+            blocked_at_planner_turn=0,
+            pending_turn_tokens=0,
+            blocked_in_last_turn=False,
         )
 
     if not isinstance(raw, dict):
@@ -138,6 +173,9 @@ def load_conversation_state(state_dir: Path, conv_id: str) -> ConversationTokenS
             last_tokens=0,
             warned_in_cycle=False,
             warned_at_tokens=0,
+            blocked_at_planner_turn=0,
+            pending_turn_tokens=0,
+            blocked_in_last_turn=False,
         )
 
     model_id_raw: object = raw.get("model_id")
@@ -148,6 +186,10 @@ def load_conversation_state(state_dir: Path, conv_id: str) -> ConversationTokenS
     warned_raw: object = raw.get("warned_in_cycle")
     warned: bool = warned_raw if isinstance(warned_raw, bool) else False
     warned_at: int = parse_non_negative_int(raw.get("warned_at_tokens"), 0)
+    blocked_turn: int = parse_non_negative_int(raw.get("blocked_at_planner_turn"), 0)
+    pending_tokens: int = parse_non_negative_int(raw.get("pending_turn_tokens"), 0)
+    blocked_last_raw: object = raw.get("blocked_in_last_turn")
+    blocked_last: bool = blocked_last_raw if isinstance(blocked_last_raw, bool) else False
 
     return ConversationTokenState(
         conversation_id=conv_id,
@@ -156,6 +198,9 @@ def load_conversation_state(state_dir: Path, conv_id: str) -> ConversationTokenS
         last_tokens=last_tokens,
         warned_in_cycle=warned,
         warned_at_tokens=warned_at,
+        blocked_at_planner_turn=blocked_turn,
+        pending_turn_tokens=pending_tokens,
+        blocked_in_last_turn=blocked_last,
     )
 
 
@@ -170,6 +215,9 @@ def save_conversation_state(state_dir: Path, state: ConversationTokenState) -> N
             "last_tokens": state.last_tokens,
             "warned_in_cycle": state.warned_in_cycle,
             "warned_at_tokens": state.warned_at_tokens,
+            "blocked_at_planner_turn": state.blocked_at_planner_turn,
+            "pending_turn_tokens": state.pending_turn_tokens,
+            "blocked_in_last_turn": state.blocked_in_last_turn,
         }
         tmp_file: Path = state_file.with_suffix(".json.tmp")
         tmp_file.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -178,7 +226,7 @@ def save_conversation_state(state_dir: Path, state: ConversationTokenState) -> N
         pass
 
 
-def resolve_transcript_file(transcript_path: str) -> Path | None:
+def resolve_transcript_file(transcript_path: str, prefer_full: bool = False) -> Path | None:
     if not transcript_path or not transcript_path.strip():
         return None
     raw: str = transcript_path.strip()
@@ -190,15 +238,69 @@ def resolve_transcript_file(transcript_path: str) -> Path | None:
 
     for cand in candidates:
         p: Path = Path(cand)
-        if p.is_file():
-            return p
-        compact_p: Path = p.with_name("transcript.jsonl")
-        if compact_p.is_file():
-            return compact_p
-        full_p: Path = p.with_name("transcript_full.jsonl")
-        if full_p.is_file():
-            return full_p
+        if prefer_full:
+            full_p: Path = p.with_name("transcript_full.jsonl")
+            if full_p.is_file():
+                return full_p
+            if p.is_file():
+                return p
+            compact_p: Path = p.with_name("transcript.jsonl")
+            if compact_p.is_file():
+                return compact_p
+        else:
+            if p.is_file():
+                return p
+            compact_p = p.with_name("transcript.jsonl")
+            if compact_p.is_file():
+                return compact_p
+            full_p = p.with_name("transcript_full.jsonl")
+            if full_p.is_file():
+                return full_p
     return None
+
+
+def measure_post_planner_transcript_tokens(transcript_path: str) -> tuple[int, int]:
+    """Return (last_planner_line_num, estimated_tokens_since_last_planner) using CHARS_PER_TOKEN."""
+    target_file: Path | None = resolve_transcript_file(transcript_path, prefer_full=True)
+    if target_file is None:
+        return 0, 0
+    try:
+        with open(target_file, "r", encoding="utf-8", errors="ignore") as f:
+            lines: list[str] = f.readlines()
+    except Exception:
+        return 0, 0
+
+    last_planner_line: int = 0
+    planner_out_tokens: int = 0
+    post_chars: int = 0
+
+    for line_idx, raw_line in enumerate(lines, 1):
+        line_str: str = raw_line.strip()
+        if not line_str:
+            continue
+        try:
+            step: object = json.loads(line_str)
+        except Exception:
+            continue
+        if not isinstance(step, dict):
+            continue
+        if step.get("type") == "PLANNER_RESPONSE":
+            inp_tok: int = parse_non_negative_int(step.get("input_tokens"), 0)
+            cache_tok: int = parse_non_negative_int(step.get("cache_read_tokens"), 0)
+            if inp_tok + cache_tok > 0:
+                last_planner_line = line_idx
+                planner_out_tokens = parse_non_negative_int(step.get("output_tokens"), 0)
+                post_chars = 0
+        elif last_planner_line > 0:
+            content_obj: object = step.get("content")
+            error_obj: object = step.get("error")
+            if isinstance(content_obj, str):
+                post_chars += len(content_obj)
+            if isinstance(error_obj, str):
+                post_chars += len(error_obj)
+
+    estimated_post_tokens: int = planner_out_tokens + int(post_chars / CHARS_PER_TOKEN)
+    return last_planner_line, estimated_post_tokens
 
 
 def is_manual_compact_in_transcript(transcript_path: str) -> bool:
@@ -313,6 +415,9 @@ def sync_conversation_and_thresholds(
     prev_turn: int = state.last_turn
     warned_in_cycle: bool = state.warned_in_cycle
     warned_at_tokens: int = state.warned_at_tokens
+    blocked_at_planner_turn: int = state.blocked_at_planner_turn
+    pending_turn_tokens: int = state.pending_turn_tokens
+    blocked_in_last_turn: bool = state.blocked_in_last_turn
     db_dirty: bool = False
 
     for idx, snap in enumerate(snapshots):
@@ -329,10 +434,15 @@ def sync_conversation_and_thresholds(
         )
 
         cur_tokens: int = snap.total_input_tokens
+        # Advancing to a new PLANNER_RESPONSE incorporates prior turn tool outputs
+        pending_turn_tokens = 0
+
         if prev_tokens > 0 and cur_tokens < int(prev_tokens * COMPACT_DROP_RATIO):
-            # Compaction drop detected: reset 90% warning flag for the new post-compact cycle
+            # Compaction drop detected: reset cycle flags for the new post-compact cycle
             warned_in_cycle = False
             warned_at_tokens = 0
+            blocked_at_planner_turn = 0
+            blocked_in_last_turn = False
 
             is_latest_transition: bool = idx == len(snapshots) - 1
             manual_compact: bool = is_manual_compact_in_transcript(transcript_path) if is_latest_transition else False
@@ -380,6 +490,9 @@ def sync_conversation_and_thresholds(
         last_tokens=prev_tokens,
         warned_in_cycle=warned_in_cycle,
         warned_at_tokens=warned_at_tokens,
+        blocked_at_planner_turn=blocked_at_planner_turn,
+        pending_turn_tokens=pending_turn_tokens,
+        blocked_in_last_turn=blocked_in_last_turn,
     )
     if new_state != state:
         save_conversation_state(state_dir, new_state)
@@ -411,11 +524,12 @@ def main() -> None:
     transcript_obj: object = payload.get("transcriptPath")
     transcript_path: str = transcript_obj if isinstance(transcript_obj, str) else ""
 
-    sync_conversation_and_thresholds(
-        conv_id=conv_id,
-        fallback_model_name=model_name,
-        transcript_path=transcript_path,
-    )
+    with conversation_state_lock(DEFAULT_STATE_DIR, conv_id):
+        sync_conversation_and_thresholds(
+            conv_id=conv_id,
+            fallback_model_name=model_name,
+            transcript_path=transcript_path,
+        )
     print(json.dumps({}))
 
 
