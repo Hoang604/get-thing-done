@@ -9,7 +9,6 @@ if str(SCRIPT_DIR) not in sys.path:
 
 from compact_threshold_tracker import (
     DEFAULT_STATE_DIR,
-    DEFAULT_STATUSLINE_ROOT,
     DEFAULT_THRESHOLDS_FILE,
     ConversationTokenState,
     ModelThresholdEntry,
@@ -39,7 +38,6 @@ def evaluate_budget_guard(
     conv_id: str,
     fallback_model_name: str,
     transcript_path: str,
-    statusline_root: Path = DEFAULT_STATUSLINE_ROOT,
     state_dir: Path = DEFAULT_STATE_DIR,
     thresholds_file: Path = DEFAULT_THRESHOLDS_FILE,
 ) -> dict[str, object]:
@@ -50,7 +48,6 @@ def evaluate_budget_guard(
         conv_id=conv_id,
         fallback_model_name=fallback_model_name,
         transcript_path=transcript_path,
-        statusline_root=statusline_root,
         state_dir=state_dir,
         thresholds_file=thresholds_file,
     )

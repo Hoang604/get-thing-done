@@ -10,7 +10,6 @@ DEFAULT_COMPACT_THRESHOLD: int = 240_000
 MIN_AUTO_COMPACT_TOKENS: int = 160_000
 COMPACT_DROP_RATIO: float = 0.65
 
-DEFAULT_STATUSLINE_ROOT: Path = Path("/tmp/agy_statusline")
 DEFAULT_STATE_DIR: Path = Path("/tmp/agy_compact_state")
 DEFAULT_THRESHOLDS_FILE: Path = Path.home() / ".gemini" / "config" / "compact_thresholds.json"
 
@@ -52,34 +51,6 @@ def parse_non_negative_int(val: object, fallback: int = 0) -> int:
     if isinstance(val, float) and val >= 0:
         return int(val)
     return fallback
-
-
-def parse_snapshot_file(filepath: Path, turn_num: int) -> StatuslineSnapshot:
-    try:
-        raw: object = json.loads(filepath.read_text(encoding="utf-8", errors="ignore"))
-    except Exception:
-        return StatuslineSnapshot(turn_num=turn_num, total_input_tokens=0, model_id="")
-
-    if not isinstance(raw, dict):
-        return StatuslineSnapshot(turn_num=turn_num, total_input_tokens=0, model_id="")
-
-    cw: object = raw.get("context_window")
-    total_in: int = 0
-    if isinstance(cw, dict):
-        total_in = parse_non_negative_int(cw.get("total_input_tokens"), 0)
-
-    model_obj: object = raw.get("model")
-    model_id: str = ""
-    if isinstance(model_obj, dict):
-        m_id: object = model_obj.get("id") or model_obj.get("display_name")
-        if isinstance(m_id, str):
-            model_id = m_id.strip()
-
-    return StatuslineSnapshot(
-        turn_num=turn_num,
-        total_input_tokens=total_in,
-        model_id=model_id,
-    )
 
 
 def compute_effective_threshold(max_safe_tokens: int, last_auto_compact_tokens: int) -> int:
@@ -304,55 +275,6 @@ def collect_transcript_snapshots(
     return snapshots
 
 
-def collect_pending_snapshots(
-    conv_statusline_dir: Path,
-    after_turn: int,
-    last_tokens: int,
-    transcript_path: str = "",
-    fallback_model_name: str = "",
-) -> list[StatuslineSnapshot]:
-    turn_snapshots: list[StatuslineSnapshot] = []
-    has_statusline_files: bool = False
-
-    if conv_statusline_dir.is_dir():
-        try:
-            for child in conv_statusline_dir.iterdir():
-                if child.is_dir() and child.name.startswith("turn-"):
-                    has_statusline_files = True
-                    suffix: str = child.name[5:]
-                    if suffix.isdigit():
-                        t_num: int = int(suffix)
-                        if t_num > after_turn:
-                            snap_file: Path = child / "statusline_input.json"
-                            if snap_file.is_file():
-                                snap: StatuslineSnapshot = parse_snapshot_file(snap_file, t_num)
-                                if snap.total_input_tokens > 0:
-                                    turn_snapshots.append(snap)
-        except Exception:
-            pass
-
-        turn_snapshots.sort(key=lambda s: s.turn_num)
-
-        latest_file: Path = conv_statusline_dir / "latest.json"
-        if latest_file.is_file():
-            has_statusline_files = True
-            latest_turn: int = turn_snapshots[-1].turn_num if turn_snapshots else max(0, after_turn)
-            latest_snap: StatuslineSnapshot = parse_snapshot_file(latest_file, latest_turn)
-            if latest_snap.total_input_tokens > 0:
-                last_seen_tok: int = turn_snapshots[-1].total_input_tokens if turn_snapshots else last_tokens
-                if latest_snap.total_input_tokens != last_seen_tok:
-                    turn_snapshots.append(latest_snap)
-
-    if has_statusline_files:
-        return turn_snapshots
-
-    return collect_transcript_snapshots(
-        transcript_path=transcript_path,
-        fallback_model_name=fallback_model_name,
-        after_turn=after_turn,
-    )
-
-
 def model_slug(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.strip().lower()).strip("-")
 
@@ -373,7 +295,6 @@ def sync_conversation_and_thresholds(
     conv_id: str,
     fallback_model_name: str,
     transcript_path: str,
-    statusline_root: Path = DEFAULT_STATUSLINE_ROOT,
     state_dir: Path = DEFAULT_STATE_DIR,
     thresholds_file: Path = DEFAULT_THRESHOLDS_FILE,
 ) -> tuple[ConversationTokenState, ModelThresholdEntry]:
@@ -381,13 +302,10 @@ def sync_conversation_and_thresholds(
     state: ConversationTokenState = load_conversation_state(state_dir, clean_conv_id)
     db: dict[str, ModelThresholdEntry] = load_thresholds_db(thresholds_file)
 
-    conv_dir: Path = statusline_root / clean_conv_id
-    snapshots: list[StatuslineSnapshot] = collect_pending_snapshots(
-        conv_statusline_dir=conv_dir,
-        after_turn=state.last_turn,
-        last_tokens=state.last_tokens,
+    snapshots: list[StatuslineSnapshot] = collect_transcript_snapshots(
         transcript_path=transcript_path,
         fallback_model_name=fallback_model_name,
+        after_turn=state.last_turn,
     )
 
     cur_model: str = resolve_model_key(db, state.model_id or fallback_model_name or "default")
