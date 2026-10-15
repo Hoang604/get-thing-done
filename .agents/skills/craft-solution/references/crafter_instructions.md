@@ -58,18 +58,18 @@ Evaluate both valid trade-off paths against these self-contained design principl
 
 - **Module Depth & Deletion Test (`Deep vs Shallow`):**
   - **Exact Terminology (`Module & Interface`):**
-    - **Module:** Anything with an interface and an implementation (`scale-agnostic: function, class, package, or tier-spanning slice`). Use precise terminology restricted to: module, function, class, package, or tier-spanning slice.
-    - **Interface:** Everything a caller must know to use the module correctly. Define interface as the complete contract: type signature, invariants, ordering constraints, error modes, required configuration, and performance characteristics.
+    - **Module:** Anything with an interface and an implementation, at any scale (function, class, package, or slice).
+    - **Interface:** Everything a caller must know to use the module correctly, kept equal to what its signature states. If correct use requires knowing unstated ordering constraints, hidden assumptions, or internal state, the interface leaks.
   - Design **deep modules**: lots of behavior hidden behind a small interface (`fewer methods, simple params`). Reject **shallow modules** (`large interface, thin pass-through implementation`).
-  - **Side-Effect Rejection:** Interfaces must return calculated results (`pure outputs`) rather than mutating caller/global state. Inject all external adapters strictly as parameters.
+  - **Side-Effect Isolation:** Interfaces must make all state transitions explicit in their return contract rather than mutating caller or global state behind the caller's back. Inject external I/O adapters strictly as parameters.
   - **The Deletion Test:** Imagine deleting the module. If complexity reappears across N callers, it earned its keep; if complexity vanishes without loss, it was a shallow pass-through and must be rejected.
 - **Seams & Dependency Categorization:**
-  - A **seam** is where the interface lives. **One adapter means a hypothetical seam; two adapters means a real one.** Introduce seams strictly when justified by at least two adapters or distinct dependency types.
+  - A **seam** is where a swappable boundary lives. **One adapter means a hypothetical seam; two adapters means a real one.** Introduce seams strictly when justified by at least two adapters (a test stand-in for I/O counting as one).
   - **Internal vs External Seams:** A deep module can have private internal seams for its own implementation and tests. Keep all internal seams strictly private within the module.
   - Classify seam dependencies: `In-process` (`pure compute/memory -> merge modules, no adapter`), `Local-substitutable` (`local stand-in like PGLite -> test with stand-in`), `Remote-owned` (`define port, in-memory test adapter`), or `True-external` (`injected port + mock adapter`).
 - **Decoupled & Open-Closed (`Isolation seams`):**
   - Seams and interfaces must operate and evolve in isolation. Abstractions must actively decouple the system, else they should not exist.
-  - **Open-Closed:** The system must absorb new features strictly by adding new code. If adding a new variant forces mutating old code, the contract fails this rule.
+  - **Open-Closed:** When the requirements or codebase carry two or more variants of behaviour, isolate variation so adding a variant lands as new code beside existing code rather than mutating callers. When only a single concrete variant exists, keep it direct without speculative indirection.
 - **Concrete Patterns:**
   - Name exact design patterns. If a pattern exists solely for speculative future-proofing or creates concurrency/I/O bottlenecks, it is an anti-pattern and fails.
 
@@ -94,13 +94,13 @@ Conclude the proposal with an executive comparison table contrasting Approach A 
 
 | Dimension / Criterion | Approach A (Pragmatic / Minimalist) | Approach B (Architectural / Robust) |
 |---|---|---|
-| **Quality Tier** | Tier 3 (Standard + Existing Pattern) | Tier 5.5 (Structural / Impossible) |
-| **Suitable If** | Fixed to 1 provider (e.g. PayPal only), fast internal MVP | Adding 2nd provider (e.g. Stripe), hot-swapping LLMs at runtime |
-| **Module Depth** | Shallow (3 helper classes, leaky params) | Deep (1 facade function, private state) |
-| **Seams & Decoupling** | In-process (tightly coupled to DB driver) | Remote-owned (isolated behind port interface) |
-| **Implementation Scope** | 2 files modified (~40 LOC) | 5 files modified / 1 new module (~180 LOC) |
-| **Long-term Maintenance** | Moderate (callers must handle error states) | High (invalid states unrepresentable) |
-| **Core Trade-off** | Fast delivery, but leaks domain logic | Higher upfront effort, but zero downstream churn |
+| **Quality Tier** | Tier 4.5 (Systemic + Existing Pattern) | Tier 5.5 (Structural / Impossible + Pattern) |
+| **Suitable If** | Single provider (PayPal only), zero runtime switching | Multi-provider (PayPal + Stripe), runtime provider swap |
+| **Module Depth** | Deep (1 concrete module, zero seam indirection) | Deep (1 port interface + isolated adapters) |
+| **Seams & Decoupling** | In-process consolidation (no abstract port) | External port seam (production + in-memory test adapter) |
+| **Implementation Scope** | 2 files modified (~45 LOC) | 4 files modified / 1 new port module (~140 LOC) |
+| **Long-term Maintenance** | High for 1 variant; requires seam extraction for 2nd | High across variants (invalid states unrepresentable) |
+| **Core Trade-off** | Zero indirection today, refactor needed if variants grow | Upfront port contract, zero churn when adding adapters |
 
 - **Completion Criterion**: Output exactly two approaches (`Approach A` and `Approach B`). Each approach must explicitly contain the headings: `Quality Tier`, `Suitable If`, `Pros`, `Cons`, `User Outcomes`, and `Senior Engineer Advocacy`. Conclude with the structured `Comparison Summary Table` contrasting both approaches.
 
@@ -126,7 +126,7 @@ Conclude the proposal with an executive comparison table contrasting Approach A 
        - Kill the finished auditor instance via `manage_subagents` to release context.
        - Refine `<appDataDir>/brain/<subagent-id>/solution_proposal.md` adhering strictly to the **Disparity Remediation Protocol**:
          - **Claim Invariant**: Every disputed claim must either cite the concrete physical mechanism that makes violation impossible, or be retracted into an unmitigated operational trade-off.
-         - **Tier Calibration**: Quality tiers are governed exclusively by state-space representation rather than runtime branching. Adopt the auditor's calibrated tier unconditionally, documenting the physical system barrier that makes a higher tier structurally unrepresentable.
+         - **Tier Calibration**: Quality tiers are governed exclusively by state-space representation rather than runtime branching. When `proposal-auditor` marks any claim backing an approach's Quality Tier as `FALSIFIED`, either add the concrete structural mechanism that enforces the claimed tier or lower the approach's Quality Tier to match what its code contracts physically guarantee, documenting the physical system barrier that prevents a higher tier.
          - **Polarity Invariant**: Remediation must never reduce the structural divergence between approaches. Approach A resolves findings strictly by bounding scope without increasing indirection; Approach B resolves findings strictly by deepening encapsulation without reducing interface depth.
        - Spawn a NEW, fresh `proposal-auditor` instance (Audit cycle 2).
    - **Hard Limit**: Maximum 2 audit cycles (up to 3 drafts total). Terminate loop immediately when zero disparities remain or hard limit is reached. Kill any remaining auditor subagent.
