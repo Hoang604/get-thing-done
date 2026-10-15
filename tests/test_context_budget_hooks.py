@@ -11,6 +11,7 @@ if str(SCRIPT_DIR) not in sys.path:
 
 from compact_threshold_tracker import (
     DEFAULT_COMPACT_THRESHOLD,
+    MAX_COMPACT_THRESHOLD,
     load_thresholds_db,
     sync_conversation_and_thresholds,
 )
@@ -88,6 +89,22 @@ class TestContextBudgetHooks(unittest.TestCase):
         db = load_thresholds_db(self.thresholds_file)
         self.assertIn("Gemini 4 Argon (High)", db)
         self.assertEqual(db["Gemini 4 Argon (High)"].compact_threshold, 192_000)
+
+        # 3. Overshoot before auto-compact (e.g. 238k -> 338k spike -> 35k compact) caps at MAX_COMPACT_THRESHOLD (245k)
+        self._append_planner_step(38_000, 200_000)
+        self._append_planner_step(100_000, 238_000)
+        self._append_planner_step(35_000, 0)
+
+        _, entry3 = sync_conversation_and_thresholds(
+            conv_id=self.conv_id,
+            fallback_model_name="Gemini 4 Argon (High)",
+            transcript_path=str(self.transcript_file),
+            state_dir=self.state_dir,
+            thresholds_file=self.thresholds_file,
+        )
+        self.assertEqual(entry3.compact_threshold, MAX_COMPACT_THRESHOLD)
+        self.assertEqual(entry3.last_auto_compact_tokens, MAX_COMPACT_THRESHOLD)
+        self.assertEqual(entry3.max_safe_tokens, 238_000)
 
     def test_budget_guard_fires_once_at_90_percent_and_resets_after_compact(self) -> None:
         # Default threshold is 240,000 -> 90% is 216,000

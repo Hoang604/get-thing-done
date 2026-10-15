@@ -14,6 +14,7 @@ except ImportError:
     fcntl = None
 
 DEFAULT_COMPACT_THRESHOLD: int = 240_000
+MAX_COMPACT_THRESHOLD: int = 245_000
 MIN_AUTO_COMPACT_TOKENS: int = 160_000
 COMPACT_DROP_RATIO: float = 0.65
 CHARS_PER_TOKEN: float = 3.0
@@ -83,8 +84,10 @@ def parse_non_negative_int(val: object, fallback: int = 0) -> int:
 
 
 def compute_effective_threshold(max_safe_tokens: int, last_auto_compact_tokens: int) -> int:
-    base: int = last_auto_compact_tokens if last_auto_compact_tokens >= MIN_AUTO_COMPACT_TOKENS else DEFAULT_COMPACT_THRESHOLD
-    return max(base, max_safe_tokens, MIN_AUTO_COMPACT_TOKENS)
+    clamped_safe: int = min(max_safe_tokens, MAX_COMPACT_THRESHOLD)
+    clamped_auto: int = min(last_auto_compact_tokens, MAX_COMPACT_THRESHOLD) if last_auto_compact_tokens > 0 else 0
+    base: int = clamped_auto if clamped_auto >= MIN_AUTO_COMPACT_TOKENS else DEFAULT_COMPACT_THRESHOLD
+    return min(max(base, clamped_safe, MIN_AUTO_COMPACT_TOKENS), MAX_COMPACT_THRESHOLD)
 
 
 def load_thresholds_db(thresholds_file: Path) -> dict[str, ModelThresholdEntry]:
@@ -105,8 +108,8 @@ def load_thresholds_db(thresholds_file: Path) -> dict[str, ModelThresholdEntry]:
     result: dict[str, ModelThresholdEntry] = {}
     for k, v in models_obj.items():
         if isinstance(k, str) and isinstance(v, dict):
-            max_safe: int = parse_non_negative_int(v.get("max_safe_tokens"), 0)
-            last_auto: int = parse_non_negative_int(v.get("last_auto_compact_tokens"), 0)
+            max_safe: int = min(parse_non_negative_int(v.get("max_safe_tokens"), 0), MAX_COMPACT_THRESHOLD)
+            last_auto: int = min(parse_non_negative_int(v.get("last_auto_compact_tokens"), 0), MAX_COMPACT_THRESHOLD)
             result[k] = ModelThresholdEntry(
                 compact_threshold=compute_effective_threshold(max_safe, last_auto),
                 max_safe_tokens=max_safe,
@@ -448,7 +451,7 @@ def sync_conversation_and_thresholds(
             manual_compact: bool = is_manual_compact_in_transcript(transcript_path) if is_latest_transition else False
 
             if prev_tokens >= MIN_AUTO_COMPACT_TOKENS and not manual_compact:
-                new_last_auto: int = prev_tokens
+                new_last_auto: int = min(prev_tokens, MAX_COMPACT_THRESHOLD)
                 new_threshold: int = compute_effective_threshold(entry.max_safe_tokens, new_last_auto)
                 db[cur_model] = ModelThresholdEntry(
                     compact_threshold=new_threshold,
@@ -458,7 +461,7 @@ def sync_conversation_and_thresholds(
                 db_dirty = True
         else:
             # Normal non-compacting progression: prev_tokens survived without auto-compact
-            candidate_safe: int = max(entry.max_safe_tokens, prev_tokens)
+            candidate_safe: int = min(max(entry.max_safe_tokens, prev_tokens), MAX_COMPACT_THRESHOLD)
             if candidate_safe > entry.max_safe_tokens or cur_model not in db:
                 new_threshold = compute_effective_threshold(candidate_safe, entry.last_auto_compact_tokens)
                 db[cur_model] = ModelThresholdEntry(
