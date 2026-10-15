@@ -258,6 +258,29 @@ class TestContextBudgetHooks(unittest.TestCase):
         assert isinstance(steps, list)
         self.assertEqual(len(steps), 1)
 
+        # Next turn (after agent wrote file, still at 232,000 >= 95% and NOT compacted yet):
+        # calling view_file and rg must be ALLOWED instead of deadlocking
+        self._append_planner_step(32_000, 200_000, output_tokens=200)
+        res_next_turn_view = evaluate_tool_budget_guard(
+            conv_id=self.conv_id,
+            fallback_model_name="Gemini 4 Argon (High)",
+            transcript_path=str(self.transcript_file),
+            tool_call={"name": "view_file", "args": {"AbsolutePath": str(target_file)}},
+            state_dir=self.state_dir,
+            thresholds_file=self.thresholds_file,
+        )
+        self.assertEqual(res_next_turn_view, {"decision": "allow"})
+
+        res_next_turn_rg = evaluate_tool_budget_guard(
+            conv_id=self.conv_id,
+            fallback_model_name="Gemini 4 Argon (High)",
+            transcript_path=str(self.transcript_file),
+            tool_call={"name": "run_command", "args": {"CommandLine": "rg 'pattern' src/"}},
+            state_dir=self.state_dir,
+            thresholds_file=self.thresholds_file,
+        )
+        self.assertEqual(res_next_turn_rg, {"decision": "allow"})
+
 
 if __name__ == "__main__":
     unittest.main()

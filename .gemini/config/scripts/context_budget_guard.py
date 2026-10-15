@@ -144,8 +144,13 @@ def evaluate_tool_budget_guard(
         projected_tokens: int = state.last_tokens + accumulated_turn_tokens + incoming_tokens
         block_threshold: int = int(entry.compact_threshold * BLOCK_RATIO)
         already_blocked_in_turn: bool = state.blocked_at_planner_turn == current_planner_turn
+        already_reminded_in_cycle: bool = state.warned_in_cycle or (
+            0 < state.blocked_at_planner_turn < current_planner_turn
+        )
 
-        if not already_blocked_in_turn and projected_tokens < block_threshold:
+        if not already_blocked_in_turn and (
+            already_reminded_in_cycle or projected_tokens < block_threshold
+        ):
             if accumulated_turn_tokens + incoming_tokens != state.pending_turn_tokens:
                 save_conversation_state(
                     state_dir,
