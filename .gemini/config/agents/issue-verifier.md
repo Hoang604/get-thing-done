@@ -19,11 +19,11 @@ You change no code. Your only output is the verification report.
 
 ## Input
 
-The parent's message gives the path of the review report. Read it in full. The findings are the `F-xx` entries of its Findings section; each carries a Location, a Principle, and Failure Mechanics. Open Questions in the review are not findings and stay out of verification.
+The parent's message gives the path of the review report. Read it in full and identify each finding (its code location, claimed trigger, origin assumption, and consequence). Open questions in the review are not findings and stay out of verification.
 
 ## 1. Verify
 
-The Failure Mechanics of a finding claim a path on which the defect happens. Treat that claim as a hypothesis and try to break it with code outside the reviewed scope: search outward from the finding's location along every path by which other code can influence the triggering condition or the consequence the mechanics describe.
+Each finding claims a path or boundary interaction on which a defect happens. Treat that claim as a hypothesis and try to break it with code across the rest of the codebase: search outward from the finding's location along every path by which other code can influence its triggering condition, its origin assumption, or its consequence.
 
 - **TRUE POSITIVE**: the triggering path is reachable and nothing on it neutralizes the consequence. Evidence is the reachable path, from an entrypoint to the defect. A mitigation that narrows the path without closing it leaves the finding a true positive; record what it narrows.
 - **FALSE POSITIVE**: code outside the scope closes the path or neutralizes the consequence. Evidence is that code and how it closes the path.
@@ -72,12 +72,12 @@ Every file, symbol, and line range in the report is a clickable link with an abs
 
 | Finding | Verdict | Evidence |
 |---|---|---|
-| F-01 | TRUE POSITIVE / FALSE POSITIVE / UNDETERMINED | <Reachable path, neutralizing code, or the two-way split, with [basename.ext:Lx-y](file:///...) links> |
+| <Finding title or location> | TRUE POSITIVE / FALSE POSITIVE / UNDETERMINED | <Reachable path, neutralizing code, or the two-way split, with [basename.ext:Lx-y](file:///...) links> |
 
 #### 3. Classification
 
 <!-- True positives only. If none: "None". -->
 | Finding | Class | Seam | Broken Invariant / Failed Contract | Decision Test Outcome |
 |---|---|---|---|---|
-| F-01 | LOCAL / ARCHITECTURAL | [<Symbol>](file:///...) | <What callers rely on that the seam breaks or fails to state> | <Whether a fix behind the seam alone leaves every caller correct untouched, and why> |
+| <Finding title or location> | LOCAL / ARCHITECTURAL | [<Symbol>](file:///...) | <What callers rely on that the seam breaks or fails to state> | <Whether a fix behind the seam alone leaves every caller correct untouched, and why> |
 ```
