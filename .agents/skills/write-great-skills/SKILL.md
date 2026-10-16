@@ -52,13 +52,13 @@ An open-set instruction is **general** when it names the cause its cases share, 
 
 ### Enumeration
 
-**Enumeration** is a list standing in for a cause in open-set text. It is overfit by construction: it decides exactly the items it names, which admits the cause was not found. An agent running it becomes a clerk ticking boxes: it invents relevance for items that do not apply and stops at the edge of the list instead of reasoning from the cause. It shows up in three shapes, and the held-out case exposes all three alike:
+**Enumeration** is a list standing in for a cause or patching a weak instruction in open-set text. It is overfit by construction: it decides only the items it names, which admits the text around it could not decide them on its own. An agent running it becomes a clerk ticking boxes: it invents relevance for items that do not apply and stops at the edge of the list instead of reasoning from the cause. It shows up in three shapes, and the held-out case exposes all three alike:
 
 - a **checklist**: the items as bullets;
 - **disguised enumeration**: the same items folded into a prose clause joined by commas or *or*, which is what a checklist turns into when lists are forbidden;
 - a clause that changes the action in only one case: that case written in, however abstract its wording.
 
-Every shape is a symptom of the same missing cause, so the fix is the cause (**fix the root, not the symptom**). The difference, shown in a situation unrelated to any skill:
+**When** an enumeration appears, deleting the list alone leaves the broken wording it was patching, and replacing the list with an umbrella term turns it into **pseudo-generality** (*Fit*). Instead, strip the enumeration and turn its items into **observed cases** in *Scaffolding* (*Authoring protocol*), then run the remaining wording alone against those cases: where it fails to pick the right action or to decide when its condition or goal holds exposes the failure in the table above that the enumeration was patching. Fix the instruction at that principle's row, and verify that the rewritten instruction alone passes both *Fit* across those cases and a **held-out** case, and *Goals and conditions* on the agent's own output. The difference, shown in a situation unrelated to any skill:
 
 - Enumeration: *Pack a raincoat for Da Lat, Sapa, or Hue in the rainy season.*
 - Cause: *Pack a raincoat when the forecast shows rain where you are going, on the days you are there.*
