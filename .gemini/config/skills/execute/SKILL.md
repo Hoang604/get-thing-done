@@ -25,7 +25,7 @@ description: Execute an implementation plan. Read before starting to implement a
   - [notes.py](file:///path/to/notes.py#L10-L30): <why the change required this file outside the File Manifest, or which declared contract was adapted and why>
 - **Round <N>**:
   - **Audit Report**: [audit_report_round_<N>.md](file:///path/to/audit_report_round_<N>.md)
-  - **Verdict**: `FAIL` | `PASS` | `PLAN VETO`
+  - **Verdict**: `PASS` | `FAIL (CLOSED)` | `FAIL (OPEN)` | `PLAN VETO`
   - **Remediations**: `<observed issue>` -> `<code fix applied & target file>`
   - **Rejections**: `<finding>` -> `<evidence it fails, with file:line>` | `None`
   - **Oscillation Status**: `None` | `<description of cyclic change (A -> B -> A) and resolution>`
@@ -49,12 +49,12 @@ When nothing departs from the File Manifest before Round 1, Round 0 holds the si
      - *Round Summary*: When audit round N returns, check each of its findings against the code before changing anything, then give the user a summary of the round: the verdict, and for each finding what the auditor claims and whether it holds, fails, or partly holds, with the evidence that decided it (`file:line`). Proceed without waiting: remediate what holds and keep the code against the rest. A PLAN VETO halts as stated below.
      - *Round Entry*: Append the round's Round N entry to the Implementation Ledger, with every finding kept against under Rejections, so the next round's auditor sees the reason.
      - *Oscillation Check (Ping-Pong Guard)*: If current remediation reverts an earlier turn's change (e.g., $A \to B \to A$), log the conflict in the round's Oscillation Status. If straightforward, fix and continue; if ambiguous or complex, trigger a Hard Stop and escalate to user.
-     - *Re-invocation*: Dispatch `boundary-auditor` for Round $N+1$ passing `<plan-link>`, `audit_report_round_<N+1>.md`, and the ledger link.
-   - Track cycles against the plan's declared **Audit Budget** (`<integer> | unlimited`). If the budget is exhausted without a pass, trigger an immediate Hard Stop.
+     - *Re-invocation*: **When** the round's verdict is `FAIL (CLOSED)` and every finding is remediated to its specified target state with `Rejections: None` and no additional code changes, the audit gate is complete once baseline checks and touched scenarios pass; otherwise dispatch `boundary-auditor` for Round $N+1$ passing `<plan-link>`, `audit_report_round_<N+1>.md`, and the ledger link.
+   - Track cycles against the plan's declared **Audit Budget** (`<integer> | unlimited`). If the budget is exhausted without completing the audit gate, trigger an immediate Hard Stop.
    - When checks fail, fix the root cause immediately—whether within primary targets or in adjacent unlisted files.
-   - When a remediation changes behavior on a scenario's path, re-run that scenario and re-probe the invariants spanning it before the next audit round.
+   - When a remediation changes behavior on a scenario's path, re-run that scenario and re-probe the invariants spanning it before completing the audit gate or dispatching the next audit round.
    - If a True Blocker is reached or the auditor issues a PLAN VETO, halt execution immediately without writing or updating `walkthrough.md`. Report findings directly to the user without attempting autonomous remediation.
-   - *Completion criterion*: Verification commands pass, declared audit reports confirm contract compliance with zero plan vetoes, and every scenario touched by remediation, with the invariants spanning it, has been re-run clean.
+   - *Completion criterion*: Verification commands pass, the audit gate completes via `PASS` or a fully remediated `FAIL (CLOSED)` with zero rejections and zero plan vetoes, and every scenario touched by remediation, with the invariants spanning it, has been re-run clean.
 4. **Report**: Overwrite `<appDataDir>/brain/<conversation-id>/walkthrough.md` strictly upon successful verification pass. Never create or update `walkthrough.md` on Plan Veto or unverified halts.
    - *Completion criterion*: `walkthrough.md` exists and matches the mandatory schema with all delivered changes, verification proofs, the scenario record, deviations & adjustments, and diagnostics recorded.
 
@@ -98,7 +98,7 @@ When nothing departs from the File Manifest before Round 1, Round 0 holds the si
 
 #### 2. Verification Proof
 - **Baseline Check:** `<Exact command(s) executed for verification>` -> `<Passing output summary line / exit code>`
-- **Subagent Audit:** <[audit_report_round_<N>.md](file://<appDataDir>/brain/<subagent-id>/audit_report_round_<N>.md) -> `<Verdict: PASS / FAIL / PLAN VETO>` | "N/A (Not declared in plan)">
+- **Subagent Audit:** <[audit_report_round_<N>.md](file://<appDataDir>/brain/<subagent-id>/audit_report_round_<N>.md) -> `<Verdict: PASS / FAIL (CLOSED) / FAIL (OPEN) / PLAN VETO>` | "N/A (Not declared in plan)">
 
 #### 3. Scenario & Invariant Record
 - **Users & Jobs:**

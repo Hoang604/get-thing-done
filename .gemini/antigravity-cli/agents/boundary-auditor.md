@@ -71,10 +71,13 @@ This invariant governs through two structural tests:
   - **INVALID (invented value)**: The value is required. The fallback must go so the code fails immediately; trace the value back to the code that created it and require that code to always supply it.
   - **VALID (real absence)**: Absence is a real business situation. A default is applied once, where data enters the system or where configuration is loaded, or both cases are handled with an explicit `if/else`, never with a placeholder object. A fallback inside domain code that hides missing data is **INVALID** without exception.
 
-### G. Root Cause Attribution & Plan Veto
-When auditing failures, shallow seams, or transition residue, determine the root cause:
-- **Execution Flaw:** The plan specified a canonical, residue-free boundary, but the implementation preserved obsolete forms or introduced transitional indirection $\to$ Mark FAIL for code remediation. Residue the plan omitted from its Retirement Inventory is an Execution Flaw: the change made the form obsolete, so the change resolves it.
-- **Plan Flaw (PLAN VETO):** The plan itself incorporates transition residue into its design—compromising canonical singularity to avoid caller edits, specifying transitional layers, or preserving obsolete forms to minimize diff $\to$ Issue a **PLAN VETO**, documenting the design defect with plan citations.
+### G. Root Cause Attribution, Remediation Closure & Plan Veto
+**When** a discrepancy is discovered across any plane above, record one finding (`F-01`, `F-02`...) per root cause under `### Findings`, grouping every symptom it produces across the tables above under that single ID, and classify its closure:
+- **`CLOSED` (Execution Flaw — Closed Remediation):** The plan is sound, the specification already determines the exact code state to reach at the cited site—leaving the implementer no choice in how to write the fix—and the rest of the path is already verified under that state. Residue the plan omitted from its Retirement Inventory is an Execution Flaw: the change made the form obsolete, so the change resolves it.
+- **`OPEN` (Execution Flaw — Open Remediation):** The plan is sound, and fixing the finding leaves an implementation choice open, producing or exposing code whose path this audit round has not yet verified.
+- **`PLAN VETO` (Plan Flaw):** The plan itself incorporates transition residue or an architectural contradiction into its design, making a permanent, residue-free boundary unattainable under the approved contract.
+
+Set `Final Delivery Gate` to `PASS` when zero findings exist, `PLAN VETO` when any finding is `PLAN VETO`, `FAIL (CLOSED)` when findings exist and every finding is `CLOSED`, and `FAIL (OPEN)` otherwise.
 
 ## 3. Delivery Protocol
 
@@ -89,73 +92,44 @@ When auditing failures, shallow seams, or transition residue, determine the root
 ### Dual Verification Audit Report (Round <N>)
 
 #### Boundary Milestones Audit
-| # | Boundary Milestone | Observable Outcome | Subagent Status | Working Parts Proof |
+| # | Boundary Milestone | Verified By | Lineage | Status |
 |---|---|---|---|---|
-| M-01 | <Milestone Title> | <Outcome statement> | PASS / FAIL | <Code proof with [file:line](file:///...) citations> |
+| M-01 | <Milestone Title> | <`B-xx`, `S-xx`, `I-xx` IDs verified under this milestone> | <Scenarios made runnable or downstream milestones enabled> | PASS / FAIL (`F-xx`) |
 
 #### Seam & Dataflow Audit
-| # | Seam / Boundary Interface | Ingress -> Sink Tracing | Contract & Type Status | Seam Citations |
+| # | Seam / Boundary Interface | Ingress -> Sink | Contract & Yield | Citations / Finding |
 |---|---|---|---|---|
-| S-01 | [SymbolName](file:///...) | PASS / FAIL | PASS / FAIL | [file:line](file:///...) |
+| B-01 | [SymbolName](file:///...) | PASS / FAIL | PASS / FAIL | <[file:line](file:///...) of seam, callers, and sink, or `F-xx`> |
 
 #### Scenario Coverage Audit
-| # | User | Use Scenario | Entrypoint -> Response Path | Coverage Status | Path Citations |
-|---|---|---|---|---|---|
-| S-01 | <User from the plan> | <Product state and invocation> | <Code path from real entrypoint to the declared observable response> | PASS / FAIL | [file:line](file:///...) |
+| # | Entrypoint -> Response Path | Status | Citations / Finding |
+|---|---|---|---|
+| S-01 | <Code path from real entrypoint to declared observable response> | PASS / FAIL | <[file:line](file:///...) citations, or `F-xx`> |
 
 #### Invariant Coverage Audit
-| # | Invariant | Spanned Scenarios | Why It Holds for Every Admitted Input | Coverage Status | Code Citations |
-|---|---|---|---|---|---|
-| I-01 | <Invariant from the plan> | S-xx, S-yy | <The code property that makes the rule hold beyond the scenarios' literal inputs, or the admitted input that breaks it> | PASS / FAIL | [file:line](file:///...) |
+| # | General Input-Domain Proof | Status | Citations / Finding |
+|---|---|---|---|
+| I-01 | <Code property making the rule hold for every admitted input beyond scenario literals, or `F-xx`> | PASS / FAIL | <[file:line](file:///...) citations, or `F-xx`> |
 
-#### Transition Residue Audit (Day-One & Entropy Test)
-<!-- One row per hit of the pre-change-form search, per touched seam caller, and per introduced structure -->
-| # | Location | Code Structure Audited | Present-Requirement Justification | Canonical Singularity & Deletion Proof | Status |
-|---|---|---|---|---|---|
-| R-01 | [file:line](file:///...) | <Symbol, call-site, or introduced structure> | <Why this exists under present requirements alone, or "None: depends on code's past"> | <Proof this is the sole canonical way and complexity reappears if deleted> | CLEAN / RESIDUE |
+#### Transition Residue Audit (Pre-Change-Form Search)
+<!-- One row per pre-change form searched across the workspace via rg -->
+| # | Pre-Change Form (`rg` query) | Remaining Hits & Present-Requirement Justification | Status |
+|---|---|---|---|
+| R-01 | `<obsolete symbol / prop / union / file>` | `0 hits remain` / <[file:line](file:///...): why remaining hits exist under present requirements alone, or `F-xx`> | CLEAN / RESIDUE |
 
 #### Changed Code Coverage
 <!-- One row per file in the plan's File Manifest and per file the ledger records beyond it -->
 | File | Origin | Findings |
 |---|---|---|
-| [basename.ext](file:///...) | MANIFEST / LEDGER | <Report entries citing this file, or "None"> |
+| [basename.ext](file:///...) | MANIFEST / LEDGER | `F-xx` / None |
 
 #### Audit Verdict
 - Milestone Outcome Status: ALL PASS / HAS FAILURES
 - Seam & Dataflow Status: ALL PASS / HAS FAILURES
 - Scenario & Invariant Coverage Status: ALL PASS / HAS FAILURES
 - Residue Status: ALL CLEAN / HAS RESIDUE
-- Final Delivery Gate: PASS (100% across all four) / FAIL / PLAN VETO
+- Final Delivery Gate: PASS (100% across all four) / FAIL (CLOSED) / FAIL (OPEN) / PLAN VETO
 
-### Ambiguities & Business Assumptions
+### Findings
 <!-- If none found, write: "None" -->
-- [file:line](file:///...):
-  - If the intended real-world outcome is <X>: this code is correct (<technical reason>).
-  - If the intended real-world outcome is <Y>: this code is incorrect (<technical reason>).
-
-### Definite Production Hazards
-<!-- If none found, write: "None" -->
-- [file:line](file:///...): <Detailed explanation of the deterministic failure or invariant violation under operating context>
-
-### Pattern & Convention Deviations
-<!-- If none found, write: "None" -->
-- [file:line](file:///...):
-  - **Observed Deviation:** <Ad-hoc logic, convention breach, or bypassed existing primitive>
-  - **Canonical Reference:** [file:line](file:///...) <Existing pattern / helper in codebase>
-  - **Pattern-Conforming Fix:** <How to rewrite using the canonical pattern without loss of correctness>
-
-### Optionality Debt
-<!-- If none found, write: "None" -->
-- [file:line](file:///...): **[INVALID / VALID]** <Context hypothesis & rationale> -> **Remediation:** <Required invariant fix or proposal>
-
-### Invariant & Boundary Breaches
-<!-- If none found, write: "None" -->
-- [file:line](file:///...): **[INVALID / VALID]** <Context hypothesis & rationale> -> **Remediation:** <Required boundary or lineage fix>
-
-### Shallow Modules & Caller Friction
-<!-- If none found, write: "None" -->
-- [file:line](file:///...): <Structural explanation of how the boundary exports complexity to callers instead of encapsulating it internally, and the required deep-interface remediation>
-
-### Plan Veto & Architectural Defects
-<!-- If plan is sound, write: "None (Plan is architecturally sound)" -->
-- [plan-file:line](file:///...): <Structural explanation of why the plan is inherently flawed and cannot achieve a permanent, deep, residue-free boundary>
+- **F-01** `[CLOSED / OPEN / PLAN VETO]` [file:line](file:///...): <Root cause, its deterministic consequence, and the required resolution>
