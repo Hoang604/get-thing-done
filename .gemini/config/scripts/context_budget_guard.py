@@ -36,10 +36,10 @@ def build_warning_message(current_tokens: int, threshold_tokens: int) -> str:
     return (
         "<critical_instructions>\n"
         f"Context usage has reached {pct:.1f}% of the compaction threshold ({current_tokens} / {threshold_tokens} tokens)—volatile context in memory is about to be wiped by compaction.\n"
-        "Persist what is already in hand to safe ground before reaching for more (this overrides concurrent-frontier batching across phases and silent application for this turn):\n"
+        "Persist what is already in hand to safe ground before reaching for more, then keep working normally across turns until auto-compaction triggers (this overrides concurrent-frontier batching across phases and silent application for this turn):\n"
         "1. **Notify the user**: Before calling tools in this turn, tell the user clearly (in their language) that context is nearly full and state what work already in hand you are securing now before continuing.\n"
-        "2. **When** context already holds settled inputs and design for any pending changes or actions (independent of unread files): dispatch only those ready actions in this turn to persist them, deferring all tool calls that gather context for untouched work—and any verification whose outcome depends on unupdated members of a coupled batch—to subsequent turns.\n"
-        "3. **When** no action is ready to persist yet: dispatch only the calls needed to settle the belief or batch currently open in context so its findings can be recorded as settled observations, rather than opening new untouched items.\n"
+        "2. **When** context already holds settled inputs and design for any pending changes or actions (independent of unread files): dispatch only those ready actions in this turn to persist them, and continue dispatching the deferred tool calls for untouched work or coupled verification in the very next turn.\n"
+        "3. **When** no action is ready to persist yet: dispatch only the calls needed to settle the belief or batch currently open in context so its findings can be recorded as settled observations, rather than opening new untouched items; if all prior work in hand is already persisted and settled, dispatch the next step's tool calls immediately in this turn.\n"
         "</critical_instructions>"
     )
 
@@ -92,7 +92,9 @@ def estimate_cat_command_tokens(args: dict[str, object]) -> int:
     if not isinstance(cmd_obj, str) or not re.search(r"\bcat\b", cmd_obj):
         return 0
     cwd_obj: object = args.get("Cwd")
-    base_dir: Path = Path(cwd_obj) if isinstance(cwd_obj, str) and cwd_obj.strip() else Path.cwd()
+    base_dir: Path = (
+        Path(cwd_obj) if isinstance(cwd_obj, str) and cwd_obj.strip() else Path.cwd()
+    )
     total_chars: int = 0
     for token in re.findall(r"[^\s|;&><\"']+", cmd_obj):
         if token in ("cat", "-") or token.startswith("-"):
@@ -138,12 +140,20 @@ def evaluate_tool_budget_guard(
             thresholds_file=thresholds_file,
         )
 
-        planner_line, post_planner_tokens = measure_post_planner_transcript_tokens(transcript_path)
+        planner_line, post_planner_tokens = measure_post_planner_transcript_tokens(
+            transcript_path
+        )
         current_planner_turn: int = max(state.last_turn, planner_line, 1)
-        accumulated_turn_tokens: int = max(state.pending_turn_tokens, post_planner_tokens)
-        projected_tokens: int = state.last_tokens + accumulated_turn_tokens + incoming_tokens
+        accumulated_turn_tokens: int = max(
+            state.pending_turn_tokens, post_planner_tokens
+        )
+        projected_tokens: int = (
+            state.last_tokens + accumulated_turn_tokens + incoming_tokens
+        )
         block_threshold: int = int(entry.compact_threshold * BLOCK_RATIO)
-        already_blocked_in_turn: bool = state.blocked_at_planner_turn == current_planner_turn
+        already_blocked_in_turn: bool = (
+            state.blocked_at_planner_turn == current_planner_turn
+        )
         already_reminded_in_cycle: bool = state.warned_in_cycle or (
             0 < state.blocked_at_planner_turn < current_planner_turn
         )
@@ -186,9 +196,13 @@ def evaluate_tool_budget_guard(
         )
 
         if is_first_block_in_turn:
-            reason_msg: str = build_warning_message(display_tokens, entry.compact_threshold)
+            reason_msg: str = build_warning_message(
+                display_tokens, entry.compact_threshold
+            )
         else:
-            reason_msg = build_subsequent_block_message(display_tokens, entry.compact_threshold)
+            reason_msg = build_subsequent_block_message(
+                display_tokens, entry.compact_threshold
+            )
 
         return {
             "decision": "deny",
@@ -216,7 +230,9 @@ def evaluate_budget_guard(
         )
 
         _, post_planner_tokens = measure_post_planner_transcript_tokens(transcript_path)
-        effective_tokens: int = state.last_tokens + max(state.pending_turn_tokens, post_planner_tokens)
+        effective_tokens: int = state.last_tokens + max(
+            state.pending_turn_tokens, post_planner_tokens
+        )
         warn_threshold: int = int(entry.compact_threshold * WARN_RATIO)
 
         if effective_tokens < warn_threshold and not state.blocked_in_last_turn:

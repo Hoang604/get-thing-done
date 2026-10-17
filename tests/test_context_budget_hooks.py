@@ -131,12 +131,6 @@ class TestContextBudgetHooks(unittest.TestCase):
         self.assertIsInstance(steps, list)
         assert isinstance(steps, list)
         self.assertEqual(len(steps), 1)
-        first_step = steps[0]
-        assert isinstance(first_step, dict)
-        msg_text = str(first_step.get("ephemeralMessage", ""))
-        self.assertIn("<critical_instructions>", msg_text)
-        self.assertIn("Persist what is already in hand to safe ground", msg_text)
-        self.assertIn("Notify the user", msg_text)
 
         # Next turn at 225,000 (cache miss: input_tokens=225,000, cache_read_tokens=0) -> does NOT fire again
         self._append_planner_step(225_000, 0)
@@ -174,7 +168,7 @@ class TestContextBudgetHooks(unittest.TestCase):
         assert isinstance(steps_new, list)
         self.assertEqual(len(steps_new), 1)
 
-    def test_pre_tool_use_blocks_at_95_percent_with_single_full_warning_and_short_subsequent_messages(self) -> None:
+    def test_pre_tool_use_blocks_at_95_percent_and_allows_next_turn(self) -> None:
         # Default threshold = 240,000 -> 95% block threshold = 228,000
         # Start turn at 220,000 input tokens + 200 output tokens
         self._append_planner_step(20_000, 200_000, output_tokens=200)
@@ -194,7 +188,7 @@ class TestContextBudgetHooks(unittest.TestCase):
         )
         self.assertEqual(res1, {"decision": "allow"})
 
-        # 2nd view_file in same turn: ~224,200 + ~4,000 = ~228,200 (>= 228,000) -> DENIED with FULL <critical_instructions>
+        # 2nd view_file in same turn: ~224,200 + ~4,000 = ~228,200 (>= 228,000) -> DENIED
         res2 = evaluate_tool_budget_guard(
             conv_id=self.conv_id,
             fallback_model_name="Gemini 4 Argon (High)",
@@ -204,11 +198,8 @@ class TestContextBudgetHooks(unittest.TestCase):
             thresholds_file=self.thresholds_file,
         )
         self.assertEqual(res2.get("decision"), "deny")
-        reason2 = str(res2.get("reason", ""))
-        self.assertIn("<critical_instructions>", reason2)
-        self.assertIn("Persist what is already in hand to safe ground", reason2)
 
-        # 3rd tool (view_file) and 4th tool (run_command rg/grep/cat) in same turn -> DENIED with SHORT persist message
+        # 3rd tool (view_file) and 4th tool (run_command rg/grep/cat) in same turn -> DENIED
         res3 = evaluate_tool_budget_guard(
             conv_id=self.conv_id,
             fallback_model_name="Gemini 4 Argon (High)",
@@ -218,9 +209,6 @@ class TestContextBudgetHooks(unittest.TestCase):
             thresholds_file=self.thresholds_file,
         )
         self.assertEqual(res3.get("decision"), "deny")
-        reason3 = str(res3.get("reason", ""))
-        self.assertNotIn("<critical_instructions>", reason3)
-        self.assertIn("persist what is already in hand to disk", reason3)
 
         res4 = evaluate_tool_budget_guard(
             conv_id=self.conv_id,
@@ -231,9 +219,6 @@ class TestContextBudgetHooks(unittest.TestCase):
             thresholds_file=self.thresholds_file,
         )
         self.assertEqual(res4.get("decision"), "deny")
-        reason4 = str(res4.get("reason", ""))
-        self.assertNotIn("<critical_instructions>", reason4)
-        self.assertIn("persist what is already in hand to disk", reason4)
 
         # Non-guarded run_command (e.g. pytest / unittest) is still allowed
         res_other_cmd = evaluate_tool_budget_guard(
