@@ -159,41 +159,6 @@ else:
             f.write(new_content)
 EOF
 
-# Install skills, agents and hook into Claude Code (~/.claude)
-CLAUDE_DIR="$HOME/.claude"
-SRC_CLAUDE_DIR="$SCRIPT_DIR/.claude"
-
-echo "  Source (claude): $SRC_CLAUDE_DIR"
-echo "  Target (claude): $CLAUDE_DIR"
-mkdir -p "$CLAUDE_DIR"
-cp -r "$SRC_CLAUDE_DIR/skills" "$SRC_CLAUDE_DIR/agents" "$CLAUDE_DIR/"
-cp "$SRC_CLAUDE_DIR/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
-
-python3 -I - "$CLAUDE_DIR/settings.json" <<'PYEOF'
-import json
-import shutil
-import sys
-from pathlib import Path
-
-settings_path = Path(sys.argv[1])
-command = "~/.gemini/config/scripts/critical_instructions_claude.sh"
-
-settings = {}
-if settings_path.exists():
-    try:
-        settings = json.loads(settings_path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, UnicodeDecodeError):
-        sys.exit(f"Error: {settings_path} is not valid JSON; fix it and re-run.")
-
-groups = settings.setdefault("hooks", {}).setdefault("UserPromptSubmit", [])
-if not any(h.get("command") == command for g in groups for h in g.get("hooks", [])):
-    if settings_path.exists():
-        shutil.copy2(settings_path, settings_path.with_name("settings.json.bak"))
-    groups.append({"hooks": [{"type": "command", "command": command, "timeout": 15}]})
-    settings_path.parent.mkdir(parents=True, exist_ok=True)
-    settings_path.write_text(json.dumps(settings, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"    Added UserPromptSubmit hook to {settings_path}")
-PYEOF
 
 echo ""
 echo "✓ Installation complete! (Copied: $file_count files, $dir_count directories)"
