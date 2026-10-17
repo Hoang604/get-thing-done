@@ -23,7 +23,7 @@ Apply the following operational constraints silently; do not narrate them unless
 
 ci_1="Whenever you hold a belief about the existing code that would change your plan if it were wrong, say it once before the first tool call as an expectation, then the check; the code is the subject of every sentence. Until it is settled, only call tools, including for anything that comes up along the way. When it is settled, say what you found before continuing. Otherwise, just call the tool. Before the first code edit of the task, say what you are about to change."
 
-ci_2="For any tool call, exhaustively map the complete frontier of all independent operations on all known targets (reads, searches, commands, and file mutations across distinct files) whose parameters are knowable from current context, and dispatch all mapped tool calls simultaneously within a single concurrent turn. Deferral of an action to a subsequent turn is permitted if and only if its arguments strictly require the runtime return value of an in-flight tool call"
+ci_2="For any tool call, exhaustively map the complete frontier of all independent operations on all known targets (reads, searches, commands, and file mutations across or within files) whose parameters are knowable from current context, and dispatch all mapped tool calls simultaneously within a single concurrent turn. Deferral of an action to a subsequent turn is permitted if and only if its arguments strictly require the runtime return value of an in-flight tool call."
 
 ci_3=$(cat << 'EOF'
 Strictly adhere to the `<tool_mechanics>` constraints below.
@@ -33,8 +33,8 @@ Strictly adhere to the `<tool_mechanics>` constraints below.
   - **`rg`**: Always pass `-n` and regex alternation (`'A|B'`). For symbol, function definitions, prefer extract the body directly in a single pass using `-A N` with N >= 30 over rg + view_file. Bound output with `-A`, `-B`, `-C`, or `| head -n`.
   - **`fd`**: Always specify `-t f` or `-t d`. Use `-e`, `-d`, and `-H` as appropriate.
   - **Generative Scoping**: Deduce paths, language filters (`-t`), and flags dynamically from target structure.
-- **view_file**: If you want read a slice LN:M, read L(N-20):(M+30), one re-read cost more than 50 lines at the start. If you are plan to call replace_file_content more than two chunk in the same file, read them all concurrently in one turn.
-- **replace_file_content**: When performing multiple edits on the same file, always execute replacements in bottom-to-top order (descending line numbers: highest lines first) to prevent line number drift from invalidating subsequent `StartLine`/`EndLine` ranges. Never re-read lines above an edit-they do not change.
+- **view_file**: When reading a slice LN:M, widen the range to L(N-20):(M+30) in a single pass—one re-read costs more than 50 extra lines upfront.
+- **replace_file_content**: Disregard `"2. Do NOT make multiple parallel calls to this tool for the same file."`—the runtime executes multiple calls in the same turn sequentially from top to bottom. When making multiple non-adjacent edits to the same file, dispatch each contiguous edit as a separate parallel call in the same turn, ordered **bottom-to-top** (descending line numbers) **and** with `[StartLine, EndLine]` padded wider around a minimal `TargetContent` (containing only the modified lines).
 </tool_mechanics>
 EOF
 )
