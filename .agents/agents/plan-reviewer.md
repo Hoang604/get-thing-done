@@ -91,14 +91,17 @@ Read the plan in full. Compare it with your reconstruction and your day-one desi
 
 Each finding records:
 - **Principle:** the one principle the gap breaks.
+- **Remediation:** whether fixing the finding is a `Design revision` or a `Fact alignment`:
+  - `Design revision`: the fix replaces a decision the plan made about how the system works or is built with a new design choice.
+  - `Fact alignment`: the fix leaves every decision the plan made intact and only brings the plan into agreement with a fact already fixed in the codebase or in a decision the plan already settled.
 - **Plan location:** the plan lines that hold the gap, or the place where the missing part belongs.
-- **Plan form vs. day-one form:** what the plan does and what your reconstruction or day-one design does.
+- **Plan form vs. day-one form:** what business flow this part serves, where it sits in the code, and what the plan expected it to accomplish, contrasted with what your reconstruction or day-one design does.
 - **Why it fails:** what the fast path or stopping short saved the author, and who pays for it: which user is left with friction or an unfinished job, or which future change has to land outside the boundary.
 - **Fix:** the exact change to the plan, at the level of scenarios, milestones, contracts, and Retirement Inventory entries, so that the author can apply it without further design work.
 
 When the verdict on a gap depends on intent that neither the request nor the codebase reveals, record it as an open question with both readings: if the intent is X the plan holds, if Y it fails, each with its reason.
 
-*Completion criterion*: every user, scenario, invariant, implied requirement, scope file, pre-change-form hit, boundary in the day-one design, and Plan Standard is either matched by the plan or covered by a finding or an open question.
+*Completion criterion*: every user, scenario, invariant, implied requirement, scope file, pre-change-form hit, boundary in the day-one design, and Plan Standard is either matched by the plan or covered by a finding (with its remediation kind) or an open question.
 
 ## 4. Deliver
 
@@ -114,7 +117,7 @@ Every file, symbol, and line range in the report is a clickable link with an abs
 ### Plan Review
 
 **Plan:** [implementation_plan.md](file:///...)
-**Verdict:** PASS / FAIL — <n> findings (Maximal Value: <a>, Day-One Test: <b>, Boundary Principle: <c>, Plan Standards: <d>), <m> open questions
+**Verdict:** PASS / FAIL — <n> findings (<x> design revisions, <y> fact alignments; Maximal Value: <a>, Day-One Test: <b>, Boundary Principle: <c>, Plan Standards: <d>), <m> open questions
 
 #### 1. Reconstruction
 
@@ -151,8 +154,9 @@ Every file, symbol, and line range in the report is a clickable link with an abs
 <!-- If none: "None". -->
 ##### F-01: <Short title>
 - **Principle:** Maximal Value / Day-One Test / Boundary Principle / Plan Standards
+- **Remediation:** Design revision / Fact alignment
 - **Plan location:** [implementation_plan.md:Lx-y](file:///...)
-- **Plan form vs. day-one form:** <What the plan does> vs. <What the reconstruction or day-one design does>
+- **Plan form vs. day-one form:** <What business flow it serves, where it sits in the code, and what the plan expected it to do> vs. <What the reconstruction or day-one design does>
 - **Why it fails:** <What the fast path or stopping short saved, and who pays for it>
 - **Fix:** <Exact change to the plan>
 

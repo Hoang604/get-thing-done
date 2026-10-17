@@ -4,11 +4,13 @@ description: Review an implementation plan via plan-reviewer, then adjudicate fi
 disable-model-invocation: true
 ---
 
-1. Take the plan the user names. When the user names none, take the most recent `implementation_plan.md` in this conversation. When none exists, ask the user for its path.
-2. Write the **request**: what the user wants from the work this plan serves, and every decision the user made about it in this conversation. Write it to pass the **cold read**: an engineer holding only the request, with no chat history, understands it without asking back. So every reference to the conversation is expanded into its full content, and where the user changed a decision, only the final one stands. Every sentence states something the user said or decided, so that the reviewer reconstructs the plan's reading of the request (its users, jobs, scenarios, and the reasons for its choices) on its own. When this conversation holds no request for the plan, ask the user for one.
+1. Resolve the target plan: take the plan the user names; when the user names none, take the most recent `implementation_plan.md` in this conversation; when none exists, ask the user for its path.
 
-   *Completion criterion*: the request passes the cold read, and each of its sentences traces to a message of the user.
-3. Dispatch `plan-reviewer` via `invoke_subagent`:
+   *Completion criterion*: the target plan's path is resolved, or the turn ends asking the user for it.
+2. Write the **request**: state every goal and final decision the user expressed for the work this plan serves in self-contained prose that passes the **cold read** — an engineer given only the request and the codebase has everything needed to reconstruct the task on the first read. Expand every reference to the conversation into its full concrete content, keep only the final decision where the user changed course, and state only what the user said or decided so the reviewer reconstructs the plan's reading of the request (its users, jobs, scenarios, and reasons for its choices) independently. When this conversation holds no request for the plan, ask the user for one.
+
+   *Completion criterion*: the request passes the cold read and each of its sentences traces to a message of the user, or the turn ends asking the user for the request.
+3. Dispatch `plan-reviewer` via `invoke_subagent`, and in the same turn output the verbatim prompt sent to it inside a blockquote (`>`):
    - **TypeName**: `plan-reviewer`
    - **Role**: `Plan Reviewer`
    - **Prompt**:
@@ -20,23 +22,31 @@ disable-model-invocation: true
      ```
 
    `<plan-link>` is the absolute `file://` path of the plan. The prompt carries only the plan and the request; the subagent's definition carries the whole protocol.
-4. Surface Dispatched Prompt:
-   Immediately after dispatching, output the exact verbatim prompt sent to `invoke_subagent` into the conversation inside a blockquote (`>`), word for word with zero alterations or omissions.
 
-   *Completion criterion*: the conversation contains the verbatim prompt sent to `invoke_subagent` inside a blockquote (`>`), exactly matching the dispatched text.
-5. **Challenge & Adjudicate Findings**:
-   When the subagent replies, read the review report in full with `view_file`. Execute the Challenge Protocol against every finding before reporting:
-   - Check each finding and requested change against codebase reality and the task's requirements.
-   - **Holds**: The finding is verified by code evidence or explicit requirements. Update `implementation_plan.md` to remediate the finding, citing the confirming `file:line` or requirement text.
-   - **Fails**: The finding contradicts code, proposes speculative seams or invalid fallbacks, or misinterprets requirements. Keep the plan unchanged and record the exact refuting code evidence (`file:line`).
-   - **Partly holds**: Remediate only the verified part in `implementation_plan.md`; refute and keep the rest.
+   *Completion criterion*: `plan-reviewer` is dispatched and the conversation contains the verbatim dispatched prompt inside a blockquote (`>`).
+4. **Challenge & Adjudicate Findings**:
+   When the subagent replies, read `plan_review.md` in full with `view_file` and verify each finding against the codebase (`file:line`) and the request before editing the plan:
+   - **Holds**: Confirmed by code evidence (`file:line`) or the request. Apply the remediation to `implementation_plan.md`.
+   - **Fails**: Contradicted by code evidence or the request. Keep `implementation_plan.md` as it is and record the refuting `file:line` or request text.
+   - **Partly holds**: Apply only the confirmed part to `implementation_plan.md`, and keep the rest with its refuting evidence.
 
-6. **Present Adjudication**:
-   Output the final report to the user formatted as follows:
-   - Link to the review report and overall verdict.
-   - Link to `implementation_plan.md` (with line references to remediations).
-   - **Holds**: Each accepted finding and the exact modification made to the plan.
-   - **Fails**: Every rejected finding with its full refutation rationale and code proof, explicitly flagged for potential user overrule.
-   - Request the user's confirmation or overrule decisions.
+   For each finding that **Holds** or **Partly holds**, classify the remediation actually applied to `implementation_plan.md`:
+   - **`Design revision`**: the applied fix replaces a decision the plan made about how the system works or is built with a new design choice.
+   - **`Fact alignment`**: the applied fix leaves every decision the plan made intact and only brings the plan into agreement with a fact already fixed in the codebase or in a decision the plan already settled.
 
-*Completion criterion*: Every finding in the review report is adjudicated as Holds, Fails, or Partly holds; all verified findings are remediated in `implementation_plan.md`; and all rejected findings are presented with refutation citations for user overrule.
+   *Completion criterion*: every finding in `plan_review.md` is judged as Holds, Fails, or Partly holds against the codebase and request; every confirmed change is written into `implementation_plan.md`; and every applied remediation is classified as `Design revision` or `Fact alignment`.
+5. **Present Adjudication**:
+   Report the adjudication to the user in a single pass:
+   - Link to `plan_review.md` (with its overall verdict) and `implementation_plan.md` (with line links to each remediation).
+   - **Holds / Partly holds — Design revisions**: For each applied `Design revision`, explain the redesign in full so the user can judge it directly:
+     1. **Context**: what business flow or user job this part serves, what it does in that flow, and where it sits in the code (`file:line` and boundary), so the user understands what it does and where it lives on the first read.
+     2. **Original plan intent**: what the plan expected that part to accomplish when it was drafted.
+     3. **Reviewer's rejection**: how `plan-reviewer` rejected the proposal in the plan.
+     4. **Why the rejection holds**: why that rejection is sound against the codebase (`file:line`) and the request.
+     5. **New design resolution**: how the new solution written into `implementation_plan.md` achieves the valid original intent while eliminating the flaw `plan-reviewer` exposed.
+   - **Holds / Partly holds — Fact alignments**: For each applied `Fact alignment`, state the finding and the exact correction made to `implementation_plan.md` with its confirming `file:line`.
+   - **Fails (and refuted parts of Partly holds)**: Each rejected finding with its full refutation rationale and `file:line` or request proof, flagged for potential user overrule.
+   - **Open Questions**: Any open question from `plan_review.md`, with both readings presented for the user's decision.
+   - Ask the user to confirm the updated plan (and any `Design revision` resolutions) or overrule any rejected findings.
+
+   *Completion criterion*: the report links both artifacts, presents every `Design revision` with all five context-to-resolution items, lists every `Fact alignment` with its applied correction, lists every `Fails` finding (and refuted part) with refutation citations for user overrule, surfaces any `Open Questions`, and ends awaiting the user's decision.
