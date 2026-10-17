@@ -113,7 +113,7 @@ For every milestone in the graph, declare the physical blueprint across two cohe
   - *Caller Audit (Ingress):* Audit all existing callers across the workspace. List every caller requiring updates, or certify: *"Caller Audit: 0 production callers found via search."*
   - *Terminal Sink Audit (Dataflow):* Trace return values, state mutations, or emitted events downstream to their terminal sink to prove data reaches its final destination.
 - **Retired Forms:** The Retirement Inventory entries this milestone makes obsolete, each at its location with its fate and the count of references that remain.
-- **File Manifest:** List every file affected using clickable links `[basename](file:///path#L1-L20)` demarcated with `[NEW]`, `[MODIFY]`, or `[DELETE]`.
+- **File Manifest:** List every file this milestone creates, modifies, or deletes as `[NEW]`, `[MODIFY]`, or `[DELETE]` with a clickable link `[basename](file:///path#L<start>-L<end>)` whose `#L<start>-L<end>` range spans the exact lines this milestone mutates.
 
 **Completion Criterion:** Every milestone declares every field of both tiers, every Maximal Value decision names the scenario state it serves, and every Retirement Inventory entry is resolved by the milestone that makes its form obsolete.
 
@@ -170,7 +170,7 @@ Every `implementation_plan.md` begins with the users and their jobs, then the ov
 - **Retired Forms:**
   - `save_note(title, body, store=None)` at [notes.py](file:///src/controllers/notes.py#L52): deleted; its 3 call sites rewritten to `note_store.save`; 0 references remain
 
-#### File Mutations
+#### File Manifest
 - `[MODIFY]` [notes.py](file:///src/controllers/notes.py#L30-L65)
 - `[NEW]` [note_store.py](file:///src/note_store.py)
 ````
