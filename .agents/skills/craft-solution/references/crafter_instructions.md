@@ -121,16 +121,18 @@ Conclude the proposal with an executive comparison table contrasting Approach A 
    - Wait for `proposal-auditor` to complete and read the `proposal_audit_report.md` path returned in its reply.
    - Evaluate the audit report:
      - **If Verdict is APPROVED (Zero Disparities)**:
-       - Terminate loop immediately. Kill the auditor subagent via `manage_subagents`.
+       - Terminate loop immediately.
      - **If Disparities or Concerns Detected**:
-       - Kill the finished auditor instance via `manage_subagents` to release context.
        - Refine `<appDataDir>/brain/<subagent-id>/solution_proposal.md` adhering strictly to the **Disparity Remediation Protocol**:
          - **Claim Invariant**: Every disputed claim must either cite the concrete physical mechanism that makes violation impossible, or be retracted into an unmitigated operational trade-off.
          - **Tier Calibration**: Quality tiers are governed exclusively by state-space representation rather than runtime branching. When `proposal-auditor` marks any claim backing an approach's Quality Tier as `FALSIFIED`, either add the concrete structural mechanism that enforces the claimed tier or lower the approach's Quality Tier to match what its code contracts physically guarantee, documenting the physical system barrier that prevents a higher tier.
          - **Polarity Invariant**: Remediation must never reduce the structural divergence between approaches. Approach A resolves findings strictly by bounding scope without increasing indirection; Approach B resolves findings strictly by deepening encapsulation without reducing interface depth.
-       - Spawn a NEW, fresh `proposal-auditor` instance (Audit cycle 2).
-   - **Hard Limit**: Maximum 2 audit cycles (up to 3 drafts total). Terminate loop immediately when zero disparities remain or hard limit is reached. Kill any remaining auditor subagent.
+       - **If all disparities are `Fact alignment` (zero `Design revision` disparities)**:
+         - Terminate loop immediately after updating `solution_proposal.md`.
+       - **If any disparity is `Design revision`**:
+         - Spawn a NEW, fresh `proposal-auditor` instance (Audit cycle 2).
+   - **Hard Limit**: Maximum 2 audit cycles (up to 3 drafts total). Terminate loop immediately when zero `Design revision` disparities remain or hard limit is reached (after applying any remaining remediations to `solution_proposal.md`).
 
 3. **Final Handoff**:
-   - Once the loop terminates and all auditors are cleaned up, reply to the parent agent with strictly this single confirmation line:
+   - Once the loop terminates, reply to the parent agent with strictly this single confirmation line:
      `Completed: Final solution_proposal.md delivered at <appDataDir>/brain/<subagent-id>/solution_proposal.md`

@@ -32,7 +32,9 @@ Every technical claim must be backed by an enforcing structural mechanism. A cla
   - *Dishonest optional field*: A field the business always needs is typed optional because some code fails to fill it, with no business situation in which it is empty.
   - *Invented value*: Code that receives data is allowed to substitute a fallback for a missing part, instead of the creating code guaranteeing completeness and the boundary rejecting invalid data with an immediate error.
 
-Audit both candidate approaches with equal rigor. Flag any asymmetrical degradation where one approach is artificially weakened to force adoption of the other. Record all falsifications directly in the **Disparity Ledger**.
+Audit both candidate approaches with equal rigor. Flag any asymmetrical degradation where one approach is artificially weakened to force adoption of the other. Record all falsifications directly in the **Disparity Ledger**, classifying each disparity's **Remediation** as either a `Design revision` or a `Fact alignment`:
+- `Design revision`: fixing the disparity replaces a decision the proposal made about how an approach works or is built with a new design choice.
+- `Fact alignment`: fixing the disparity leaves every design decision of the proposal intact and only brings the proposal into agreement with a fact already fixed in the codebase.
 
 ## 3. Delivery Protocol
 
@@ -47,7 +49,7 @@ Audit both candidate approaches with equal rigor. Flag any asymmetrical degradat
 ### Proposal Architectural Audit Report
 
 #### 1. Executive Verdict
-- **Verdict**: [APPROVED / CONCERNS DETECTED / REJECTED]
+- **Verdict**: [APPROVED / CONCERNS DETECTED / REJECTED] — <n> disparities (<x> design revisions, <y> fact alignments)
 - **Recommended Approach**: [Approach A / Approach B / Redraft Required]
 - **Core Rationale**: <One concise sentence on the root-cause technical driver>
 
@@ -60,6 +62,7 @@ Audit both candidate approaches with equal rigor. Flag any asymmetrical degradat
 #### 3. Disparity Ledger
 <!-- Record each verified invalidation citing concrete evidence. If no claims were falsified, output: "Zero disparities identified across all evaluated approaches." -->
 - **Disparity in [Approach Name]**:
+  - **Remediation**: [Design revision / Fact alignment]
   - **Asserted Claim**: <The specific guarantee made by the proposal>
   - **Physical Counter-Evidence**: [file:line](file:///...) <The code structure that contradicts or fails to enforce the claim>
   - **Structural Impact**: <How this invalidation compromises the proposed architecture>

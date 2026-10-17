@@ -59,7 +59,6 @@ Immediately after dispatching the subagent, output the exact verbatim `Prompt` s
 
 When `self` subagent completes and returns its single confirmation line:
 
-1. **Cleanup**: Terminate the `self` subagent via `manage_subagents`.
-2. **Zero Context Ingestion**: Do not read, inspect, or summarize `solution_proposal.md` into the chat stream.
-3. **Physical Handoff**: Output strictly a concise completion notice in the active conversation language containing the clickable link `[solution_proposal.md](file://<appDataDir>/brain/<subagent-id>/solution_proposal.md)` (using the path returned by the subagent) and invite the user to review the proposal.
-4. **Hard Stop**: Terminate execution immediately.
+1. **Zero Context Ingestion**: Do not read, inspect, or summarize `solution_proposal.md` into the chat stream.
+2. **Physical Handoff**: Output strictly a concise completion notice in the active conversation language containing the clickable link `[solution_proposal.md](file://<appDataDir>/brain/<subagent-id>/solution_proposal.md)` (using the path returned by the subagent) and invite the user to review the proposal.
+3. **Hard Stop**: Terminate execution immediately.
