@@ -143,6 +143,6 @@ Every skill is user-invoked: its frontmatter sets `disable-model-invocation: tru
    - **Question map**: a table of every question the target skill answers, its quoted **judge** (dropping any question with no judge), and whether its set is **Closed** or **Open**.
    - For every **Open** question:
      - **Scaffolding**: the observed cases, each with its concrete situation, the judge-ratified right action, and the tempting wrong actions (the rejected options from Step 1 or the failures observed in runs).
-     - **Synthesis**: one instruction naming the cause that makes the right action right and rules out the tempting wrong actions across every case.
+     - **Synthesis**: one instruction naming the cause that makes the right action right and rules out the tempting wrong actions across every case, satisfying every section of this skill and entering the target skill verbatim.
      - **Fit test**: the test of that instruction alone against every case in Scaffolding and one **held-out** case outside Scaffolding, reworking Synthesis on overfit and sharpening wording as *Fit* prescribes on underfit.
-   *Completion criterion*: the question map and every open instruction's Scaffolding, Synthesis, and passing Fit test are shown in the conversation, and `SKILL.md` is written satisfying every section of this skill.
+   *Completion criterion*: the question map and every open instruction's Scaffolding, Synthesis, and passing Fit test are shown in the conversation, and `SKILL.md` is written with each Synthesis verbatim, satisfying every section of this skill.
