@@ -14,13 +14,15 @@ except ImportError:
     fcntl = None
 
 DEFAULT_COMPACT_THRESHOLD: int = 240_000
-MAX_COMPACT_THRESHOLD: int = 245_000
+MAX_COMPACT_THRESHOLD: int = 250_000
 MIN_AUTO_COMPACT_TOKENS: int = 160_000
 COMPACT_DROP_RATIO: float = 0.65
 CHARS_PER_TOKEN: float = 3.0
 
 DEFAULT_STATE_DIR: Path = Path("/tmp/agy_compact_state")
-DEFAULT_THRESHOLDS_FILE: Path = Path.home() / ".gemini" / "config" / "compact_thresholds.json"
+DEFAULT_THRESHOLDS_FILE: Path = (
+    Path.home() / ".gemini" / "config" / "compact_thresholds.json"
+)
 
 
 @dataclass(frozen=True)
@@ -83,10 +85,20 @@ def parse_non_negative_int(val: object, fallback: int = 0) -> int:
     return fallback
 
 
-def compute_effective_threshold(max_safe_tokens: int, last_auto_compact_tokens: int) -> int:
+def compute_effective_threshold(
+    max_safe_tokens: int, last_auto_compact_tokens: int
+) -> int:
     clamped_safe: int = min(max_safe_tokens, MAX_COMPACT_THRESHOLD)
-    clamped_auto: int = min(last_auto_compact_tokens, MAX_COMPACT_THRESHOLD) if last_auto_compact_tokens > 0 else 0
-    base: int = clamped_auto if clamped_auto >= MIN_AUTO_COMPACT_TOKENS else DEFAULT_COMPACT_THRESHOLD
+    clamped_auto: int = (
+        min(last_auto_compact_tokens, MAX_COMPACT_THRESHOLD)
+        if last_auto_compact_tokens > 0
+        else 0
+    )
+    base: int = (
+        clamped_auto
+        if clamped_auto >= MIN_AUTO_COMPACT_TOKENS
+        else DEFAULT_COMPACT_THRESHOLD
+    )
     return min(max(base, clamped_safe, MIN_AUTO_COMPACT_TOKENS), MAX_COMPACT_THRESHOLD)
 
 
@@ -94,7 +106,9 @@ def load_thresholds_db(thresholds_file: Path) -> dict[str, ModelThresholdEntry]:
     if not thresholds_file.is_file():
         return {}
     try:
-        raw: object = json.loads(thresholds_file.read_text(encoding="utf-8", errors="ignore"))
+        raw: object = json.loads(
+            thresholds_file.read_text(encoding="utf-8", errors="ignore")
+        )
     except Exception:
         return {}
 
@@ -108,8 +122,14 @@ def load_thresholds_db(thresholds_file: Path) -> dict[str, ModelThresholdEntry]:
     result: dict[str, ModelThresholdEntry] = {}
     for k, v in models_obj.items():
         if isinstance(k, str) and isinstance(v, dict):
-            max_safe: int = min(parse_non_negative_int(v.get("max_safe_tokens"), 0), MAX_COMPACT_THRESHOLD)
-            last_auto: int = min(parse_non_negative_int(v.get("last_auto_compact_tokens"), 0), MAX_COMPACT_THRESHOLD)
+            max_safe: int = min(
+                parse_non_negative_int(v.get("max_safe_tokens"), 0),
+                MAX_COMPACT_THRESHOLD,
+            )
+            last_auto: int = min(
+                parse_non_negative_int(v.get("last_auto_compact_tokens"), 0),
+                MAX_COMPACT_THRESHOLD,
+            )
             result[k] = ModelThresholdEntry(
                 compact_threshold=compute_effective_threshold(max_safe, last_auto),
                 max_safe_tokens=max_safe,
@@ -118,7 +138,9 @@ def load_thresholds_db(thresholds_file: Path) -> dict[str, ModelThresholdEntry]:
     return result
 
 
-def save_thresholds_db(thresholds_file: Path, db: dict[str, ModelThresholdEntry]) -> None:
+def save_thresholds_db(
+    thresholds_file: Path, db: dict[str, ModelThresholdEntry]
+) -> None:
     try:
         thresholds_file.parent.mkdir(parents=True, exist_ok=True)
         models_dict: dict[str, dict[str, int]] = {}
@@ -133,7 +155,9 @@ def save_thresholds_db(thresholds_file: Path, db: dict[str, ModelThresholdEntry]
             "models": models_dict,
         }
         tmp_file: Path = thresholds_file.with_suffix(".json.tmp")
-        tmp_file.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        tmp_file.write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
         os.replace(tmp_file, thresholds_file)
     except Exception:
         pass
@@ -154,7 +178,9 @@ def load_conversation_state(state_dir: Path, conv_id: str) -> ConversationTokenS
             blocked_in_last_turn=False,
         )
     try:
-        raw: object = json.loads(state_file.read_text(encoding="utf-8", errors="ignore"))
+        raw: object = json.loads(
+            state_file.read_text(encoding="utf-8", errors="ignore")
+        )
     except Exception:
         return ConversationTokenState(
             conversation_id=conv_id,
@@ -184,7 +210,11 @@ def load_conversation_state(state_dir: Path, conv_id: str) -> ConversationTokenS
     model_id_raw: object = raw.get("model_id")
     model_id: str = model_id_raw if isinstance(model_id_raw, str) else ""
     last_turn_raw: object = raw.get("last_turn")
-    last_turn: int = last_turn_raw if isinstance(last_turn_raw, int) and not isinstance(last_turn_raw, bool) else -1
+    last_turn: int = (
+        last_turn_raw
+        if isinstance(last_turn_raw, int) and not isinstance(last_turn_raw, bool)
+        else -1
+    )
     last_tokens: int = parse_non_negative_int(raw.get("last_tokens"), 0)
     warned_raw: object = raw.get("warned_in_cycle")
     warned: bool = warned_raw if isinstance(warned_raw, bool) else False
@@ -192,7 +222,9 @@ def load_conversation_state(state_dir: Path, conv_id: str) -> ConversationTokenS
     blocked_turn: int = parse_non_negative_int(raw.get("blocked_at_planner_turn"), 0)
     pending_tokens: int = parse_non_negative_int(raw.get("pending_turn_tokens"), 0)
     blocked_last_raw: object = raw.get("blocked_in_last_turn")
-    blocked_last: bool = blocked_last_raw if isinstance(blocked_last_raw, bool) else False
+    blocked_last: bool = (
+        blocked_last_raw if isinstance(blocked_last_raw, bool) else False
+    )
 
     return ConversationTokenState(
         conversation_id=conv_id,
@@ -223,21 +255,29 @@ def save_conversation_state(state_dir: Path, state: ConversationTokenState) -> N
             "blocked_in_last_turn": state.blocked_in_last_turn,
         }
         tmp_file: Path = state_file.with_suffix(".json.tmp")
-        tmp_file.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        tmp_file.write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
         os.replace(tmp_file, state_file)
     except Exception:
         pass
 
 
-def resolve_transcript_file(transcript_path: str, prefer_full: bool = False) -> Path | None:
+def resolve_transcript_file(
+    transcript_path: str, prefer_full: bool = False
+) -> Path | None:
     if not transcript_path or not transcript_path.strip():
         return None
     raw: str = transcript_path.strip()
     candidates: list[str] = [raw]
     if "/.gemini/antigravity/" in raw:
-        candidates.append(raw.replace("/.gemini/antigravity/", "/.gemini/antigravity-cli/"))
+        candidates.append(
+            raw.replace("/.gemini/antigravity/", "/.gemini/antigravity-cli/")
+        )
     elif "/.gemini/antigravity-cli/" in raw:
-        candidates.append(raw.replace("/.gemini/antigravity-cli/", "/.gemini/antigravity/"))
+        candidates.append(
+            raw.replace("/.gemini/antigravity-cli/", "/.gemini/antigravity/")
+        )
 
     for cand in candidates:
         p: Path = Path(cand)
@@ -264,7 +304,9 @@ def resolve_transcript_file(transcript_path: str, prefer_full: bool = False) -> 
 
 def measure_post_planner_transcript_tokens(transcript_path: str) -> tuple[int, int]:
     """Return (last_planner_line_num, estimated_tokens_since_last_planner) using CHARS_PER_TOKEN."""
-    target_file: Path | None = resolve_transcript_file(transcript_path, prefer_full=True)
+    target_file: Path | None = resolve_transcript_file(
+        transcript_path, prefer_full=True
+    )
     if target_file is None:
         return 0, 0
     try:
@@ -292,7 +334,9 @@ def measure_post_planner_transcript_tokens(transcript_path: str) -> tuple[int, i
             cache_tok: int = parse_non_negative_int(step.get("cache_read_tokens"), 0)
             if inp_tok + cache_tok > 0:
                 last_planner_line = line_idx
-                planner_out_tokens = parse_non_negative_int(step.get("output_tokens"), 0)
+                planner_out_tokens = parse_non_negative_int(
+                    step.get("output_tokens"), 0
+                )
                 post_chars = 0
         elif last_planner_line > 0:
             content_obj: object = step.get("content")
@@ -366,7 +410,9 @@ def collect_transcript_snapshots(
             continue
 
         inp_tokens: int = parse_non_negative_int(step.get("input_tokens"), 0)
-        cache_read_tokens: int = parse_non_negative_int(step.get("cache_read_tokens"), 0)
+        cache_read_tokens: int = parse_non_negative_int(
+            step.get("cache_read_tokens"), 0
+        )
         total_in: int = inp_tokens + cache_read_tokens
         if total_in > 0:
             snapshots.append(
@@ -413,7 +459,9 @@ def sync_conversation_and_thresholds(
         after_turn=state.last_turn,
     )
 
-    cur_model: str = resolve_model_key(db, state.model_id or fallback_model_name or "default")
+    cur_model: str = resolve_model_key(
+        db, state.model_id or fallback_model_name or "default"
+    )
     prev_tokens: int = state.last_tokens
     prev_turn: int = state.last_turn
     warned_in_cycle: bool = state.warned_in_cycle
@@ -448,11 +496,17 @@ def sync_conversation_and_thresholds(
             blocked_in_last_turn = False
 
             is_latest_transition: bool = idx == len(snapshots) - 1
-            manual_compact: bool = is_manual_compact_in_transcript(transcript_path) if is_latest_transition else False
+            manual_compact: bool = (
+                is_manual_compact_in_transcript(transcript_path)
+                if is_latest_transition
+                else False
+            )
 
             if prev_tokens >= MIN_AUTO_COMPACT_TOKENS and not manual_compact:
                 new_last_auto: int = min(prev_tokens, MAX_COMPACT_THRESHOLD)
-                new_threshold: int = compute_effective_threshold(entry.max_safe_tokens, new_last_auto)
+                new_threshold: int = compute_effective_threshold(
+                    entry.max_safe_tokens, new_last_auto
+                )
                 db[cur_model] = ModelThresholdEntry(
                     compact_threshold=new_threshold,
                     max_safe_tokens=entry.max_safe_tokens,
@@ -461,9 +515,13 @@ def sync_conversation_and_thresholds(
                 db_dirty = True
         else:
             # Normal non-compacting progression: prev_tokens survived without auto-compact
-            candidate_safe: int = min(max(entry.max_safe_tokens, prev_tokens), MAX_COMPACT_THRESHOLD)
+            candidate_safe: int = min(
+                max(entry.max_safe_tokens, prev_tokens), MAX_COMPACT_THRESHOLD
+            )
             if candidate_safe > entry.max_safe_tokens or cur_model not in db:
-                new_threshold = compute_effective_threshold(candidate_safe, entry.last_auto_compact_tokens)
+                new_threshold = compute_effective_threshold(
+                    candidate_safe, entry.last_auto_compact_tokens
+                )
                 db[cur_model] = ModelThresholdEntry(
                     compact_threshold=new_threshold,
                     max_safe_tokens=candidate_safe,

@@ -23,7 +23,7 @@ from compact_threshold_tracker import (
 )
 
 WARN_RATIO: float = 0.90
-BLOCK_RATIO: float = 0.95
+BLOCK_RATIO: float = 0.98
 MAX_VIEW_FILE_LINES: int = 800
 MAX_VIEW_FILE_BYTES: int = 46_080
 GUARDED_COMMAND_RE: re.Pattern[str] = re.compile(r"\b(?:rg|grep|cat)\b")
@@ -46,7 +46,7 @@ def build_warning_message(current_tokens: int, threshold_tokens: int) -> str:
 
 def build_subsequent_block_message(current_tokens: int, threshold_tokens: int) -> str:
     pct: float = (
-        (current_tokens / threshold_tokens) * 100.0 if threshold_tokens > 0 else 95.0
+        (current_tokens / threshold_tokens) * 100.0 if threshold_tokens > 0 else 98.0
     )
     return (
         f"BLOCKED (context at {pct:.1f}%: {current_tokens}/{threshold_tokens} tokens): "
