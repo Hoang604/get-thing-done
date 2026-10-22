@@ -33,7 +33,6 @@ RAW_INPUT=$(cat)
   read -r VCS_DIRTY
   read -r MODEL
   read -r COLS
-  read -r DISPLAY_IN_TOKENS
   read -r COST_IN_TOKENS
   read -r OUT_TOKENS
   read -r CACHE_TOKENS
@@ -52,7 +51,6 @@ RAW_INPUT=$(cat)
     (.vcs.dirty // false),
     (.model.display_name // ""),
     (.terminal_width // 80),
-    (.context_window.total_input_tokens // 0),
     (.context_window.current_usage.input_tokens // 0),
     (.context_window.current_usage.output_tokens // 0),
     (.context_window.current_usage.cache_read_input_tokens // 0),
@@ -63,7 +61,7 @@ RAW_INPUT=$(cat)
     (.quota["gemini-weekly"].reset_in_seconds // .quota["3p-weekly"].reset_in_seconds // .quotas["gemini-weekly"].reset_in_seconds // ."gemini-weekly".reset_in_seconds // ""),
     (.email // .user.email // ""),
     "EOF"
-  ' 2>/dev/null || printf "idle\n0\n\nfalse\n\n80\n0\n0\n0\n0\n\n\n\n\n\n\nEOF\n"
+  ' 2>/dev/null || printf "idle\n0\n\nfalse\n\n80\n0\n0\n0\n\n\n\n\n\n\nEOF\n"
 )"
 
 # ─── Write Raw Input to tmp/conversation_id/turn-<x>/statusline_input.json ───
@@ -170,6 +168,11 @@ format_compact_num() {
       printf "%d", n
     }
   }' | sed 's/\.0*k/k/;s/\.00*M/M/'
+}
+
+format_cost() {
+  local c="${1:-0.0000}"
+  echo "$c" | sed 's/\([0-9]*\.[0-9]*[1-9]\)0*/\1/;s/\.0*$//'
 }
 
 # ─── Computed Values ─────────────────────────────────────────────────────────
@@ -280,77 +283,101 @@ CTX="${FG_GRAY}ctx ${BAR_COLOR}${BAR} ${NUM_COLOR}${PCT_FMT}%${R}"
 CUMULATIVE_IN=0
 CUMULATIVE_CACHE=0
 CUMULATIVE_OUT=0
+CUMULATIVE_COST_IN="0.0000"
+CUMULATIVE_COST_CACHE="0.0000"
+CUMULATIVE_COST_OUT="0.0000"
 CUMULATIVE_COST="0.0000"
+
+PRICE_IN=0
+PRICE_CACHE=0
+PRICE_OUT=0
+
+case "$MODEL" in
+  *"3.1 Pro"*)
+      PRICE_IN=2.00
+      PRICE_CACHE=0.50
+      PRICE_OUT=12.00
+      ;;
+  *"3.5 Flash"*)
+      PRICE_IN=1.50
+      PRICE_CACHE=0.15
+      PRICE_OUT=9.00
+      ;;
+  *"3.8 Flash"*)
+      PRICE_IN=1.50
+      PRICE_CACHE=0.15
+      PRICE_OUT=7.00
+      ;;
+  *"4 Argon"*)
+      PRICE_IN=2.0
+      PRICE_CACHE=0.1
+      PRICE_OUT=10.0
+      ;;
+  *"3.7 Flash"*)
+      PRICE_IN=0.75
+      PRICE_CACHE=0.075
+      PRICE_OUT=3.5
+      ;;
+  *"Claude Sonnet 4.6"*)
+      PRICE_IN=3.00
+      PRICE_CACHE=0.30
+      PRICE_OUT=15.00
+      ;;
+  *"Claude Opus 4.6"*)
+      PRICE_IN=5.00
+      PRICE_CACHE=0.50
+      PRICE_OUT=25.00
+      ;;
+esac
 
 if [ -n "$CONV_ID" ]; then
   STATE_FILE="/tmp/agy_cumulative_${CONV_ID}"
-  TURN_ID=$(cat "/tmp/agy_turn_${CONV_ID}" 2>/dev/null || echo "-1")
-  LAST_TURN=$(cat "${STATE_FILE}.turn" 2>/dev/null || echo "-1")
+  LAST_USAGE_SIG=$(cat "${STATE_FILE}.turn" 2>/dev/null || echo "")
   CUMULATIVE_IN=$(cat "${STATE_FILE}.sum" 2>/dev/null || echo "0")
   CUMULATIVE_CACHE=$(cat "${STATE_FILE}.cache" 2>/dev/null || echo "0")
   CUMULATIVE_OUT=$(cat "${STATE_FILE}.out" 2>/dev/null || echo "0")
   CUMULATIVE_COST=$(cat "${STATE_FILE}.cost" 2>/dev/null || echo "0.0000")
 
-  if [ "$TURN_ID" != "$LAST_TURN" ] && [ "$TURN_ID" != "-1" ]; then
-      CUMULATIVE_IN=$((CUMULATIVE_IN + DISPLAY_IN_TOKENS))
+  if [ -f "${STATE_FILE}.cost_in" ]; then
+      CUMULATIVE_COST_IN=$(cat "${STATE_FILE}.cost_in" 2>/dev/null || echo "0.0000")
+      CUMULATIVE_COST_CACHE=$(cat "${STATE_FILE}.cost_cache" 2>/dev/null || echo "0.0000")
+      CUMULATIVE_COST_OUT=$(cat "${STATE_FILE}.cost_out" 2>/dev/null || echo "0.0000")
+  elif [ "$CUMULATIVE_IN" -gt 0 ] || [ "$CUMULATIVE_OUT" -gt 0 ]; then
+      UNCACHED_EXISTING=$((CUMULATIVE_IN > CUMULATIVE_CACHE ? CUMULATIVE_IN - CUMULATIVE_CACHE : 0))
+      CUMULATIVE_COST_IN=$(awk -v t="$UNCACHED_EXISTING" -v p="$PRICE_IN" 'BEGIN { printf "%.4f", (t * p) / 1000000 }')
+      CUMULATIVE_COST_CACHE=$(awk -v t="$CUMULATIVE_CACHE" -v p="$PRICE_CACHE" 'BEGIN { printf "%.4f", (t * p) / 1000000 }')
+      CUMULATIVE_COST_OUT=$(awk -v t="$CUMULATIVE_OUT" -v p="$PRICE_OUT" 'BEGIN { printf "%.4f", (t * p) / 1000000 }')
+      echo "$CUMULATIVE_COST_IN" > "${STATE_FILE}.cost_in"
+      echo "$CUMULATIVE_COST_CACHE" > "${STATE_FILE}.cost_cache"
+      echo "$CUMULATIVE_COST_OUT" > "${STATE_FILE}.cost_out"
+  fi
+
+  STEP_IN_TOKENS=$((COST_IN_TOKENS + CACHE_TOKENS))
+  STEP_TOTAL_ACTIVITY=$((STEP_IN_TOKENS + OUT_TOKENS))
+  USAGE_SIG="${COST_IN_TOKENS}:${CACHE_TOKENS}:${OUT_TOKENS}"
+
+  if [ "$STEP_TOTAL_ACTIVITY" -gt 0 ] && [ "$USAGE_SIG" != "$LAST_USAGE_SIG" ]; then
+      CUMULATIVE_IN=$((CUMULATIVE_IN + STEP_IN_TOKENS))
       CUMULATIVE_CACHE=$((CUMULATIVE_CACHE + CACHE_TOKENS))
       CUMULATIVE_OUT=$((CUMULATIVE_OUT + OUT_TOKENS))
 
-      PRICE_IN=0
-      PRICE_CACHE=0
-      PRICE_OUT=0
-
-      case "$MODEL" in
-        *"3.1 Pro"*)
-            PRICE_IN=2.00
-            PRICE_CACHE=0.50
-            PRICE_OUT=12.00
-            ;;
-        *"3.5 Flash"*)
-            PRICE_IN=1.50
-            PRICE_CACHE=0.15
-            PRICE_OUT=9.00
-            ;;
-        *"3.8 Flash"*)
-            PRICE_IN=1.50
-            PRICE_CACHE=0.15
-            PRICE_OUT=7.00
-            ;;
-        *"4 Argon"*)
-            PRICE_IN=2.0
-            PRICE_CACHE=0.1
-            PRICE_OUT=10.0
-            ;;
-        *"3.7 Flash"*)
-            PRICE_IN=0.75
-            PRICE_CACHE=0.075
-            PRICE_OUT=3.5
-            ;;
-        *"Claude Sonnet 4.6"*)
-            PRICE_IN=3.00
-            PRICE_CACHE=0.30
-            PRICE_OUT=15.00
-            ;;
-        *"Claude Opus 4.6"*)
-            PRICE_IN=5.00
-            PRICE_CACHE=0.50
-            PRICE_OUT=25.00
-            ;;
-        *)
-            PRICE_IN=0
-            PRICE_CACHE=0
-            PRICE_OUT=0
-            ;;
-      esac
-
+      CUMULATIVE_COST_IN=$(awk -v old="$CUMULATIVE_COST_IN" -v i="$COST_IN_TOKENS" -v pi="$PRICE_IN" \
+                               'BEGIN { printf "%.4f", old + (i * pi) / 1000000 }')
+      CUMULATIVE_COST_CACHE=$(awk -v old="$CUMULATIVE_COST_CACHE" -v c="$CACHE_TOKENS" -v pc="$PRICE_CACHE" \
+                                  'BEGIN { printf "%.4f", old + (c * pc) / 1000000 }')
+      CUMULATIVE_COST_OUT=$(awk -v old="$CUMULATIVE_COST_OUT" -v o="$OUT_TOKENS" -v po="$PRICE_OUT" \
+                                'BEGIN { printf "%.4f", old + (o * po) / 1000000 }')
       CUMULATIVE_COST=$(awk -v old="$CUMULATIVE_COST" -v i="$COST_IN_TOKENS" -v pi="$PRICE_IN" \
                             -v c="$CACHE_TOKENS" -v pc="$PRICE_CACHE" -v o="$OUT_TOKENS" -v po="$PRICE_OUT" \
                             'BEGIN { printf "%.4f", old + (i * pi + c * pc + o * po) / 1000000 }')
 
-      echo "$TURN_ID" > "${STATE_FILE}.turn"
+      echo "$USAGE_SIG" > "${STATE_FILE}.turn"
       echo "$CUMULATIVE_IN" > "${STATE_FILE}.sum"
       echo "$CUMULATIVE_CACHE" > "${STATE_FILE}.cache"
       echo "$CUMULATIVE_OUT" > "${STATE_FILE}.out"
+      echo "$CUMULATIVE_COST_IN" > "${STATE_FILE}.cost_in"
+      echo "$CUMULATIVE_COST_CACHE" > "${STATE_FILE}.cost_cache"
+      echo "$CUMULATIVE_COST_OUT" > "${STATE_FILE}.cost_out"
       echo "$CUMULATIVE_COST" > "${STATE_FILE}.cost"
   fi
 fi
@@ -359,24 +386,27 @@ IN_COMPACT=$(format_compact_num "$CUMULATIVE_IN")
 CACHE_COMPACT=$(format_compact_num "$CUMULATIVE_CACHE")
 OUT_COMPACT=$(format_compact_num "$CUMULATIVE_OUT")
 
+COST_IN_FMT=$(format_cost "$CUMULATIVE_COST_IN")
+COST_CACHE_FMT=$(format_cost "$CUMULATIVE_COST_CACHE")
+COST_OUT_FMT=$(format_cost "$CUMULATIVE_COST_OUT")
+COST_FMT=$(format_cost "$CUMULATIVE_COST")
+
 if [ "$COLS" -ge 120 ]; then
-  IN_FMT="${FG_GRAY}total input ${NUM_COLOR}${IN_COMPACT}${R}"
-  CACHE_FMT="${FG_GRAY}cache hit ${NUM_COLOR}${CACHE_COMPACT}${R}"
-  OUT_FMT="${FG_GRAY}output ${NUM_COLOR}${OUT_COMPACT}${R}"
-  COST_FMT=$(echo "$CUMULATIVE_COST" | sed 's/\([0-9]*\.[0-9]*[1-9]\)0*/\1/;s/\.0*$//')
-  COST_STR="${FG_GRAY}estimate cost: ${R}${FG_BRIGHT_GREEN}${B}\$${COST_FMT}${R}"
+  IN_FMT="${FG_GRAY}total input ${NUM_COLOR}${IN_COMPACT}${R} ${FG_GRAY}(${FG_BRIGHT_GREEN}\$${COST_IN_FMT}${FG_GRAY})${R}"
+  CACHE_FMT="${FG_GRAY}cache hit ${NUM_COLOR}${CACHE_COMPACT}${R} ${FG_GRAY}(${FG_BRIGHT_GREEN}\$${COST_CACHE_FMT}${FG_GRAY})${R}"
+  OUT_FMT="${FG_GRAY}output ${NUM_COLOR}${OUT_COMPACT}${R} ${FG_GRAY}(${FG_BRIGHT_GREEN}\$${COST_OUT_FMT}${FG_GRAY})${R}"
+  COST_STR="${FG_GRAY}Σ ${R}${FG_BRIGHT_GREEN}${B}\$${COST_FMT}${R}"
 elif [ "$COLS" -ge 85 ]; then
-  IN_FMT="${NUM_COLOR}${IN_COMPACT}${R} ${FG_GRAY}in${R}"
-  CACHE_FMT="${NUM_COLOR}${CACHE_COMPACT}${R} ${FG_GRAY}cache${R}"
-  OUT_FMT="${NUM_COLOR}${OUT_COMPACT}${R} ${FG_GRAY}out${R}"
-  COST_FMT=$(echo "$CUMULATIVE_COST" | sed 's/\([0-9]*\.[0-9]*[1-9]\)0*/\1/;s/\.0*$//')
-  COST_STR="${FG_GRAY}est: ${R}${FG_BRIGHT_GREEN}${B}\$${COST_FMT}${R}"
+  IN_FMT="${NUM_COLOR}${IN_COMPACT}${R} ${FG_GRAY}in (${FG_BRIGHT_GREEN}\$${COST_IN_FMT}${FG_GRAY})${R}"
+  CACHE_FMT="${NUM_COLOR}${CACHE_COMPACT}${R} ${FG_GRAY}cache (${FG_BRIGHT_GREEN}\$${COST_CACHE_FMT}${FG_GRAY})${R}"
+  OUT_FMT="${NUM_COLOR}${OUT_COMPACT}${R} ${FG_GRAY}out (${FG_BRIGHT_GREEN}\$${COST_OUT_FMT}${FG_GRAY})${R}"
+  COST_STR="${FG_GRAY}Σ ${R}${FG_BRIGHT_GREEN}${B}\$${COST_FMT}${R}"
 else
   IN_FMT="${NUM_COLOR}${IN_COMPACT}${R} ${FG_GRAY}in${R}"
   CACHE_FMT="${NUM_COLOR}${CACHE_COMPACT}${R} ${FG_GRAY}cache${R}"
   OUT_FMT="${NUM_COLOR}${OUT_COMPACT}${R} ${FG_GRAY}out${R}"
   COST_ROUND=$(awk -v c="$CUMULATIVE_COST" 'BEGIN { printf "%.2f", c }')
-  COST_STR="${FG_BRIGHT_GREEN}${B}\$${COST_ROUND}${R}"
+  COST_STR="${FG_GRAY}Σ ${R}${FG_BRIGHT_GREEN}${B}\$${COST_ROUND}${R}"
 fi
 
 # ─── Output (Adaptive 2-Line Layout) ─────────────────────────────────────────
