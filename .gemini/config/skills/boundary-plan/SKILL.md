@@ -204,6 +204,6 @@ Embed the audit directive verbatim into `implementation_plan.md`.
 Declare execution bounds directly in `implementation_plan.md`:
 - **Audit Budget:** `<integer (default: 2) | unlimited>`
   - Configures the maximum audit cycles before a Hard Stop. Set to `unlimited` to cycle until a clean pass or Plan Veto, or specify an integer limit (e.g., `1`, `3`).
-- **Plan Veto Escalation:** When the auditor determines that the plan is architecturally flawed or conceived as a patch that cannot be made permanent and residue-free, halt execution immediately without producing `walkthrough.md` and escalate directly to the user with the auditor's findings. Do not attempt autonomous remediation.
+- **Plan Veto Escalation:** When the auditor determines that the plan is architecturally flawed or conceived as a patch that cannot be made permanent and residue-free, halt execution immediately and escalate directly to the user with the auditor's findings. Do not attempt autonomous remediation.
 
 **Completion Criterion:** `implementation_plan.md` exists with the users-and-jobs list, the scenario table, and the invariant table, the strategy, every milestone, the Verification Matrix (baseline checks, scenario table, and invariant table), the verbatim Subagent Spawn Directive, and the declared Audit Budget.

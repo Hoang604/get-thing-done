@@ -82,15 +82,15 @@ Every condition the agent must evaluate is stated so the agent can decide it fro
 
 Every rule is reached one of two ways: a step applies it, or it opens with **When** and its condition. A rule reached neither way is read, then never applied at the moment it governs.
 
-**Negation** is steering by prohibition. A prohibition says what is wrong and leaves what is right unsaid, so the agent learns only where not to go; and naming the failure makes it more available: tell the agent not to think of an elephant, and the elephant is what it thinks of. Test a text by deleting its prohibitions: if what remains no longer tells the agent what to produce, the prohibitions were doing the steering. Rewrite each such prohibition as the goal it was guarding, the state in which the forbidden thing does not occur.
+**Negation** is steering by prohibition. A prohibition says what is wrong and leaves what is right unsaid, so the agent learns only where not to go. Test a text by deleting its prohibitions: if what remains no longer tells the agent what to produce, the prohibitions were doing the steering. Rewrite each such prohibition as the goal it was guarding, the state in which the forbidden thing does not occur.
 
-A prohibition earns a place only as a **guardrail**: right after the goal it protects, naming a failure that runs carrying that goal still showed.
+A prohibition earns a place only as a **guardrail**: right after the goal it protects, naming a failure that runs carrying that goal still showed, so the agent cannot rationalize its default habit as serving the goal.
 
 ## Steps and reference
 
 A skill holds **steps**, actions the agent executes in order, and **reference**, material it consults when a situation calls for it; a skill can be either or both.
 
-Every step ends on a **completion criterion** that tells done from not done. The criterion also sets the **legwork**, the digging the agent does inside the work before it claims done: the agent gathers the evidence the criterion makes it show, and stops there. So the criterion names evidence covering everything the step's result depends on; a criterion that covers part of it lets the agent stop after that part. A skill made only of reference binds legwork the same way: every rule applied to everything it governs. The last step's criterion is the deliverable's: the run ends when what its user receives is finished and checked, not when a precondition for producing it is met.
+Every step ends on a **completion criterion** that tells done from not done. The criterion also sets the **legwork**, the digging the agent does inside the work before it claims done: the agent gathers the evidence the criterion makes it show, and stops there. So the criterion names evidence covering everything the step's result depends on; a criterion that covers part of it lets the agent stop after that part. **When** a step is bounded by a budget that can expire before full coverage, its step orders legwork by impact first and its criterion requires naming what was not checked and the risk that leaves. A skill made only of reference binds legwork the same way: every rule applied to everything it governs. The last step's criterion is the deliverable's: the run ends when what its user receives is finished and checked, not when a precondition for producing it is met.
 
 **Premature completion**, ending a step before it is done, happens where the criterion leaves done undecided; the defence is a criterion decidable as *Goals and conditions* requires, then *Splitting* if runs still end early.
 
@@ -124,7 +124,7 @@ Material read by runs that don't need it costs them attention (**sprawl**); mate
 
 Every question a run can ask the skill is answered in exactly one place; every other place that touches the question points there, and answers about one concept sit under one heading. Two places answering one question are a defect whether they agree (**duplication**) or disagree (**contradiction**): agreeing copies drift into disagreeing ones on the next edit.
 
-A sentence stays only if you can name a situation in which an agent without it would act differently, and how. If what it asks for is already the agent's default, it is a **no-op**: delete the whole sentence. If it asks for what the agent does not yet do and still fails to produce it, it is underfit: sharpen it as *Fit* prescribes, or strengthen its leading word (*Words*).
+A sentence stays only if you can name a situation in which an agent without it would act differently, and how. If what it asks for is already the agent's default, it is a **no-op**: delete the whole sentence. If it asks for what the agent does not yet do and still fails to produce it, it is underfit: sharpen it as *Fit* prescribes, or strengthen its leading word (*Words*). **When** sharpening still does not move the agent's behaviour in runs, delete the addition rather than spending attention on a rule that changes nothing.
 
 A sentence also stays only while it bears on what the skill does now. Sentences that no longer do pile up because adding feels safe and removing feels risky (**sediment**). Deletion is the default for every sentence that fails these tests: rewrite only a sentence whose behaviour the skill still needs, and delete the rest.
 

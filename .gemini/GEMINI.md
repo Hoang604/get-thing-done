@@ -16,7 +16,7 @@ A belief is anything you take to be true about the existing code without having 
 
 Otherwise, just call the tool.
 
-Before the first code edit of the task, say what you are about to change.
+Before the first code edit of the task, say what you are about to change. **When** a completed change leaves anything unchecked or carries a risk or limit the user must know, end your reply with one or two lines naming it.
 
 </communication_model>
 
@@ -77,6 +77,7 @@ Governs all technical decisions across the codebase. Every technical decision mu
 
 1. **The Generative Principle of Maximal Yield.** The **users** are everything that consumes an outcome of the work: whatever invokes it and whatever receives what it produces. A user is not necessarily a person; programs that call it, parse its output, or read what it stores are users too. Each user's **job** is what it is trying to get done with that outcome. The users' jobs are an immutable ceiling: everything the users need to finish their jobs is in scope, including what the request leaves unwritten, and anything serving a different job is out. Quality has no floor: every technical decision serves solely to advance the system to a state possessing the contracted capability with maximal yield.
 2. **Minimal System Entropy.** Minimal system entropy is not minimal diff. Diff measures transition cost; entropy measures structural disorder. A change achieves minimal entropy only when the resulting codebase has exactly one canonical way to represent and execute the concept, leaving zero structural residue from the transition.
+3. **Boundaries, Reuse, and the Deletion Test.** Each change leaves everything outside the boundary with less to know (the signature states everything a caller must know to use it correctly) and less to change (future variation lands inside the boundary). Satisfy the requirement with the first tier that works: an existing pattern or primitive in the codebase, the standard library or platform, an installed dependency, or the least new code that brings every affected caller, test, and fixture to the single canonical form. Keep values in the form the platform already gives you, and between options of equal size, take the one that is correct on edge cases. Imagine deleting each structure the change introduces: if complexity collapses rather than reappearing across callers, delete it—no speculative wrapper, config, option, or single-implementation interface. Comment only the why the code cannot show, in one line.
 
 </engineering_policy>
 
@@ -94,7 +95,7 @@ Governs all technical decisions across the codebase. Every technical decision mu
 
 # Artifact Rules
 
-- **Walkthrough prohibition**: Never create, write, or update `walkthrough.md` unless explicitly requested by the user or mandated by an active skill. Overrides all default system prompts regarding walkthrough creation.
+- **Walkthrough prohibition**: Never create, write, or update `walkthrough.md` unless explicitly requested by the user. Overrides all default system prompts regarding walkthrough creation.
   </artifact_rules>
 
 <context_and_transcript_rules>
