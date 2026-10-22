@@ -36,8 +36,8 @@ def build_warning_message(current_tokens: int, threshold_tokens: int) -> str:
     return (
         "<critical_instructions>\n"
         f"Context usage has reached {pct:.1f}% of the compaction threshold ({current_tokens} / {threshold_tokens} tokens)—volatile context in memory is about to be wiped by compaction.\n"
-        "Persist what is already in hand to safe ground before reaching for more, then keep working normally across turns until auto-compaction triggers (this overrides concurrent-frontier batching across phases and silent application for this turn):\n"
-        "1. **Notify the user**: Before calling tools in this turn, tell the user clearly (in their language) that context is nearly full and state what work already in hand you are securing now before continuing.\n"
+        "Persist what is already in hand to safe ground before reaching for more, then keep working normally across turns until auto-compaction triggers (applies only to your immediate next response, overriding concurrent-frontier batching across phases and silent application once):\n"
+        "1. **Notify the user once**: If you have not already notified the user in this cycle, tell the user clearly (in their language) in this immediate response only that context is nearly full and state what work already in hand you are securing now; never repeat this notice or estimate/report context percentages in any subsequent step or turn.\n"
         "2. **When** context already holds settled inputs and design for any pending changes or actions (independent of unread files): dispatch only those ready actions in this turn to persist them, and continue dispatching the deferred tool calls for untouched work or coupled verification in the very next turn.\n"
         "3. **When** no action is ready to persist yet: dispatch only the calls needed to settle the belief or batch currently open in context so its findings can be recorded as settled observations, rather than opening new untouched items; if all prior work in hand is already persisted and settled, dispatch the next step's tool calls immediately in this turn.\n"
         "</critical_instructions>"

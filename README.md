@@ -156,7 +156,6 @@ These capabilities run independently of any delivery pipeline:
 
 Dynamic interceptors that plug into execution upon specific events or risk conditions:
 
-- **[context-loss](.gemini/antigravity-cli/skills/context-loss/SKILL.md) (Compaction Recovery Hook)**: Automatically triggered upon context compaction. Re-anchors to `implementation_plan.md` or active audit artifacts and resumes execution seamlessly without re-asking questions.
 - **[safe](.gemini/antigravity-cli/skills/safe/SKILL.md) (High-Risk Operation Interceptor)**: Intercepts destructive commands, bulk mutations, speculative domain code, semantic git conflicts, and delete collisions. Emits a `### 🛡️ Safe Guard` report and halts execution until explicit user approval.
 - **Circuit Breakers in [execute](.gemini/antigravity-cli/skills/execute/SKILL.md)**:
   - **`PLAN VETO`**: Triggered by `boundary-auditor` if the plan itself contains structural flaws or transition residue. Halts execution immediately.
