@@ -4,7 +4,9 @@ description: Write or update skill
 disable-model-invocation: true
 ---
 
-A skill exists to make a stochastic agent **predictable**, taking the same process every run rather than producing the same output: for every situation a run can meet, its text decides one process, the intended one, and the point where that process is done, spending the agent's attention only where and when that decision needs it. Below, the **target skill** is the skill being written, updated, or reviewed with this one, and every section applies to every sentence of it, frontmatter included.
+Mathematically, an LLM is trained as a probability machine: its probabilities do not emerge from what is most reasonable or most correct, but are governed by its weights—or more precisely, by the loss function, training dataset, and gradients during training. Therefore, strictly speaking, a model trained to know when to use which concept, and how to use that concept in practice, will be able to do this better. However, input tokens also participate in conditioning the generation of the next token, so even a model not trained in that direction can still work that way by having instructions fed directly into it.
+
+A skill is the instruction fed into input tokens to condition next-token generation: making the model know, for every situation a run can meet, when to use which concept or process, how to use it in practice, and where that process is done, spending the agent's attention only where and when that decision needs it. Below, the **target skill** is the skill being written, updated, or reviewed with this one, and every section applies to every sentence of it, frontmatter included.
 
 The principles below are not peers. Two are **roots**: skip one and a family of failures follows. The rest are **independent**: each has its own failure, unrelated to the roots.
 
@@ -104,10 +106,6 @@ Use an existing word that already carries the meaning, a plain word or a concept
 
 A word steers only when the agent can tell whether what it names is present in its own work. A word that names only the degree of a quality cannot be told present or absent: replace it with the observable state that degree should reach.
 
-**When** one meaning is spelled out at more than one site, or a passage explains what a pretrained concept already carries, collapse it into a **leading word**: that concept, used wherever the meaning recurs, so the agent reaches for the same behaviour each time it meets the word. Every skill carries restatements a leading word can retire; hunt for them rather than waiting to trip over them. *Fast, deterministic, low-overhead*, restated across a phase, collapses into *tight* (a tight loop); *a loop you believe in* collapses into *red*, which also turns a fuzzy gate into a binary state: the loop goes red on the bug, or it doesn't.
-
-A leading word that does not move the agent past its default is too weak, and the fix is a stronger word, not a different technique: *relentless* where *thorough* changes nothing.
-
 ## Placement
 
 Put each piece where exactly the runs that need it read it:
@@ -124,7 +122,7 @@ Material read by runs that don't need it costs them attention (**sprawl**); mate
 
 Every question a run can ask the skill is answered in exactly one place; every other place that touches the question points there, and answers about one concept sit under one heading. Two places answering one question are a defect whether they agree (**duplication**) or disagree (**contradiction**): agreeing copies drift into disagreeing ones on the next edit.
 
-A sentence stays only if you can name a situation in which an agent without it would act differently, and how. If what it asks for is already the agent's default, it is a **no-op**: delete the whole sentence. If it asks for what the agent does not yet do and still fails to produce it, it is underfit: sharpen it as *Fit* prescribes, or strengthen its leading word (*Words*). **When** sharpening still does not move the agent's behaviour in runs, delete the addition rather than spending attention on a rule that changes nothing.
+A sentence stays only if you can name a situation in which an agent without it would act differently, and how. If what it asks for is already the agent's default, it is a **no-op**: delete the whole sentence. If it asks for what the agent does not yet do and still fails to produce it, it is underfit: sharpen it as *Fit* and *Words* prescribe. **When** sharpening still does not move the agent's behaviour in runs, delete the addition rather than spending attention on a rule that changes nothing.
 
 A sentence also stays only while it bears on what the skill does now. Sentences that no longer do pile up because adding feels safe and removing feels risky (**sediment**). Deletion is the default for every sentence that fails these tests: rewrite only a sentence whose behaviour the skill still needs, and delete the rest.
 
@@ -133,6 +131,8 @@ A sentence also stays only while it bears on what the skill does now. Sentences 
 Every skill is user-invoked: its frontmatter sets `disable-model-invocation: true`, and its `description` is a summary for the human who invokes it.
 
 ## Authoring protocol
+
+**When** researching a domain to author a domain reference via an autonomous web-search subagent or an external Deep Research prompt, read `references/domain-reference-research.md` to construct the research prompt and execute the reference authoring protocol.
 
 1. **Settle the judge**: Find every question the target skill must answer where the agent's default does not suffice, and every passage in an existing target skill that fails a principle in this skill. **When** any such question or fix lacks a quoted ruling from its judge, call `ask_question` before drafting or editing:
    - Each question states the exact context that raised it (quoting the conflicting or broken passage of the existing skill, or naming the gap where the agent's default fails in a new skill) and places the user in a concrete scenario a run can meet, so the user can judge it from the question alone without guessing what is being asked.

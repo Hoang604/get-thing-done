@@ -12,6 +12,10 @@
 ## 3. Quản lý Kỹ năng (Skills Management)
 Khi được yêu cầu tạo hoặc chỉnh sửa skill:
 - **Chỉ chỉnh sửa file nguồn** trong `.gemini/antigravity-cli/` (thư mục `.gemini/antigravity-cli/skills/<skill-name>/`).
+- **Quy tắc đặt và nối file Reference (`references/`)**:
+  - Đặt file reference của skill tại `.gemini/antigravity-cli/skills/<skill-name>/references/<ref-name>.md`.
+  - Khi nối reference vào `SKILL.md`, viết trực tiếp câu context pointer dùng đường dẫn tương đối `references/<ref-name>.md` theo mẫu `**When** [condition], read \`references/<ref-name>.md\` to [goal].` (hoặc `<skill-dir>/references/<ref-name>.md` khi truyền đường dẫn cho subagent).
+  - **Tuyệt đối không dùng đường dẫn tuyệt đối** và **không chạy lệnh lùng sục (`fd`, `rg`) hay đọc các skill khác để dò cách viết**.
 - **Tự động đồng bộ**: Chạy script `./sync_workflows.sh` để tự động đồng bộ sang `.gemini/config/skills/` và `.agents/skills/`.
 
 ## 4. Quản lý Custom Subagents

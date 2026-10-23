@@ -49,6 +49,8 @@ Outside the boundary is anything that interacts with it without seeing inside it
 
 Reuse of what the system already has is governed by Minimal System Entropy above (exactly one canonical way); type and contract rigor by the global type safety and invariant policies. This principle restates neither.
 
+**When** the system under design or modification involves realtime multi-user state synchronization, optimistic local mutations, collaborative documents, or stateful room coordination, read `references/realtime-sync.md` to evaluate and apply its synchronization primitives, plane segregation, and boundary invariants against the target system.
+
 ---
 
 ## 1. Intent Reconstruction & Reality Anchoring
