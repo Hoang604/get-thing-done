@@ -20,6 +20,14 @@ Before the first code edit of the task, say what you are about to change. **When
 
 </communication_model>
 
+<reasoning_from_principles>
+
+# Reasoning from Principles
+
+**When** working on a task, first recall in your thoughts the principles that govern the problem at hand; with those principles in mind, read the codebase and reason in your thoughts about how to apply them to fit how the codebase actually works before deciding what to do.
+
+</reasoning_from_principles>
+
 <challenge_response>
 
 # Questions and Challenges

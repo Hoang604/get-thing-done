@@ -35,11 +35,11 @@ def build_warning_message(current_tokens: int, threshold_tokens: int) -> str:
     )
     return (
         "<critical_instructions>\n"
-        f"Context usage has reached {pct:.1f}% of the compaction threshold ({current_tokens} / {threshold_tokens} tokens)—volatile context in memory is about to be wiped by compaction.\n"
-        "Persist what is already in hand to safe ground before reaching for more, then keep working normally across turns until auto-compaction triggers (applies only to your immediate next response, overriding concurrent-frontier batching across phases and silent application once):\n"
-        "1. **Notify the user once**: If you have not already notified the user in this cycle, tell the user clearly (in their language) in this immediate response only that context is nearly full and state what work already in hand you are securing now; never repeat this notice or estimate/report context percentages in any subsequent step or turn.\n"
-        "2. **When** context already holds settled inputs and design for any pending changes or actions (independent of unread files): dispatch only those ready actions in this turn to persist them, and continue dispatching the deferred tool calls for untouched work or coupled verification in the very next turn.\n"
-        "3. **When** no action is ready to persist yet: dispatch only the calls needed to settle the belief or batch currently open in context so its findings can be recorded as settled observations, rather than opening new untouched items; if all prior work in hand is already persisted and settled, dispatch the next step's tool calls immediately in this turn.\n"
+        f"Context usage has reached {pct:.1f}% of the compaction threshold ({current_tokens} / {threshold_tokens} tokens)—volatile context in memory will be wiped when auto-compaction triggers.\n"
+        "Insert one persist tool-call step now to secure in-hand work to disk, then immediately resume calling tools in the very next step of this same turn until the user's task is complete or auto-compaction fires (auto-compaction only triggers while you keep calling tools; stopping or yielding to the user stalls the run):\n"
+        "1. **Notify the user once**: If you have not already notified the user in this compaction cycle, tell the user clearly (in their language) in this immediate step only that context is nearly full and state what work in hand you are securing now; do not repeat this notice or report context percentages in any subsequent step.\n"
+        "2. **When** context holds settled inputs or design for any pending file edits or writes (independent of unread files): dispatch only those write/edit tool calls in this step to persist them, and **when** those persist tool calls return their results, immediately dispatch the deferred or previously blocked read/search/verification tool calls in the next step without ending your turn.\n"
+        "3. **When** no write/edit action is ready to persist yet: dispatch only the tool calls needed to settle the belief or batch currently open in context so its findings can be persisted on the next step; if all prior work in hand is already persisted and settled, dispatch the next step's tool calls immediately without pausing.\n"
         "</critical_instructions>"
     )
 
@@ -49,8 +49,9 @@ def build_subsequent_block_message(current_tokens: int, threshold_tokens: int) -
         (current_tokens / threshold_tokens) * 100.0 if threshold_tokens > 0 else 95.0
     )
     return (
-        f"BLOCKED (context at {pct:.1f}%: {current_tokens}/{threshold_tokens} tokens): "
-        "Auto-compaction is imminent. Stop reading more context and persist what is already in hand to disk immediately."
+        f"DEFERRED FOR 1 STEP (context at {pct:.1f}%: {current_tokens}/{threshold_tokens} tokens): "
+        "This read/search call is paused for this single step so you can persist in-hand work to disk first. "
+        "The budget guard unlocks on the very next step—re-dispatch this call immediately after your persist tool call returns, without ending your turn."
     )
 
 
