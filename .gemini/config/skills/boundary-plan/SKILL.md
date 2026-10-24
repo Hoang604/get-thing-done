@@ -49,7 +49,11 @@ Outside the boundary is anything that interacts with it without seeing inside it
 
 Reuse of what the system already has is governed by Minimal System Entropy above (exactly one canonical way); type and contract rigor by the global type safety and invariant policies. This principle restates neither.
 
+**When** the user requests researching or creating an additional domain reference (via an autonomous web-search subagent or an external Deep Research prompt), read `references/domain-reference-research.md` to execute the reference-research protocol directly without generating `implementation_plan.md`.
+
 **When** the system under design or modification involves realtime multi-user state synchronization, optimistic local mutations, collaborative documents, or stateful room coordination, read `references/realtime-sync.md` to evaluate and apply its synchronization primitives, plane segregation, and boundary invariants against the target system.
+
+**When** the system under design or modification involves e-commerce checkout, order payment collection, payment webhooks, or customer refunds and cancellations, read `references/ecommerce-payment.md` to evaluate and apply its PCI scope contracts, durable idempotency rules, webhook fulfillment invariants, and refund state machine against the target system.
 
 ---
 

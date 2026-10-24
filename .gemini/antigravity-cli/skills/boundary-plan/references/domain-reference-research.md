@@ -1,5 +1,7 @@
 # Domain Reference Research & Deep Research Prompt Builder
 
+> **Execution Override (No Plan Generation)**: **When** the user requests researching or creating an additional domain reference, execute ONLY the protocol in this file (spawning the web-search subagent, generating the Deep Research prompt, or writing the domain reference). Do NOT run the `boundary-plan` workflow and do NOT create `implementation_plan.md` or any plan artifact.
+
 Convert the user's raw domain query into either (1) an autonomous web-search subagent run that researches and writes a domain reference directly, or (2) a structured research prompt for an external research model to execute, matching the user's language across all outputs. Do not answer the user's domain question or introduce domain knowledge outside the user's text when constructing the prompt.
 
 ## Core principles
@@ -14,7 +16,7 @@ Every sentence you write inside the research prompt is governed by three invaria
 
 ## Execution protocol
 
-Execute the requested mode (or both in parallel when requested) without pausing to interview the user:
+Execute the requested mode (or both in parallel when requested) without pausing to interview the user and without generating any implementation plan:
 
 ### Mode 1: Autonomous web-search subagent
 

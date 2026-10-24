@@ -132,8 +132,6 @@ Every skill is user-invoked: its frontmatter sets `disable-model-invocation: tru
 
 ## Authoring protocol
 
-**When** researching a domain to author a domain reference via an autonomous web-search subagent or an external Deep Research prompt, read `references/domain-reference-research.md` to construct the research prompt and execute the reference authoring protocol.
-
 1. **Settle the judge**: Find every question the target skill must answer where the agent's default does not suffice, and every passage in an existing target skill that fails a principle in this skill. **When** any such question or fix lacks a quoted ruling from its judge, call `ask_question` before drafting or editing:
    - Each question states the exact context that raised it (quoting the conflicting or broken passage of the existing skill, or naming the gap where the agent's default fails in a new skill) and places the user in a concrete scenario a run can meet, so the user can judge it from the question alone without guessing what is being asked.
    - The options are distinct, competing actions the target skill could take in that scenario, each stating the behaviour it produces and its consequence.
