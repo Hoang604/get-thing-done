@@ -1,5 +1,5 @@
 ---
-name: writing-great-skills
+name: write-skills
 description: Write or update skill
 disable-model-invocation: true
 ---

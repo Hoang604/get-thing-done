@@ -27,6 +27,7 @@ DEST_AGENTS_AGENTS="$WORKSPACE_DIR/.agents/agents"
 if [[ -d "$SRC_AGENTS" ]]; then
     mkdir -p "$DEST_AGENTS_CFG" "$DEST_AGENTS_AGENTS"
     echo "Syncing agents: $SRC_AGENTS -> $DEST_AGENTS_CFG & $DEST_AGENTS_AGENTS..."
+    rm -rf "$DEST_AGENTS_CFG"/* "$DEST_AGENTS_AGENTS"/*
     cp -rf "$SRC_AGENTS/." "$DEST_AGENTS_CFG/"
     cp -rf "$SRC_AGENTS/." "$DEST_AGENTS_AGENTS/"
 fi
