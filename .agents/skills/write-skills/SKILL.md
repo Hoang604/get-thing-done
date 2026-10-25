@@ -6,13 +6,13 @@ disable-model-invocation: true
 
 Mathematically, an LLM is trained as a probability machine: its probabilities do not emerge from what is most reasonable or most correct, but are governed by its weights—or more precisely, by the loss function, training dataset, and gradients during training. Therefore, strictly speaking, a model trained to know when to use which concept, and how to use that concept in practice, will be able to do this better. However, input tokens also participate in conditioning the generation of the next token, so even a model not trained in that direction can still work that way by having instructions fed directly into it.
 
-A skill is the instruction fed into input tokens to condition next-token generation: making the model know, for every situation a run can meet, when to use which concept or process, how to use it in practice, and where that process is done, spending the agent's attention only where and when that decision needs it. Below, the **target skill** is the skill being written, updated, or reviewed with this one, and every section applies to every sentence of it, frontmatter included.
+A skill is the instruction fed into input tokens to condition next-token generation: making the model know, for every situation a run can meet, when to use which concept or process, how to use it in practice, and where that process is done, spending the agent's attention only where and when that decision needs it. Below, the **target skill** is the skill, system prompt, or instruction being written, updated, or reviewed with this one, and every section applies to its whole structure and every sentence of it, frontmatter included.
 
 The principles below are not peers. Two are **roots**: skip one and a family of failures follows. The rest are **independent**: each has its own failure, unrelated to the roots.
 
 | Principle | Failures when it is skipped | Sections |
 |---|---|---|
-| **Root 1, the decision**: each question gets a judge, a closed or open form, and for an open one a cause, which generality measures | enumeration (checklist, disguised enumeration), overfit, underfit, pseudo-generality, fabricated authority, exemplar anchoring | *Generality*, *Examples* |
+| **Root 1, the decision**: each independent decision is its own question, and each question gets a judge, a closed or open form, and for an open one a cause, which generality measures | enumeration (case templates, checklist, disguised enumeration), overfit, underfit, pseudo-generality, fabricated authority, exemplar anchoring | *Generality*, *Examples* |
 | **Root 2, the goal**: each instruction states the state to reach, and each condition can be decided when it must be | negation, premature completion, a rule never reached | *Goals and conditions*, *Steps and reference*, *Splitting*, *Authoring protocol* |
 | **Independent**: attention spent only where it is needed | sprawl, duplication, contradiction, no-op, sediment | *Words*, *Placement*, *Pruning* |
 
@@ -22,7 +22,7 @@ The principles below are not peers. Two are **roots**: skip one and a family of 
 
 ## Generality
 
-Every question the target skill answers goes through one chain: its judge decides whether it gets a rule and whether that rule can be closed; an open rule names a cause; generality measures whether what it names is a cause.
+Every independent decision a run faces is its own question, and every question the target skill answers goes through one chain: its judge decides whether it gets a rule and whether that rule can be closed; an open rule names a cause; generality measures whether what it names is a cause.
 
 ### Judges
 
@@ -48,19 +48,20 @@ One instruction can be both, a closed form with open content; write each part by
 
 An open-set instruction is **general** when it names the cause its cases share, and so, in one sentence, picks the right action in every case it was written from, picks it in a **held-out** case it was not written from, and rules out the tempting wrong action in all of them. Being true in every case is not enough: an instruction that holds everywhere but rules out no wrong action decides nothing. A general instruction is a **generative principle**: compact, and neither overfit nor underfit. The raincoat in *Enumeration* shows all three failures below in one situation.
 
-- Missing the held-out case is **overfit**: the instruction memorized its cases, and the cure is a cause that also decides the held-out case.
+- Missing the held-out case is **overfit**: the skill memorized the form of its cases instead of isolating each question and its cause, and the cure is to separate the questions and name a cause that also decides the held-out case.
 - Admitting the wrong action is **underfit**: the instruction does not steer away from it. Detail is sharpness, not count: the cure is to find the word that lets the wrong action through and replace it with a test the agent can run on its own work, one that fails the wrong action and passes the right one; a word that names a recurring idea keeps its place, and the test becomes its definition (*Words*). Added cases are no cure: they turn the instruction into an enumeration.
 - Abstract vocabulary hides underfit (**pseudo-generality**): restate the instruction in plain words, and if it then picks no action in a concrete case, it is underfit whatever its wording.
 
 ### Enumeration
 
-**Enumeration** is a list standing in for a cause or patching a weak instruction in open-set text. It is overfit by construction: it decides only the items it names, which admits the text around it could not decide them on its own. An agent running it becomes a clerk ticking boxes: it invents relevance for items that do not apply and stops at the edge of the list instead of reasoning from the cause. It shows up in three shapes, and the held-out case exposes all three alike:
+**Enumeration** is a list or template standing in for a cause or patching a weak instruction in open-set text. It is overfit by construction: it decides only the items or combinations it names, which admits the text around it could not decide them on its own. An agent running it becomes a clerk ticking boxes: it invents relevance for items that do not apply and stops at the edge of the list instead of reasoning from the cause. It shows up in four shapes, and the held-out case exposes all four alike:
 
+- **case templates**: whole sections or workflows modeled on individual cases, bundling independent questions together so a run that mixes answers across templates has nowhere to go;
 - a **checklist**: the items as bullets;
 - **disguised enumeration**: the same items folded into a prose clause joined by commas or *or*, which is what a checklist turns into when lists are forbidden;
 - a clause that changes the action in only one case: that case written in, however abstract its wording.
 
-**When** an enumeration appears, deleting the list alone leaves the broken wording it was patching, and replacing the list with an umbrella term turns it into **pseudo-generality** (*Fit*). Instead, strip the enumeration and turn its items into **observed cases** in *Scaffolding* (*Authoring protocol*), then run the remaining wording alone against those cases: where it fails to pick the right action or to decide when its condition or goal holds exposes the failure in the table above that the enumeration was patching. Fix the instruction at that principle's row, and verify that the rewritten instruction alone passes both *Fit* across those cases and a **held-out** case, and *Goals and conditions* on the agent's own output. The difference, shown in a situation unrelated to any skill:
+**When** an enumeration appears, deleting it alone leaves the broken wording it was patching, and replacing it with an umbrella term turns it into **pseudo-generality** (*Fit*). Instead, strip the enumeration, separate any bundled questions, and turn its items or templates into **observed cases** in *Scaffolding* (*Authoring protocol*), then run the remaining wording alone against those cases: where it fails to pick the right action or to decide when its condition or goal holds exposes the failure in the table above that the enumeration was patching. Fix the instruction at that principle's row, and verify that the rewritten instruction alone passes both *Fit* across those cases and a **held-out** case, and *Goals and conditions* on the agent's own output. The difference, shown in a situation unrelated to any skill:
 
 - Enumeration: *Pack a raincoat for Da Lat, Sapa, or Hue in the rainy season.*
 - Cause: *Pack a raincoat when the forecast shows rain where you are going, on the days you are there.*
