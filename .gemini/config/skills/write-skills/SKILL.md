@@ -137,10 +137,12 @@ Every skill is user-invoked: its frontmatter sets `disable-model-invocation: tru
    - The options are distinct, competing actions the target skill could take in that scenario, each stating the behaviour it produces and its consequence.
    *Completion criterion*: every question the target skill answers has a quoted ruling from its judge; if `ask_question` was called, the turn ends to await the user's answer before Step 2 runs.
 
-2. **Fit and write**: Output to the conversation, then write to `SKILL.md`:
+2. **Fit and write**: Output to the conversation:
    - **Question map**: a table of every question the target skill answers, its quoted **judge** (dropping any question with no judge), and whether its set is **Closed** or **Open**.
    - For every **Open** question:
      - **Scaffolding**: the observed cases, each with its concrete situation, the judge-ratified right action, and the tempting wrong actions (the rejected options from Step 1 or the failures observed in runs).
      - **Synthesis**: one instruction naming the cause that makes the right action right and rules out the tempting wrong actions across every case, satisfying every section of this skill and entering the target skill verbatim.
-     - **Fit test**: the test of that instruction alone against every case in Scaffolding and one **held-out** case outside Scaffolding, reworking Synthesis on overfit and sharpening wording as *Fit* prescribes on underfit.
-   *Completion criterion*: the question map and every open instruction's Scaffolding, Synthesis, and passing Fit test are shown in the conversation, and `SKILL.md` is written with each Synthesis verbatim, satisfying every section of this skill.
+     - **Fit test**: the test of that instruction alone against every case in *Scaffolding*, sharpening wording as *Fit* prescribes when any case fails.
+   - **Held-out cases** (at the bottom of the output, after every question's *Scaffolding*, *Synthesis*, and *Fit test*): for each **Open** question, one **held-out** case outside *Scaffolding*, written in Step 1's scenario-and-options form and stating which option **Synthesis** alone picks.
+   **When** the user rejects a chosen option, add that held-out case to *Scaffolding*—with the user's choice as the right action and the option **Synthesis** picked as a tempting wrong action—and repeat Step 2 with a new **Synthesis** and a new **held-out** case at the bottom. **When** the user agrees with every chosen option (or immediately when no question is **Open**), write `SKILL.md` with each **Synthesis** verbatim, satisfying every section of this skill.
+   *Completion criterion*: the user has agreed with the option **Synthesis** picks for every **Open** question's held-out case, and `SKILL.md` is written with each ratified **Synthesis** verbatim, satisfying every section of this skill.
