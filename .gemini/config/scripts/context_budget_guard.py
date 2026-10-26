@@ -35,11 +35,11 @@ def build_warning_message(current_tokens: int, threshold_tokens: int) -> str:
     )
     return (
         "<critical_instructions>\n"
-        f"Context usage has reached {pct:.1f}% of the compaction threshold ({current_tokens} / {threshold_tokens} tokens)—volatile context in memory will be wiped when auto-compaction triggers.\n"
-        "Insert one persist tool-call step now to secure in-hand work to disk, then immediately resume calling tools in the very next step of this same turn until the user's task is complete or auto-compaction fires (auto-compaction only triggers while you keep calling tools; stopping or yielding to the user stalls the run):\n"
-        "1. **Notify the user once**: If you have not already notified the user in this compaction cycle, tell the user clearly (in their language) in this immediate step only that context is nearly full and state what work in hand you are securing now; do not repeat this notice or report context percentages in any subsequent step.\n"
-        "2. **When** context holds settled inputs or design for any pending file edits or writes (independent of unread files): dispatch only those write/edit tool calls in this step to persist them, and **when** those persist tool calls return their results, immediately dispatch the deferred or previously blocked read/search/verification tool calls in the next step without ending your turn.\n"
-        "3. **When** no write/edit action is ready to persist yet: dispatch only the tool calls needed to settle the belief or batch currently open in context so its findings can be persisted on the next step; if all prior work in hand is already persisted and settled, dispatch the next step's tool calls immediately without pausing.\n"
+        f"Context usage is at {pct:.1f}% ({current_tokens} / {threshold_tokens} tokens).\n"
+        "Keep calling tools continuously in this turn until the harness triggers auto-compaction on its own—ending your turn or waiting for compaction halts execution:\n"
+        "1. **When** context holds settled file edits or ledger/artifact updates not yet written to disk: state in one sentence which file you are writing now, dispatch only those write/edit tool calls in this step, and in the very next step after they return, immediately dispatch your next read/search/verification tool calls without ending your turn.\n"
+        "2. **When** all settled changes are already on disk: dispatch the next tool calls for the current task step immediately in this step.\n"
+        "3. **Guardrail**: Do NOT output a compaction `<summary>`, a `Read-next working set`, or a remaining-work recap in chat—the `<summary>` is generated only when the harness explicitly prompts for compaction after wiping the turn.\n"
         "</critical_instructions>"
     )
 

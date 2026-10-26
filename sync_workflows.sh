@@ -32,5 +32,41 @@ if [[ -d "$SRC_AGENTS" ]]; then
     cp -rf "$SRC_AGENTS/." "$DEST_AGENTS_AGENTS/"
 fi
 
+# 3. Sync shared instruction blocks: .gemini/GEMINI.md -> .agents/AGENTS.md
+SRC_GEMINI_MD="$WORKSPACE_DIR/.gemini/GEMINI.md"
+DEST_AGENTS_MD="$WORKSPACE_DIR/.agents/AGENTS.md"
+
+if [[ -f "$SRC_GEMINI_MD" ]]; then
+    echo "Syncing instructions: $SRC_GEMINI_MD -> $DEST_AGENTS_MD..."
+    python3 - "$SRC_GEMINI_MD" "$DEST_AGENTS_MD" <<'PYEOF'
+import re
+import sys
+from pathlib import Path
+
+src_path = Path(sys.argv[1])
+dst_path = Path(sys.argv[2])
+text = src_path.read_text(encoding="utf-8")
+
+TAGS = [
+    "harness_injection",
+    "communication_model",
+    "reasoning_from_principles",
+    "challenge_response",
+    "type_safety_policy",
+    "invariant_policy",
+    "engineering_policy",
+]
+
+blocks: list[str] = []
+for tag in TAGS:
+    m = re.search(rf"<{tag}>.*?</{tag}>", text, flags=re.DOTALL)
+    if m:
+        blocks.append(m.group(0))
+
+dst_path.parent.mkdir(parents=True, exist_ok=True)
+dst_path.write_text("\n\n".join(blocks) + "\n", encoding="utf-8")
+PYEOF
+fi
+
 echo "Done."
 

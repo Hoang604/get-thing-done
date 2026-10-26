@@ -1,50 +1,40 @@
 ---
 name: test-increment
-description: Design adversarial test seams and update implementation plan immediately
+description: Design REAL boundary tests for an implementation_plan.md produced by boundary-plan and embed them into each milestone and the Verification Matrix.
 disable-model-invocation: true
 ---
 
-# CORE DIRECTIVE
+Every test you add to `implementation_plan.md` must earn a **REAL** verdict under all four rules, and every existing test that breaks under a milestone's boundary change or fails the Day-One Test must be retired in that milestone:
 
-Ingest the active `implementation_plan.md` Artifact and any user-provided directives to immediately formulate and write deterministic, adversarial test seams.
-Design adversarial tests that catch regression mutations (`Breaks-If`). Never mirror implementation logic or write tautology tests.
-Directly update Section 4.B (`### B. Adversarial Seam & Test Replacement Matrix`) and Section 5 of the `implementation_plan.md` Artifact without pausing for confirmation.
+1. **Contract.** The test guards a rule that the code under test promises to whoever calls it or reads its output, and the rule holds for every valid input. State that promise in one sentence that quotes none of the test's literal values and leaves no room for an output that satisfies the sentence while breaking what a caller of that behavior relies on. If the only sentence you can write repeats the test's expected value, the test pins an outcome, not a contract.
 
-**Source of Truth Hierarchy:**
-1. **User Directives (Absolute Priority):** Any information, invariants, test cases, or constraints provided directly by the user in the prompt or conversation are binding **Ground Truth**. They override any inferred assumptions or default conventions.
-2. **Implementation Plan:** Sections 1 through 4.A of `implementation_plan.md` serve as the pre-audited baseline. Do not re-scan callers, re-explore system architecture, or re-scan tests already identified in the plan.
+2. **Kills a mutant.** Name a plausible edit to one product line (`file:line`, old → new) in the milestone's planned product code that breaks the rule in 1, where product logic carries the change to an assertion and turns it red, and that no other REAL test in scope already kills just as directly. Every part of the outcome that the rule in 1 determines for this test's input must be checked by an assertion, so that no plausible edit to a product line can violate the rule in 1 on this input and still leave the test green (a **surviving mutant**). If the values being compared travel from the test's setup to its assertion without passing through any product decision, no product mutant can reach that assertion.
 
-**Seam Discipline (`Replace, Don't Layer & Anti-Brittle Defense`):**
-- **The Interface is the Test Surface (`Signature + Invariants + Error Modes`):** An interface is *everything* a caller must know to use the module (`type signature, invariants, ordering constraints, error modes`), not just the API signature. Callers and tests cross this exact same **External Seam**. Never test *past* the interface by asserting on private methods, internal state, or intermediate call graphs (`e.g., toHaveBeenCalledWith`). If a test breaks when internal implementation refactors while external behavior remains identical, it is a brittle implementation-coupled test (`Test Rác`) and is strictly rejected.
-- **Dependency Categorization & Mocking Ban (`DEPENDING discipline`):**
-  1. `In-process` (pure compute, in-memory state): **Strictly forbid mocks.** Merge modules and test directly through the interface.
-  2. `Local-substitutable` (Postgres, Filesystem): **Strictly forbid mocks.** Test using real local stand-ins (`PGLite`, `tmp_path`, in-memory DB).
-  3. `Remote-owned` (Internal microservices): Define a port (`seam`); test via `In-Memory Adapter` (`FakePort`).
-  4. `True-external` (Stripe, Twilio): Only here are mock/stub adapters permitted.
+3. **Survives refactors.** Every edit that keeps the contract leaves the test green. Each assertion may observe only what the contract promises. Anything else it observes is something a refactor is allowed to change.
 
----
+4. **Reaches the product.** The test enters the product the same way its real callers do, starts from state the real path can produce, and gets the same outcome on every run in the tier where it is filed. Stand-ins are used only at out-of-process boundaries that cannot run locally in the test tier, and each stand-in implements the boundary's stateful contract rather than recording calls.
 
-## Execution Steps
+## Steps
 
-### 1. Formulate Adversarial Test Seams
-Read `implementation_plan.md` and any user instructions. Formulate the adversarial test matrix directly from the plan's interface contracts across 4 mandatory categories (`Unit / Logic`, `Integration`, `Adversarial`, `Edge Case`):
+1. **Map milestones and existing tests.** Read the active `implementation_plan.md` (its `Users, Jobs & Use Scenarios` tables `S-xx` and `I-xx`, every `### Milestone N` section, and `### Verification Matrix`) along with the existing test files covering the files in each milestone's `File Manifest`.
+   - For each existing test that depends on a pre-change form or asserts internal details retired by Milestone $N$, record its fate (`deleted` or `rewritten`) in Milestone $N$'s `Retired Forms` and `File Manifest`.
+   - For each Milestone $N$, derive the tests required to guard its `Acceptance Signal` (`S-xx`, `I-xx`) and `Literal Contracts & Bound Structures` so every contract rule introduced or modified by Milestone $N$ is covered by a test that satisfies all four REAL rules.
+   *Done when* every obsolete existing test is assigned a fate in the milestone that retires its form, and every milestone's contract rules are mapped to planned tests with all five fields filled in:
+   - the contract sentence
+   - the mutant killed as `file:line` old → new
+   - the surviving mutant (`none`)
+   - the refactor that turns it red (`none`)
+   - the reach path
 
-- **Seam & Dependency Audit:** State target external interface signature. Categorize dependencies (`In-process`, `Local-substitutable`, `Remote-owned`, `True-external`) and specify stand-ins/adapters.
-- **Oracle Declarations:** Cite exact sources (`USER PROMPT`, `SPEC`, or `SOURCE: [file:line]`). Flag unverified items with `⚠️ ASSUMPTION`. Declare causal independence (variables that must not alter outputs).
-- **Adversarial Invariant Matrix:** Every item must declare its observable invariant and explicit failure trigger (`Breaks-If Mutation`):
+2. **Update `implementation_plan.md`.** Edit `implementation_plan.md` directly:
+   - In each `### Milestone N`, update `Retired Forms` and `#### File Manifest` (`[NEW]`, `[MODIFY]`, `[DELETE]`) for all touched test files, and add or update a `#### Test Matrix` subsection formatted to the anchor below.
+   - In `### Verification Matrix`, update `Baseline Checks` with the exact workspace test runner commands covering the test files across all milestones.
+   *Done when* every `### Milestone N` in `implementation_plan.md` contains its `#### Test Matrix` formatted to the anchor below with `Surviving mutant` and `Refactor that turns it red` both equal to `none` on every row, `#### File Manifest` lists every created, modified, or deleted test file, and `### Verification Matrix` includes the exact test runner commands.
 
-| Test Category | Target Seam / Module | Old Shallow Test to [DELETE] | New Deep Test & Observable Invariant | Dependency Category & Test Stand-in | Breaks-If Mutation (Specific Code Bug That Fails This) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Unit / Logic** | [Order.calc_total](file:///path#L10) | [test_old.py:L10](file:///path#L10) or None | [test_order.py:L15](file:///path#L15): Total == sum(items) - discount | `In-process direct call` | Omitting discount clamp when total < 0 |
-| **Integration** | [OrderService.pay](file:///path#L50) | [test_old.py:L40](file:///path#L40) or None | [test_order_svc.py:L30](file:///path#L30): DB rollback on gateway timeout | `Local stand-in (PGLite/SQLite)` | Swallowing timeout exception without rollback |
-| **Adversarial** | [OrderParser.parse](file:///path#L20) | None | [test_parser.py:L10](file:///path#L10): Explicit rejection of malformed payload | `In-process direct call` | Accepting malformed payload header |
-| **Edge Case** | [Pool.acquire](file:///path#L5) | None | [test_pool.py:L20](file:///path#L20): Graceful failure when pool_size=0 | `In-memory FakePort` | Division by zero or unhandled IndexError |
+```markdown
+#### Test Matrix
 
-### 2. Mutate Implementation Plan Artifact
-Immediately update the active `implementation_plan.md` Artifact:
-1. **Update Section 4.B:** Replace `### B. Adversarial Seam & Test Replacement Matrix` with the newly formulated table, seam discipline rules, and oracle declarations.
-2. **Synchronize Section 5:** Ensure `Verification Commands` contains exact test execution commands (`e.g., uv run pytest <filepath>`, `npm test <filepath>`) targeting the newly defined test seams.
-
-### 3. Report Completion
-Present a concise summary of the updated test seams in chat and prompt:
-`"Implementation plan test seams updated. Run /execute to proceed with implementation."`
+| Test | Contract | Mutant killed | Surviving mutant | Refactor that turns it red | Reach |
+|---|---|---|---|---|---|
+| `tests/test_note_store.py::test_save_assigns_id_and_persists_draft` | Saving a draft persists its title and body and returns the saved note with its assigned id | `note_store.py:24` `repo.insert(draft)` → `SavedNote(id=1, title=draft.title, body=draft.body)` | none | none | public `save(NoteDraft)`, read back via `NoteRepository` |
+```

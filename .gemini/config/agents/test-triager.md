@@ -23,9 +23,9 @@ The parent's message gives the scope: paths to test, or the whole suite if none 
 
 A test is **REAL** when all four rules hold. It is **JUNK** when any rule fails.
 
-1. **Contract.** The test guards a rule that the code under test promises to whoever calls it or reads its output, and the rule holds for every valid input. You can state it in one sentence that quotes none of the test's literal values. If the only sentence you can write repeats the test's expected value, the test pins an outcome, not a contract.
+1. **Contract.** The test guards a rule that the code under test promises to whoever calls it or reads its output, and the rule holds for every valid input. State that promise in one sentence that quotes none of the test's literal values and leaves no room for an output that satisfies the sentence while breaking what a caller of that behavior relies on. If the only sentence you can write repeats the test's expected value, the test pins an outcome, not a contract.
 
-2. **Kills a mutant.** Name a plausible edit to one product line (`file:line`, old → new) that breaks the contract. Trace from that line: product logic has to carry the change to an assertion and turn it red. If the values being compared travel from the test's setup to its assertion without passing through any product decision, no product mutant can reach that assertion. The mutant also has to be one that no other REAL test in scope already kills just as directly.
+2. **Kills a mutant.** Name a plausible edit to one product line (`file:line`, old → new) that breaks the rule in 1, where product logic carries the change to an assertion and turns it red, and that no other REAL test in scope already kills just as directly. Every part of the outcome that the rule in 1 determines for this test's input must be checked by an assertion, so that no plausible edit to a product line can violate the rule in 1 on this input and still leave the test green (a **surviving mutant**). If the values being compared travel from the test's setup to its assertion without passing through any product decision, no product mutant can reach that assertion.
 
 3. **Survives refactors.** Every edit that keeps the contract leaves the test green. Each assertion may observe only what the contract promises. Anything else it observes is something a refactor is allowed to change.
 
@@ -46,9 +46,10 @@ Classify each test as a whole. If even one assertion breaks rule 3 or rule 4, th
    *Done when* every row has two recorded outcomes.
 
 3. **Trace.** For each row, read the test body, its fixtures, and every product function between the test's call and its assertions. Then apply the four rules.
-   *Done when* every row has all four of these filled in with concrete content:
+   *Done when* every row has all five of these filled in with concrete content:
    - the contract sentence, or the outcome the test pins
    - the mutant as `file:line` old → new, or the reason no mutant reaches an assertion
+   - the surviving mutant as `file:line` old → new, or `none`
    - a contract-preserving edit that turns the test red, or `none`
    - the reach finding
 
@@ -56,10 +57,10 @@ Classify each test as a whole. If even one assertion breaks rule 3 or rule 4, th
    *Done when* every collected node ID has an entry formatted to the anchor.
 
 ```markdown
-| Test | Verdict | Contract | Mutant killed | Refactor that turns it red | Reach |
-|---|---|---|---|---|---|
-| `tests/unit/test_account.py::test_withdraw_rejects_overdraft` | REAL | Withdrawing more than the balance raises and leaves the balance unchanged | `account.py:42` `raise Overdraft()` → `pass` | none | public `withdraw()`, same outcome both runs |
-| `tests/unit/test_cli.py::test_help_mentions_usage` | JUNK | Pins an outcome: help text contains "Usage" | none — the text is a constant, so no logic sits between the source and the assertion | reword the help text | public `--help`, same outcome both runs |
+| Test | Verdict | Contract | Mutant killed | Surviving mutant | Refactor that turns it red | Reach |
+|---|---|---|---|---|---|---|
+| `tests/unit/test_account.py::test_withdraw_rejects_overdraft` | REAL | Withdrawing more than the balance raises and leaves the balance unchanged | `account.py:42` `raise Overdraft()` → `pass` | none | none | public `withdraw()`, same outcome both runs |
+| `tests/unit/test_cli.py::test_help_mentions_usage` | JUNK | Pins an outcome: help text contains "Usage" | none — the text is a constant, so no logic sits between the source and the assertion | none | reword the help text | public `--help`, same outcome both runs |
 ```
 
 ## Deliver
