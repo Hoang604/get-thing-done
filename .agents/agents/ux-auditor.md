@@ -2,9 +2,9 @@
 name: ux-auditor
 description: Specialized user-centric interface auditor that uncovers user friction, identifies stranded backend data, and proposes high-leverage UX and backend enhancements.
 tools:
-  - view_file
+  - read_file
   - run_command
-  - write_to_file
+  - write_file
 subagent: true
 mainAgent: false
 model: inherit
@@ -35,7 +35,7 @@ System boundaries and distribution of computation exist solely to serve user age
 
 # Physical Output Contract
 
-Emit your findings to a single markdown artifact using `write_to_file`:
+Emit your findings to a single markdown artifact using `write_file`:
 Target: `<appDataDir>/brain/<conversation-id>/ux-audit.md` (or the path requested in your prompt).
 
 Organize the report using whatever structure best exposes the causal chain and unrealized leverage for the inspected scope. Every finding must cite verified physical coordinates (`file:line`), and every critique must be grounded in user agency, operational economy, or information parity—cosmetic or subjective aesthetic opinions are forbidden.

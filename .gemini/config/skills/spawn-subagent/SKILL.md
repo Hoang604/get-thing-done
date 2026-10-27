@@ -4,76 +4,59 @@ description: Delegate work to a subagent through a cold-read prompt that hands o
 disable-model-invocation: true
 ---
 
-# CORE DIRECTIVE
+## 1. Frame the Prompt
 
-A subagent knows nothing but its prompt, and it takes that prompt as both truth and map: it believes every assertion and searches only where the prompt points. Its value is what you have not already seen. You own the **Problem Space**; the subagent owns 100% of the **Solution Space**.
+Write the prompt so an engineer holding only the prompt can complete the work without asking anything back, dropping orchestration words about delegating. Replace every **reference** — a pointer to a specific item the conversation already pinned down — with that item's full content and location. Carry over every **category** — a set whose members the work must find or act on — in the user's own words with where its members live, without listing members you found yourself (listing members you found claims completeness and makes the subagent stop at the list's edge; **When** the user named the members, their list is the category and enters verbatim).
 
----
+In `### Role`, state the subagent's expertise and what counts as a successful outcome for its run; **When** the task evaluates a claim, plan, or implementation, state that success is proving where it fails rather than agreeing with the prompt.
 
-## 1. Frame the Problem
+In `### Problem`, state only **settled** facts — observations with their exact locations and user decisions that stay true whatever the subagent finds — never your conclusions from them or constraints you invented. **When** the work evaluates a hypothesis, plan, or implementation, state it as an open claim under judgment rather than a settled verdict.
 
-De-reference the conversation into a prompt that passes the **cold read**: an engineer holding only the prompt — no chat history, no thoughts, no git log — can start work without asking anything back. A **reference** points at one thing the conversation already pinned down: replace it with its full content. A **category** names a set whose members the work must find or act on: carry it over in the user's own words, with where its members live. Orchestration words about delegating are dropped.
+In `### Objective`, state the required end-state and every question or acceptance condition the deliverable must satisfy in a form verifiable from the subagent's output alone, without prescribing the execution steps or technical solution the subagent must use to reach it.
 
-Assert only what is **settled** — what stays true whatever the subagent finds. What you observed is settled; what you concluded from it is not. What the user decided is settled; a constraint you invented is not. When the task is to judge something, that thing enters the prompt as a claim under judgment, never as a verdict.
+In `### Scope`, state the boundary of the subagent's work: which components, directories, or architectural layers it covers (carrying over any category as defined above rather than pre-filtering into a partial file list) and which adjacent areas or mutations are out of bounds.
 
-The subagent finds every member of a category itself; its value is the members you missed. A list of members you found claims completeness without stating it — a conclusion, not an observation — and the subagent searches that list and stops at its edge. When the user named the members, their list is the category: carry it over verbatim.
-
-Give the subagent a role defined by what success means for it. When the outcome is a judgment, success is finding what is wrong — state it, because by default a subagent agrees with whoever asked.
-
-- **Completion Criterion**: The prompt passes the cold read, and every sentence under `Problem` stays true whatever the subagent finds.
+- **Completion Criterion**: The prompt passes the cold read with every reference expanded and every category preserved unenumerated; `### Role` defines success for the run; `### Problem` contains only settled facts and open claims under judgment; `### Objective` states verifiable acceptance conditions without prescribing the solution; and `### Scope` states both covered targets and out-of-bounds areas or mutations.
 
 ---
 
 ## 2. Dispatch
 
-Invoke via `invoke_subagent` with `Model`: `inherit`, always `self` subagent when using this skill, and this `Prompt`:
+Call `invoke_subagent` with `TypeName`: `self`, `Model`: `inherit`, and `Prompt` formatted as:
 
 ```markdown
 ### Role
-<Role, defined by what success means for it>
+<From Step 1>
 
 ### Problem
-<Settled facts only; the subject under judgment stated as a claim>
+<From Step 1>
 
 ### Objective
-<End-state as behavior an outsider can check, by the user's own standard of success>
+<From Step 1>
 
 ### Scope
-<Boundary of the work you assign; omit this section when the whole system is in scope>
+<From Step 1>
 
 ### Delivery
-<Exactly one of the two blocks below>
-```
-
-Delivery — write-capable subagent with a deliverable longer than a short answer:
-
-```markdown
 1. Write the full result to `<appDataDir>/brain/<your-conversation-id>/<artifact>.md`.
 2. Reply with only: Completed: <artifact>.md written to <appDataDir>/brain/<your-conversation-id>/<artifact>.md
 ```
 
-Delivery — read-only subagent, or a short answer:
-
-```markdown
-Reply with the result directly.
-```
-
-- **Completion Criterion**: `invoke_subagent` dispatched; every section carries content, and only `Scope` may be absent.
+- **Completion Criterion**: `invoke_subagent` is dispatched with `TypeName: "self"`, `Model: "inherit"`, and all five prompt sections (`Role`, `Problem`, `Objective`, `Scope`, `Delivery`) populated.
 
 ---
 
 ## 3. Surface Dispatched Prompt
 
-Immediately after dispatching the subagent, output the exact verbatim `Prompt` sent to `invoke_subagent` into the conversation inside a blockquote (`>`), word for word with zero alterations or omissions.
+Immediately after calling `invoke_subagent`, output the verbatim `Prompt` into the conversation inside a blockquote (`>`).
 
-- **Completion Criterion**: The conversation contains the verbatim prompt sent to `invoke_subagent` inside a blockquote (`>`), exactly matching the dispatched text.
+- **Completion Criterion**: The conversation contains the verbatim `Prompt` sent to `invoke_subagent` inside a blockquote (`>`).
 
 ---
 
 ## 4. Receive & Follow Up
 
-1. When the subagent delivered an artifact, read it in full with `view_file`; when it replied directly, its reply is the result.
-2. To follow up, `send_message` only the new directive, opening with the deliverable. The subagent still holds its own context: point to its prior findings by their identifier. The directive obeys Step 1 — settled facts, categories carried over whole.
-3. When no follow-up remains, keep the agent idle so it can take a later follow-up.
+1. When the subagent replies, read `<appDataDir>/brain/<your-conversation-id>/<artifact>.md` in full with `read_file`, and leave the subagent in idle state without calling `manage_subagents` to kill it. Do not call `send_message` to follow up unless the user requests a follow-up.
+2. **When** the user requests a follow-up with the subagent, call `send_message` with only the new directive framed by Step 1, opening with the `### Delivery` block from Step 2 and pointing to the subagent's prior findings by their identifiers.
 
-- **Completion Criterion**: The result is read in full and meets every point of the prompt's `Objective`; each point it misses has a follow-up sent for it.
+- **Completion Criterion**: `<artifact>.md` is read in full with `read_file`, the subagent remains unkilled, and `send_message` is called only when requested by the user.

@@ -177,34 +177,34 @@ class TestContextBudgetHooks(unittest.TestCase):
         # 200 lines * ~60 chars/line = ~12,000 chars -> ~4,000 tokens at 3.0 chars/token
         target_file.write_text("\n".join("x" * 54 for _ in range(200)) + "\n", encoding="utf-8")
 
-        # 1st view_file: ~220,200 + ~4,000 = ~224,200 (< 228,000) -> allowed
+        # 1st read_file: ~220,200 + ~4,000 = ~224,200 (< 228,000) -> allowed
         res1 = evaluate_tool_budget_guard(
             conv_id=self.conv_id,
             fallback_model_name="Gemini 4 Argon (High)",
             transcript_path=str(self.transcript_file),
-            tool_call={"name": "view_file", "args": {"AbsolutePath": str(target_file)}},
+            tool_call={"name": "read_file", "args": {"Path": str(target_file)}},
             state_dir=self.state_dir,
             thresholds_file=self.thresholds_file,
         )
         self.assertEqual(res1, {"decision": "allow"})
 
-        # 2nd view_file in same turn: ~224,200 + ~4,000 = ~228,200 (>= 228,000) -> DENIED
+        # 2nd read_file in same turn: ~224,200 + ~4,000 = ~228,200 (>= 228,000) -> DENIED
         res2 = evaluate_tool_budget_guard(
             conv_id=self.conv_id,
             fallback_model_name="Gemini 4 Argon (High)",
             transcript_path=str(self.transcript_file),
-            tool_call={"name": "view_file", "args": {"AbsolutePath": str(target_file)}},
+            tool_call={"name": "read_file", "args": {"Path": str(target_file)}},
             state_dir=self.state_dir,
             thresholds_file=self.thresholds_file,
         )
         self.assertEqual(res2.get("decision"), "deny")
 
-        # 3rd tool (view_file) and 4th tool (run_command rg/grep/cat) in same turn -> DENIED
+        # 3rd tool (read_file) and 4th tool (run_command rg/grep/cat) in same turn -> DENIED
         res3 = evaluate_tool_budget_guard(
             conv_id=self.conv_id,
             fallback_model_name="Gemini 4 Argon (High)",
             transcript_path=str(self.transcript_file),
-            tool_call={"name": "view_file", "args": {"AbsolutePath": str(target_file)}},
+            tool_call={"name": "read_file", "args": {"Path": str(target_file)}},
             state_dir=self.state_dir,
             thresholds_file=self.thresholds_file,
         )
@@ -244,17 +244,17 @@ class TestContextBudgetHooks(unittest.TestCase):
         self.assertEqual(len(steps), 1)
 
         # Next turn (after agent wrote file, still at 232,000 >= 95% and NOT compacted yet):
-        # calling view_file and rg must be ALLOWED instead of deadlocking
+        # calling read_file and rg must be ALLOWED instead of deadlocking
         self._append_planner_step(32_000, 200_000, output_tokens=200)
-        res_next_turn_view = evaluate_tool_budget_guard(
+        res_next_turn_read = evaluate_tool_budget_guard(
             conv_id=self.conv_id,
             fallback_model_name="Gemini 4 Argon (High)",
             transcript_path=str(self.transcript_file),
-            tool_call={"name": "view_file", "args": {"AbsolutePath": str(target_file)}},
+            tool_call={"name": "read_file", "args": {"Path": str(target_file)}},
             state_dir=self.state_dir,
             thresholds_file=self.thresholds_file,
         )
-        self.assertEqual(res_next_turn_view, {"decision": "allow"})
+        self.assertEqual(res_next_turn_read, {"decision": "allow"})
 
         res_next_turn_rg = evaluate_tool_budget_guard(
             conv_id=self.conv_id,

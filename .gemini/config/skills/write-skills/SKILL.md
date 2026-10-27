@@ -129,7 +129,7 @@ A sentence also stays only while it bears on what the skill does now. Sentences 
 
 ## Invocation
 
-Every skill is user-invoked: its frontmatter sets `disable-model-invocation: true`, and its `description` is a summary for the human who invokes it.
+**When** creating a new skill, set `disable-model-invocation: true` in its frontmatter and write `description` as a summary for the human who invokes it; **when** updating an existing skill without `disable-model-invocation: true`, leave it omitted.
 
 ## Authoring protocol
 

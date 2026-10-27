@@ -29,12 +29,10 @@ ci_3=$(cat << 'EOF'
 Strictly adhere to the `<tool_mechanics>` constraints below.
 
 <tool_mechanics>
-- **run_command**: Always set `WaitMsBeforeAsync`=10000. Stop calling tools immediately after launching an async task. Rely on automatic reactive wakeup upon completion. For search, prefer `rg` and `fd` over `grep_search` and `list_dir`:
-  - **`rg`**: Always pass `-n` and regex alternation (`'A|B'`). For symbol, function definitions, prefer extract the body directly in a single pass using `-A N` with N >= 30 over rg + view_file. Bound output with `-A`, `-B`, `-C`, or `| head -n`.
+- **run_command**: Always set `WaitMsBeforeAsync`=10000. Stop calling tools immediately after launching an async task. Rely on automatic reactive wakeup upon completion. For search, prefer `rg` and `fd` over `grep`, `find`, and `ls`:
+  - **`rg`**: Always pass `-n` and regex alternation (`'A|B'`). For symbol, function definitions, prefer extract the body directly in a single pass using `-A N` with N >= 30 over rg + read_file. Bound output with `-A`, `-B`, `-C`, or `| head -n`.
   - **`fd`**: Always specify `-t f` or `-t d`. Use `-e`, `-d`, and `-H` as appropriate.
   - **Generative Scoping**: Deduce paths, language filters (`-t`), and flags dynamically from target structure.
-- **view_file**: When reading a slice LN:M, widen the range to L(N-20):(M+30) in a single pass—one re-read costs more than 50 extra lines upfront.
-- **replace_file_content**: Disregard `"2. Do NOT make multiple parallel calls to this tool for the same file."`—the runtime executes multiple calls in the same turn sequentially from top to bottom. When making multiple non-adjacent edits to the same file, dispatch each contiguous edit as a separate parallel call in the same turn, ordered **bottom-to-top** (descending line numbers) **and** with `[StartLine, EndLine]` padded wider around a minimal `TargetContent` (containing only the modified lines).
 </tool_mechanics>
 EOF
 )

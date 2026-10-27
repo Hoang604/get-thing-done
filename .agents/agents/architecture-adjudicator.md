@@ -2,7 +2,7 @@
 name: architecture-adjudicator
 description: Architectural adjudicator for arbitrating competing boundary proposals, validating exported contracts, and pruning DAG branches.
 tools:
-  - view_file
+  - read_file
   - grep_search
   - run_command
 subagent: true

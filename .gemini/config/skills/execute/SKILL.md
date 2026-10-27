@@ -1,7 +1,6 @@
 ---
 name: execute
 description: Execute an approved implementation plan
-disable-model-invocation: true
 ---
 
 ## Adaptation, Scope & Completeness Rules

@@ -2,9 +2,9 @@
 name: test-triager
 description: Classify every test in scope as REAL or JUNK — REAL means it kills a plausible mutant of a consumer contract and survives every refactor that keeps the contract.
 tools:
-  - view_file
+  - read_file
   - run_command
-  - write_to_file
+  - write_file
 subagent: true
 mainAgent: false
 model: inherit
@@ -65,6 +65,6 @@ Classify each test as a whole. If even one assertion breaks rule 3 or rule 4, th
 
 ## Deliver
 
-1. Write the ledger with `write_to_file` to `<appDataDir>/brain/<your-conversation-id>/test_triage_report.md`.
+1. Write the ledger with `write_file` to `<appDataDir>/brain/<your-conversation-id>/test_triage_report.md`.
 2. Reply to the parent with exactly this single line and nothing else:
    `Completed: test triage report written to <appDataDir>/brain/<your-conversation-id>/test_triage_report.md with REAL: <n> · JUNK: <m>`

@@ -94,7 +94,7 @@ class TestConditionalToolGuard(unittest.TestCase):
             f.write(json.dumps({"type": "USER_INPUT", "content": "run the audit skill"}) + "\n")
             f.write(json.dumps({
                 "type": "PLANNER_RESPONSE",
-                "tool_calls": [{"name": "view_file", "args": {"AbsolutePath": skill_file}}]
+                "tool_calls": [{"name": "read_file", "args": {"Path": skill_file}}]
             }) + "\n")
 
         res = self._run_guard({
@@ -112,7 +112,7 @@ class TestConditionalToolGuard(unittest.TestCase):
             f.write(json.dumps({"type": "USER_INPUT", "content": "inspect job runner"}) + "\n")
             f.write(json.dumps({
                 "type": "PLANNER_RESPONSE",
-                "tool_calls": [{"name": "view_file", "args": {"AbsolutePath": code_file}}]
+                "tool_calls": [{"name": "read_file", "args": {"Path": code_file}}]
             }) + "\n")
 
         res = self._run_guard({
@@ -132,7 +132,7 @@ class TestConditionalToolGuard(unittest.TestCase):
             f.write(json.dumps({"type": "USER_INPUT", "content": "turn 1 request"}) + "\n")
             f.write(json.dumps({
                 "type": "PLANNER_RESPONSE",
-                "tool_calls": [{"name": "view_file", "args": {"AbsolutePath": skill_file}}]
+                "tool_calls": [{"name": "read_file", "args": {"Path": skill_file}}]
             }) + "\n")
             f.write(json.dumps({"type": "USER_INPUT", "content": "turn 2: check git status now"}) + "\n")
 

@@ -34,6 +34,6 @@ Then end your turn and wait for the subagent's reply.
 
 ## 4. Present
 
-When the subagent's completion line arrives, read the `transition_residue_report.md` path it names with `view_file`. Reply to the user with a link to it, its Status, and the LAZY and WEAK counts.
+When the subagent's completion line arrives, read the `transition_residue_report.md` path it names with `read_file`. Reply to the user with a link to it, its Status, and the LAZY and WEAK counts.
 
 *Completion criterion*: the user holds a link to the delivered report and knows whether coverage was complete.

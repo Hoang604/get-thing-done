@@ -125,9 +125,11 @@ For every milestone in the graph, declare the physical blueprint across two cohe
 
 ---
 
-## 4. In-Line Structural Anchor
+## 4. In-Line Structural Anchor & Verification Gate
 
-Every `implementation_plan.md` begins with the users and their jobs, then the overall strategy, then the milestone sequence:
+Compile the plan into `<Artifact Directory>/implementation_plan.md`. Every `implementation_plan.md` begins with the users and their jobs, then the milestone sequence, and ends with the verification matrix and subagent audit directive:
+- **Audit Budget:** `<integer (default: 2) | unlimited>` — configures the maximum audit cycles before a Hard Stop. Set to `unlimited` to cycle until a clean pass or Plan Veto, or specify an integer limit (e.g., `1`, `3`).
+- **Dynamic Parameter Rule:** Permitted substitutions in the `Subagent Spawn Directive` prompt are `<plan-link>`, `<N>` (the round number: `1, 2, ...`), and `<ledger-link>` (the `implementation_ledger.md` beside the plan).
 
 ````markdown
 ## Users, Jobs & Use Scenarios
@@ -143,11 +145,6 @@ Every `implementation_plan.md` begins with the users and their jobs, then the ov
 | # | Invariant | Spans |
 |---|---|---|
 | I-01 | <Rule that holds for every input the spanned scenarios' product state admits, stated so that one counter-input would prove it false> | S-01 |
-
-## Minimal Entropy & Maximal Value Strategy
-
-- **Minimal Entropy:** <How each touched concept keeps one canonical form, what callers no longer need to know, and which pre-change forms are retired, across the whole system>
-- **Maximal Value:** <Decisions that remove friction across the users' jobs, each tied to the scenarios it serves>
 
 ### Milestone 1: <Descriptive Title>
 
@@ -179,23 +176,12 @@ Every `implementation_plan.md` begins with the users and their jobs, then the ov
 #### File Manifest
 - `[MODIFY]` [notes.py](file:///src/controllers/notes.py#L30-L65)
 - `[NEW]` [note_store.py](file:///src/note_store.py)
-````
-
----
-
-## 5. Plan Artifact & Verification Gate
-
-Compile the plan into `<Artifact Directory>/implementation_plan.md`.
 
 ### Verification Matrix
-- **Baseline Checks:** Automated validation commands (typecheck, lint, unit tests, integration tests) certifying system invariants across all milestones.
-- **Scenario & Invariant Matrix:** The full scenario table and invariant table, defining the external behavioral contracts to be satisfied across all milestones without manual environment intervention.
 
-### Subagent Dual Audit Directive
-Embed the audit directive verbatim into `implementation_plan.md`.
-**Dynamic Parameter Rule:** Permitted substitutions in the prompt are `<plan-link>`, `<N>` (the round number: 1, 2, ...), and `<ledger-link>` (the `implementation_ledger.md` beside the plan).
+- **Baseline Checks:** `<Automated validation commands (typecheck, lint, unit tests, integration tests) certifying system invariants across all milestones>`
+- **Audit Budget:** `<integer (default: 2) | unlimited>`
 
-````markdown
 #### Subagent Spawn Directive (Post-Implementation)
 > [!IMPORTANT]
 > After completing code implementation or remediation, spawn `boundary-auditor` via `invoke_subagent`:
@@ -206,10 +192,4 @@ Embed the audit directive verbatim into `implementation_plan.md`.
 > *Invocation Contract:* Dispatch with this exact prompt structure. Do NOT append custom conversational steering.
 ````
 
-### Convergence & Circuit Breaker Protocol
-Declare execution bounds directly in `implementation_plan.md`:
-- **Audit Budget:** `<integer (default: 2) | unlimited>`
-  - Configures the maximum audit cycles before a Hard Stop. Set to `unlimited` to cycle until a clean pass or Plan Veto, or specify an integer limit (e.g., `1`, `3`).
-- **Plan Veto Escalation:** When the auditor determines that the plan is architecturally flawed or conceived as a patch that cannot be made permanent and residue-free, halt execution immediately and escalate directly to the user with the auditor's findings. Do not attempt autonomous remediation.
-
-**Completion Criterion:** `implementation_plan.md` exists with the users-and-jobs list, the scenario table, and the invariant table, the strategy, every milestone, the Verification Matrix (baseline checks, scenario table, and invariant table), the verbatim Subagent Spawn Directive, and the declared Audit Budget.
+**Completion Criterion:** `implementation_plan.md` exists with the users-and-jobs list, the scenario table, the invariant table, every milestone, and the Verification Matrix (`Baseline Checks`, `Audit Budget`, and the verbatim `Subagent Spawn Directive`).

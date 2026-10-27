@@ -21,24 +21,24 @@ def extract_md_paths_from_text(text: str) -> Set[str]:
     return paths
 
 
-def extract_viewed_md_files(step: Dict[str, Any]) -> Set[str]:
+def extract_read_md_files(step: Dict[str, Any]) -> Set[str]:
     md_files: Set[str] = set()
 
     tool_calls = step.get("tool_calls")
     if isinstance(tool_calls, list):
         for tc in tool_calls:
-            if isinstance(tc, dict) and tc.get("name") == "view_file":
+            if isinstance(tc, dict) and tc.get("name") == "read_file":
                 args = tc.get("args")
                 if isinstance(args, dict):
-                    filepath = args.get("AbsolutePath") or args.get("targetFile") or args.get("path")
+                    filepath = args.get("Path")
                     if isinstance(filepath, str) and filepath.strip().lower().endswith(".md"):
                         md_files.add(filepath.strip())
 
     tc = step.get("toolCall")
-    if isinstance(tc, dict) and tc.get("name") == "view_file":
+    if isinstance(tc, dict) and tc.get("name") == "read_file":
         args = tc.get("args")
         if isinstance(args, dict):
-            filepath = args.get("AbsolutePath") or args.get("targetFile") or args.get("path")
+            filepath = args.get("Path")
             if isinstance(filepath, str) and filepath.strip().lower().endswith(".md"):
                 md_files.add(filepath.strip())
 
@@ -111,7 +111,7 @@ def is_tool_allowed(tool_name: str, transcript_path: str) -> bool:
     md_files_to_check: Set[str] = extract_md_paths_from_text(latest_user_text)
 
     for step in steps[last_user_idx:]:
-        md_files_to_check.update(extract_viewed_md_files(step))
+        md_files_to_check.update(extract_read_md_files(step))
 
     # 3. Scan collected .md files
     for filepath in md_files_to_check:

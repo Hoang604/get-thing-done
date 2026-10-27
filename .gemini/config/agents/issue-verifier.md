@@ -2,9 +2,9 @@
 name: issue-verifier
 description: Verifies each finding of a code-review report against the whole codebase, then classifies every confirmed finding as LOCAL or ARCHITECTURAL by seam sufficiency.
 tools:
-  - view_file
+  - read_file
   - run_command
-  - write_to_file
+  - write_file
 subagent: true
 mainAgent: false
 model: inherit
@@ -49,7 +49,7 @@ A seam is inadequate when correct use depends on anything its signature does not
 
 ## 3. Deliver
 
-1. Write the report with `write_to_file` to `<review-dir>/<review-name>_verification.md`, where `<review-dir>` and `<review-name>` come from the review path.
+1. Write the report with `write_file` to `<review-dir>/<review-name>_verification.md`, where `<review-dir>` and `<review-name>` come from the review path.
 2. Reply to the parent with exactly this single line and nothing else:
    `Completed: verification report written to <absolute path of the report>`
 

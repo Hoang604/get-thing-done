@@ -37,7 +37,7 @@ Ask: **Can the defect be fixed behind the seam alone, leaving every caller corre
 
 1. **Gather Context**:
    - If full context and related code are already known, proceed directly.
-   - Otherwise, read the relevant code and trace the seam using `grep_search` and `view_file` until the seam is understood.
+   - Otherwise, read the relevant code and trace the seam using `grep_search` and `read_file` until the seam is understood.
 
 2. **Evaluate & Classify**:
    - Contrast caller expectations with seam guarantees using the Decision Test and Evaluation Levers.

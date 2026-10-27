@@ -45,7 +45,7 @@ Completion criterion: The subagent completes execution and emits its audit artif
 
 ### 3. Stage 2: Domain Resolution (Main Agent)
 
-Read the audit artifact emitted by the subagent using `view_file`.
+Read the audit artifact emitted by the subagent using `read_file`.
 
 If unresolved items exist in the audit artifact, invoke `ask_question`:
 - **Grounded Question**: Open by articulating the codebase reality that blocks the specification and why engineering cannot resolve it without a business policy decision, then pose the domain choice.

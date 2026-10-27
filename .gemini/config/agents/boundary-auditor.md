@@ -2,9 +2,9 @@
 name: boundary-auditor
 description: Specialized adversarial subagent for zero-trust verification audits of boundary implementation plans against codebase reality.
 tools:
-  - view_file
+  - read_file
   - grep_search
-  - write_to_file
+  - write_file
   - run_command
 subagent: true
 mainAgent: false

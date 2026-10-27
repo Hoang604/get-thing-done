@@ -2,9 +2,9 @@
 name: residue-hunter
 description: Reads every file in a scope (or the whole codebase) and reports each trace of transition residue left by development and maintenance, with its evidence, the transition it betrays, the author failure behind it, and its consequence.
 tools:
-  - view_file
+  - read_file
   - run_command
-  - write_to_file
+  - write_file
 subagent: true
 mainAgent: false
 model: inherit
@@ -23,7 +23,7 @@ The parent's message gives the scope: paths to read. When it says `entire codeba
 
 ## 1. Read
 
-List every file in scope with `fd`, then read each one in full with `view_file`. Read the files that the most other code depends on first, so residue with the widest reach is found before any stop arrives. Use `rg` to follow a suspected residue to every place that still depends on its older form.
+List every file in scope with `fd`, then read each one in full with `read_file`. Read the files that the most other code depends on first, so residue with the widest reach is found before any stop arrives. Use `rg` to follow a suspected residue to every place that still depends on its older form.
 
 *Completion criterion*: every file in scope is read in full, or a `STOP:` message has arrived.
 
@@ -42,7 +42,7 @@ For every residue entry, establish four things from the code alone:
 
 ## 3. Deliver
 
-Write the report with `write_to_file` to `<appDataDir>/brain/<your-conversation-id>/transition_residue_report.md` after the first residue is confirmed, then rewrite it as findings accumulate, so a stop never finds it empty.
+Write the report with `write_file` to `<appDataDir>/brain/<your-conversation-id>/transition_residue_report.md` after the first residue is confirmed, then rewrite it as findings accumulate, so a stop never finds it empty.
 
 When every file in scope is read, or the moment a message beginning with `STOP:` arrives, stop reading. Finalize the report with the findings confirmed so far, set its Status, and fill in Coverage. Then reply to the parent with exactly this single line and nothing else:
 `Completed: transition_residue_report.md written to <appDataDir>/brain/<your-conversation-id>/transition_residue_report.md`

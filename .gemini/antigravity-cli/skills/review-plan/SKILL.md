@@ -25,7 +25,7 @@ disable-model-invocation: true
 
    *Completion criterion*: `plan-reviewer` is dispatched and the conversation contains the verbatim dispatched prompt inside a blockquote (`>`).
 4. **Challenge & Adjudicate Findings**:
-   When the subagent replies, read `plan_review.md` in full with `view_file` and verify each finding against the codebase (`file:line`) and the request before editing the plan:
+   When the subagent replies, read `plan_review.md` in full with `read_file` and verify each finding against the codebase (`file:line`) and the request before editing the plan:
    - **Holds**: Confirmed by code evidence (`file:line`) or the request. Apply the remediation to `implementation_plan.md`.
    - **Fails**: Contradicted by code evidence or the request. Keep `implementation_plan.md` as it is and record the refuting `file:line` or request text.
    - **Partly holds**: Apply only the confirmed part to `implementation_plan.md`, and keep the rest with its refuting evidence.

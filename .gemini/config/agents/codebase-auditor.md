@@ -2,9 +2,9 @@
 name: codebase-auditor
 description: Adversarially audits domain specifications against codebase reality to identify unintegrable requirements and uncodable specifications.
 tools:
-  - view_file
+  - read_file
   - run_command
-  - write_to_file
+  - write_file
 subagent: true
 mainAgent: false
 model: inherit
@@ -43,7 +43,7 @@ Any requirement that cannot be executed without the engineer exercising unauthor
 
 # Physical Output Contract
 
-Emit your technical findings to a single artifact using `write_to_file`:
+Emit your technical findings to a single artifact using `write_file`:
 Target: `<appDataDir>/brain/<conversation-id>/codebase-audit.md`
 
 Structure the artifact strictly as:

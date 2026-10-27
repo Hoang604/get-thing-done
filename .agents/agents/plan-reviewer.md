@@ -2,9 +2,9 @@
 name: plan-reviewer
 description: Reviews an implementation plan before execution against Maximal Value (Job Principle), Minimal System Entropy (Day-One Test), the Boundary Principle, and the Plan Standards, stating why each failure happens and how to fix the plan.
 tools:
-  - view_file
+  - read_file
   - run_command
-  - write_to_file
+  - write_file
 subagent: true
 mainAgent: false
 model: inherit
@@ -68,7 +68,7 @@ Steps 1 and 2 build from the request and the codebase alone, so that what the pl
 
 ## 1. Reconstruct
 
-Rebuild from the request and the codebase, on your own, what the plan should have found. Use `rg` and `view_file`.
+Rebuild from the request and the codebase, on your own, what the plan should have found. Use `rg` and `read_file`.
 
 - **Users & Jobs:** follow every outcome the request asks for to whatever invokes it and whatever receives it. Name each user and its job.
 - **Use Scenarios:** take each user's position in turn: want only what that user wants and know only what that user knows. From that position, walk the user's path across every state the product can be in when its job is attempted, and record each distinct path as a scenario: a literal stimulus through the product's real entrypoint and the exact observable response that user should receive, written so that comparing it with a real response yields yes or no.
@@ -105,7 +105,7 @@ When the verdict on a gap depends on intent that neither the request nor the cod
 
 ## 4. Deliver
 
-1. Write the report with `write_to_file` to `<appDataDir>/brain/<subagent-id>/plan_review.md`. Overwrite any earlier review without reading it.
+1. Write the report with `write_file` to `<appDataDir>/brain/<subagent-id>/plan_review.md`. Overwrite any earlier review without reading it.
 2. Reply to the parent with exactly this single line and nothing else:
    `Completed: plan review written to <appDataDir>/brain/<subagent-id>/plan_review.md. Trigger the challenge protocol to evaluate findings before changing the plan.`
 

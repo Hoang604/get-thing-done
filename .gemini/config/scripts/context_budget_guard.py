@@ -24,8 +24,8 @@ from compact_threshold_tracker import (
 
 WARN_RATIO: float = 0.90
 BLOCK_RATIO: float = 0.95
-MAX_VIEW_FILE_LINES: int = 800
-MAX_VIEW_FILE_BYTES: int = 46_080
+MAX_READ_FILE_LINES: int = 800
+MAX_READ_FILE_BYTES: int = 46_080
 GUARDED_COMMAND_RE: re.Pattern[str] = re.compile(r"\b(?:rg|grep|cat)\b")
 
 
@@ -55,8 +55,8 @@ def build_subsequent_block_message(current_tokens: int, threshold_tokens: int) -
     )
 
 
-def estimate_view_file_tokens(args: dict[str, object]) -> int:
-    filepath_obj: object = args.get("AbsolutePath")
+def estimate_read_file_tokens(args: dict[str, object]) -> int:
+    filepath_obj: object = args.get("Path")
     if not isinstance(filepath_obj, str) or not os.path.isfile(filepath_obj):
         return 0
     try:
@@ -73,11 +73,11 @@ def estimate_view_file_tokens(args: dict[str, object]) -> int:
     start_line: int = max(1, start_raw)
     end_raw: int = parse_non_negative_int(args.get("EndLine"), total_lines)
     end_line: int = min(total_lines, max(start_line, end_raw))
-    end_line = min(end_line, start_line + MAX_VIEW_FILE_LINES - 1)
+    end_line = min(end_line, start_line + MAX_READ_FILE_LINES - 1)
 
     selected: list[str] = lines[start_line - 1 : end_line]
     raw_chars: int = sum(len(line) + 6 for line in selected)
-    capped_chars: int = min(raw_chars, MAX_VIEW_FILE_BYTES)
+    capped_chars: int = min(raw_chars, MAX_READ_FILE_BYTES)
     return int(capped_chars / CHARS_PER_TOKEN)
 
 
@@ -103,7 +103,7 @@ def estimate_cat_command_tokens(args: dict[str, object]) -> int:
         candidate: Path = Path(token) if os.path.isabs(token) else base_dir / token
         if candidate.is_file():
             try:
-                total_chars += min(candidate.stat().st_size, MAX_VIEW_FILE_BYTES)
+                total_chars += min(candidate.stat().st_size, MAX_READ_FILE_BYTES)
             except Exception:
                 pass
     return int(total_chars / CHARS_PER_TOKEN)
@@ -125,8 +125,8 @@ def evaluate_tool_budget_guard(
     args_obj: object = tool_call.get("args")
     args: dict[str, object] = args_obj if isinstance(args_obj, dict) else {}
 
-    if tool_name == "view_file":
-        incoming_tokens: int = estimate_view_file_tokens(args)
+    if tool_name == "read_file":
+        incoming_tokens: int = estimate_read_file_tokens(args)
     elif tool_name == "run_command" and is_guarded_run_command(args):
         incoming_tokens = estimate_cat_command_tokens(args)
     else:

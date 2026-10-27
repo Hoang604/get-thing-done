@@ -26,7 +26,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "view_file|run_command",
+        "matcher": "read_file|run_command",
         "hooks": [
           {
             "type": "command",
@@ -55,6 +55,20 @@
             "type": "command",
             "command": "python3 ~/.gemini/config/scripts/conditional_tool_guard.py",
             "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "read-file-widener": {
+    "PreToolUse": [
+      {
+        "matcher": "read_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.gemini/config/scripts/read_file_widener.py",
+            "timeout": 5
           }
         ]
       }
