@@ -31,7 +31,7 @@ Strictly adhere to the `<tool_mechanics>` constraints below.
 <tool_mechanics>
 - **run_command**: Always set `WaitMsBeforeAsync`=10000. Stop calling tools immediately after launching an async task. Rely on automatic reactive wakeup upon completion. For search, prefer `rg` and `fd` over `grep`, `find`, and `ls`:
   - **`rg`**: Always pass `-n` and regex alternation (`'A|B'`). For symbol, function definitions, prefer extract the body directly in a single pass using `-A N` with N >= 30 over rg + read_file. Bound output with `-A`, `-B`, `-C`, or `| head -n`.
-  - **`fd`**: Always specify `-t f` or `-t d`. Use `-e`, `-d`, and `-H` as appropriate.
+  - **`fd`**: Always specify `-t f` (append `-X wc -l` to get line counts) or `-t d`. Use `-e`, `-d`, and `-H` as appropriate.
   - **Generative Scoping**: Deduce paths, language filters (`-t`), and flags dynamically from target structure.
 </tool_mechanics>
 EOF

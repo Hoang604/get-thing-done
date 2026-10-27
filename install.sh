@@ -51,9 +51,19 @@ chmod +x "$TARGET_DIR/config/scripts/init-python-agent.sh"
 chmod +x "$TARGET_DIR/config/scripts/conditional_tool_guard.py"
 chmod +x "$TARGET_DIR/config/scripts/compact_threshold_tracker.py"
 chmod +x "$TARGET_DIR/config/scripts/context_budget_guard.py"
+chmod +x "$TARGET_DIR/config/scripts/read_file_widener.py"
+chmod +x "$TARGET_DIR/config/scripts/rtk_rewrite_hook.py"
 
 mkdir -p "$HOME/.local/bin"
 ln -sf "$TARGET_DIR/config/scripts/init-python-agent.sh" "$HOME/.local/bin/init-python-agent"
+
+# Install rtk (Rust Token Killer) CLI if not present
+if ! command -v rtk >/dev/null 2>&1 && [ ! -x "$HOME/.local/bin/rtk" ] && [ ! -x "$HOME/.cargo/bin/rtk" ]; then
+    if command -v curl >/dev/null 2>&1; then
+        echo "  Installing rtk (Rust Token Killer) to ~/.local/bin..."
+        curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh || echo "  Warning: rtk installation failed; hook will pass commands through unchanged."
+    fi
+fi
 
 # Merge opencode config into ~/.config/opencode/opencode.json
 OPENCODE_CFG_SRC="$TARGET_AGENTS_DIR/opencode.json"
