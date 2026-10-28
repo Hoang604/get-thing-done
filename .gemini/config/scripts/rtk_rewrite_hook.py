@@ -1,12 +1,20 @@
 #!/usr/bin/env python3
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 RTK_TIMEOUT_SECONDS: float = 4.0
+EXCLUDED_RTK_SUBCOMMANDS_RE: re.Pattern[str] = re.compile(
+    r"\brtk\s+(?=(?:rg|grep|fd|find)\b)"
+)
+
+
+def strip_excluded_rtk_rewrites(command_line: str) -> str:
+    return EXCLUDED_RTK_SUBCOMMANDS_RE.sub("", command_line)
 
 
 def resolve_rtk_binary() -> str:
@@ -37,7 +45,7 @@ def rewrite_command_with_rtk(command_line: str, rtk_bin: str) -> str:
         return command_line
 
     if completed.returncode in (0, 3):
-        rewritten: str = completed.stdout.strip()
+        rewritten: str = strip_excluded_rtk_rewrites(completed.stdout.strip())
         if rewritten:
             return rewritten
     return command_line
