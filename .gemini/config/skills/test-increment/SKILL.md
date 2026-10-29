@@ -17,9 +17,9 @@ Every test you add to `implementation_plan.md` must earn a **REAL** verdict unde
 ## Steps
 
 1. **Map milestones and existing tests.** Read the active `implementation_plan.md` (its `Users, Jobs & Use Scenarios` tables `S-xx` and `I-xx`, every `### Milestone N` section, and `### Verification Matrix`) along with the existing test files covering the files in each milestone's `File Manifest`.
-   - For each existing test that depends on a pre-change form or asserts internal details retired by Milestone $N$, record its fate (`deleted` or `rewritten`) in Milestone $N$'s `Retired Forms` and `File Manifest`.
+   - Search the workspace test suite with `rg` for every symbol in Milestone $N$'s `Retired Forms` and every symbol mutated in its `File Manifest`, and mark for deletion every existing test that relies on any property of the mutated code not guaranteed by Milestone $N$'s `Observable Outcome` and `Literal Contracts & Bound Structures`. Never rewrite such a test in place; cover Milestone $N$'s contracts with new REAL tests in `Test Matrix`.
    - For each Milestone $N$, derive the tests required to guard its `Acceptance Signal` (`S-xx`, `I-xx`) and `Literal Contracts & Bound Structures` so every contract rule introduced or modified by Milestone $N$ is covered by a test that satisfies all four REAL rules.
-   *Done when* every obsolete existing test is assigned a fate in the milestone that retires its form, and every milestone's contract rules are mapped to planned tests with all five fields filled in:
+   *Done when* every existing test that blocks Milestone $N$'s transition is mapped to the `Retired Form` or refactor in Milestone $N$ that it blocks, and every milestone's contract rules are mapped to planned tests with all five fields filled in:
    - the contract sentence
    - the mutant killed as `file:line` old → new
    - the surviving mutant (`none`)
@@ -27,9 +27,9 @@ Every test you add to `implementation_plan.md` must earn a **REAL** verdict unde
    - the reach path
 
 2. **Update `implementation_plan.md`.** Edit `implementation_plan.md` directly:
-   - In each `### Milestone N`, update `Retired Forms` and `#### File Manifest` (`[NEW]`, `[MODIFY]`, `[DELETE]`) for all touched test files, and add or update a `#### Test Matrix` subsection formatted to the anchor below.
+   - In each `### Milestone N`, record every deleted test in `Retired Forms`, update `#### File Manifest` (`[NEW]`, `[MODIFY]`, `[DELETE]`) for all touched test files, and add or update a `#### Test Matrix` subsection (including its `Deleted Tests` table) formatted to the anchor below.
    - In `### Verification Matrix`, update `Baseline Checks` with the exact workspace test runner commands covering the test files across all milestones.
-   *Done when* every `### Milestone N` in `implementation_plan.md` contains its `#### Test Matrix` formatted to the anchor below with `Surviving mutant` and `Refactor that turns it red` both equal to `none` on every row, `#### File Manifest` lists every created, modified, or deleted test file, and `### Verification Matrix` includes the exact test runner commands.
+   *Done when* every `### Milestone N` in `implementation_plan.md` contains its `#### Test Matrix` formatted to the anchor below with `Surviving mutant` and `Refactor that turns it red` both equal to `none` on every REAL test row and every deleted test listed in `Deleted Tests` and `Retired Forms`, `#### File Manifest` lists every created, modified, or deleted test file, and `### Verification Matrix` includes the exact test runner commands.
 
 ```markdown
 #### Test Matrix
@@ -37,4 +37,8 @@ Every test you add to `implementation_plan.md` must earn a **REAL** verdict unde
 | Test | Contract | Mutant killed | Surviving mutant | Refactor that turns it red | Reach |
 |---|---|---|---|---|---|
 | `tests/test_note_store.py::test_save_assigns_id_and_persists_draft` | Saving a draft persists its title and body and returns the saved note with its assigned id | `note_store.py:24` `repo.insert(draft)` → `SavedNote(id=1, title=draft.title, body=draft.body)` | none | none | public `save(NoteDraft)`, read back via `NoteRepository` |
+
+| Deleted test | Transition blocked |
+|---|---|
+| `[test_notes.py::test_save_note_with_custom_store](file:///tests/test_notes.py#L14-L28)` | Calls retired `save_note(title, body, store=None)` at `notes.py:52` |
 ```
