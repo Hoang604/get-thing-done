@@ -1,8 +1,8 @@
 # Domain Reference Research & Deep Research Prompt Builder
 
-> **Execution Override (No Plan Generation)**: **When** the user requests researching or creating an additional domain reference, execute ONLY the protocol in this file (spawning the web-search subagent, generating the Deep Research prompt, or writing the domain reference). Do NOT run the `boundary-plan` workflow and do NOT create `implementation_plan.md` or any plan artifact.
+> **Execution Override (No Plan Generation)**: **When** the user requests researching or creating an additional domain reference, execute ONLY the protocol in this file (always running both the autonomous web-search subagent and the external Deep Research prompt handover in parallel). Do NOT run the `boundary-plan` workflow and do NOT create `implementation_plan.md` or any plan artifact.
 
-Convert the user's raw domain query into either (1) an autonomous web-search subagent run that researches and writes a domain reference directly, or (2) a structured research prompt for an external research model to execute, matching the user's language across all outputs. Do not answer the user's domain question or introduce domain knowledge outside the user's text when constructing the prompt.
+Convert the user's raw domain query into both (1) an autonomous web-search subagent run that researches and writes a domain reference directly, and (2) a structured research prompt for an external research model to execute, matching the user's language across all outputs. Do not answer the user's domain question or introduce domain knowledge outside the user's text when constructing the prompt.
 
 ## Core principles
 
@@ -16,15 +16,15 @@ Every sentence you write inside the research prompt is governed by three invaria
 
 ## Execution protocol
 
-Execute the requested mode (or both in parallel when requested) without pausing to interview the user and without generating any implementation plan:
+Always execute both Mode 1 and Mode 2 in parallel without pausing to interview the user and without generating any implementation plan:
 
 ### Mode 1: Autonomous web-search subagent
 
-**When** spawning a subagent to research and write the domain reference autonomously, construct the research prompt using the 6 sections in Mode 2 below (with the **Verbatim Reference Standard** appended in full) and pass it to a subagent equipped with web search so it executes the investigation and returns the finished reference and verification tables directly.
+Spawn a subagent equipped with web search to research and write the domain reference autonomously: construct the research prompt using the 6 sections in Mode 2 below (with the **Verbatim Reference Standard** appended in full) and pass it to the subagent so it executes the investigation and returns the finished reference and verification tables directly.
 
 ### Mode 2: Construct and handover the Deep Research prompt
 
-**When** constructing a research prompt for an external research model, write the prompt in the user's language using imperative analytical directives, and append the **Verbatim Reference Standard** block below word-for-word inside the prompt so the external model receives the complete authoring specification in a single self-contained text. Include these exact sections in order:
+Construct and output the research prompt for an external research model in the user's language using imperative analytical directives, and append the **Verbatim Reference Standard** block below word-for-word inside the prompt so the external model receives the complete authoring specification in a single self-contained text. Include these exact sections in order:
 
 1. **Context** *(include **when** the user provided background premises)*: Map the complete topology of the user's background intact. Instruct the research model to treat the locked **baseline** as established truth to build upon immediately without re-searching, re-verifying, or re-proposing ruled-out paths, while treating any user-voiced suspicion as an open candidate hypothesis to test alongside competing explanations.
 2. **Mission Formulation**: Formulate the core investigative mission strictly from the user's **opaque** vocabulary and **blind** framing—mandating symmetrical testing of any presupposition and excavation of the deeper generative forces that produce the surface answer. Use the field's specialized terminology, notation conventions, and evidence standards without simplification for a domain-literate reader; define foundational premises explicitly before building the argument, and state uncertainty through explicit confidence qualifiers and evidential gaps without translating jargon into everyday language.
