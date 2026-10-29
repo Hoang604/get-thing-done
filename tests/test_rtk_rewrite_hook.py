@@ -34,6 +34,14 @@ class TestRtkRewriteHook(unittest.TestCase):
             '      echo "rtk git log -n 5"\n'
             "      exit 3\n"
             "      ;;\n"
+            '    "rg -n foo src/")\n'
+            '      echo "rtk rg -n foo src/"\n'
+            "      exit 0\n"
+            "      ;;\n"
+            '    "rg -n foo src/ && git status")\n'
+            '      echo "rtk rg -n foo src/ && rtk git status"\n'
+            "      exit 0\n"
+            "      ;;\n"
             '    "echo hello")\n'
             "      exit 1\n"
             "      ;;\n"
@@ -83,6 +91,28 @@ class TestRtkRewriteHook(unittest.TestCase):
                 rtk_bin=str(self.fake_rtk),
             )
             self.assertEqual(res, {"decision": "allow"})
+
+    def test_excludes_rg_from_rtk_wrapping(self) -> None:
+        res_single = evaluate_rtk_rewrite(
+            {"name": "run_command", "args": {"CommandLine": "rg -n foo src/"}},
+            rtk_bin=str(self.fake_rtk),
+        )
+        self.assertEqual(res_single, {"decision": "allow"})
+
+        res_compound = evaluate_rtk_rewrite(
+            {
+                "name": "run_command",
+                "args": {"CommandLine": "rg -n foo src/ && git status"},
+            },
+            rtk_bin=str(self.fake_rtk),
+        )
+        self.assertEqual(
+            res_compound,
+            {
+                "decision": "allow",
+                "overwrite": {"CommandLine": "rg -n foo src/ && rtk git status"},
+            },
+        )
 
     def test_passes_through_for_other_tools_or_missing_binary(self) -> None:
         res_other_tool = evaluate_rtk_rewrite(
