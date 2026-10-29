@@ -53,6 +53,7 @@ chmod +x "$TARGET_DIR/config/scripts/compact_threshold_tracker.py"
 chmod +x "$TARGET_DIR/config/scripts/context_budget_guard.py"
 chmod +x "$TARGET_DIR/config/scripts/read_file_widener.py"
 chmod +x "$TARGET_DIR/config/scripts/rtk_rewrite_hook.py"
+chmod +x "$TARGET_DIR/config/scripts/skill_usage_tracker.py"
 
 mkdir -p "$HOME/.local/bin"
 ln -sf "$TARGET_DIR/config/scripts/init-python-agent.sh" "$HOME/.local/bin/init-python-agent"

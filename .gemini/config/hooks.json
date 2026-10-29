@@ -87,5 +87,19 @@
         ]
       }
     ]
+  },
+  "skill-usage-tracker": {
+    "PostToolUse": [
+      {
+        "matcher": "read_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.gemini/config/scripts/skill_usage_tracker.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
   }
 }
