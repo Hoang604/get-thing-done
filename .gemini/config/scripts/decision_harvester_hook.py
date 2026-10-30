@@ -843,7 +843,7 @@ def evaluate_pre_invocation(
             new_user_msgs if saw_any_user_input else 1
         )
         msgs += effective_new_user_msgs
-        inject_steps: list[dict[str, str]] = []
+        inject_steps: list[dict[str, dict[str, str]]] = []
 
         if (
             effective_new_user_msgs > 0
@@ -855,7 +855,7 @@ def evaluate_pre_invocation(
                 injected_in_cycle = True
             else:
                 prompt_msg = build_reminder_prompt(config)
-            inject_steps.append({"ephemeralMessage": prompt_msg})
+            inject_steps.append({"systemMessage": {"systemMessage": prompt_msg}})
 
         updated_state = DecisionHarvesterState(
             conversation_id=clean_conv_id,

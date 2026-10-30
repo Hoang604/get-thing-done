@@ -7,15 +7,46 @@ if [ -z "$CONV_ID" ]; then
   CONV_ID="default"
 fi
 
-COUNTER_FILE="/tmp/agy_ci_turn_${CONV_ID}"
-
-# Increment turn counter T (starts at 1)
-if [ -f "$COUNTER_FILE" ]; then
-  T=$(($(cat "$COUNTER_FILE") + 1))
-else
-  T=1
+CLEAN_CONV_ID=$(printf '%s' "$CONV_ID" | sed 's/[^a-zA-Z0-9_-]/_/g')
+if [ -z "$CLEAN_CONV_ID" ]; then
+  CLEAN_CONV_ID="default"
 fi
-echo "$T" > "$COUNTER_FILE"
+
+COUNTER_FILE="/tmp/agy_ci_turn_${CLEAN_CONV_ID}"
+STATE_FILE="/tmp/agy_compact_state/${CLEAN_CONV_ID}.json"
+
+T=0
+LAST_INJECT_T=0
+LAST_INJECT_TOKENS=0
+if [ -f "$COUNTER_FILE" ]; then
+  read -r T LAST_INJECT_T LAST_INJECT_TOKENS < "$COUNTER_FILE"
+  [[ "$T" =~ ^[0-9]+$ ]] || T=0
+  [[ "$LAST_INJECT_T" =~ ^[0-9]+$ ]] || LAST_INJECT_T=0
+  [[ "$LAST_INJECT_TOKENS" =~ ^[0-9]+$ ]] || LAST_INJECT_TOKENS=0
+fi
+T=$((T + 1))
+
+LAST_TOKENS=0
+PENDING_TOKENS=0
+if [ -f "$STATE_FILE" ]; then
+  read -r LAST_TOKENS PENDING_TOKENS < <(
+    jq -r '[(.last_tokens // 0 | floor), (.pending_turn_tokens // 0 | floor)] | @tsv' "$STATE_FILE" 2>/dev/null || echo "0 0"
+  )
+  [[ "$LAST_TOKENS" =~ ^[0-9]+$ ]] || LAST_TOKENS=0
+  [[ "$PENDING_TOKENS" =~ ^[0-9]+$ ]] || PENDING_TOKENS=0
+fi
+CUR_TOKENS=$((LAST_TOKENS + PENDING_TOKENS))
+
+# Backfill baseline token count once the first PLANNER_RESPONSE reports input tokens
+if (( LAST_INJECT_TOKENS == 0 && LAST_TOKENS > 0 )); then
+  LAST_INJECT_TOKENS=$LAST_TOKENS
+fi
+
+# Detect context compaction drop (< 65% of last injected token count)
+COMPACT_DROP=0
+if (( LAST_INJECT_TOKENS > 0 && CUR_TOKENS > 0 && CUR_TOKENS * 100 < LAST_INJECT_TOKENS * 65 )); then
+  COMPACT_DROP=1
+fi
 
 
 header="<critical_instructions>
@@ -39,14 +70,18 @@ EOF
 
 footer="</critical_instructions>"
 
-# Alternate turns: inject full instructions on odd turns, turn off completely on even turns
-if (( T % 2 == 1 )); then
+# Inject instructions as a persistent systemMessage at T=1, after 5 turns, after >=30k token growth, or after compaction
+if (( T == 1 || LAST_INJECT_T == 0 || T - LAST_INJECT_T >= 5 || CUR_TOKENS - LAST_INJECT_TOKENS >= 30000 || COMPACT_DROP == 1 )); then
+  LAST_INJECT_T=$T
+  LAST_INJECT_TOKENS=$CUR_TOKENS
+  echo "$T $LAST_INJECT_T $LAST_INJECT_TOKENS" > "$COUNTER_FILE"
   message="${header}
 ${ci_1}
 ${ci_2}
 ${ci_3}
 ${footer}"
-  jq -n --arg msg "$message" '{ "injectSteps": [ { "ephemeralMessage": $msg } ] }'
+  jq -n --arg msg "$message" '{ "injectSteps": [ { "systemMessage": { "systemMessage": $msg } } ] }'
 else
+  echo "$T $LAST_INJECT_T $LAST_INJECT_TOKENS" > "$COUNTER_FILE"
   jq -n '{ "injectSteps": [] }'
 fi

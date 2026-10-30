@@ -137,7 +137,7 @@ class TestDecisionHarvesterHook(unittest.TestCase):
         )
         self.assertEqual(
             res_3,
-            {"injectSteps": [{"ephemeralMessage": expected_full}]},
+            {"injectSteps": [{"systemMessage": {"systemMessage": expected_full}}]},
         )
 
         # Reactive wakeup right after message 3 (when counter is still 3):
@@ -177,7 +177,7 @@ class TestDecisionHarvesterHook(unittest.TestCase):
         )
         self.assertEqual(
             res_6,
-            {"injectSteps": [{"ephemeralMessage": expected_reminder}]},
+            {"injectSteps": [{"systemMessage": {"systemMessage": expected_reminder}}]},
         )
 
         # Compaction occurs (tokens drop from 140,000 -> 25,000): cycle resets!
@@ -214,7 +214,7 @@ class TestDecisionHarvesterHook(unittest.TestCase):
         )
         self.assertEqual(
             res_post_3,
-            {"injectSteps": [{"ephemeralMessage": expected_full}]},
+            {"injectSteps": [{"systemMessage": {"systemMessage": expected_full}}]},
         )
 
     def test_prompt_section_replace_and_slot_inject(self) -> None:
@@ -245,13 +245,15 @@ prompt:
             {
                 "injectSteps": [
                     {
-                        "ephemeralMessage": (
-                            "<critical_instructions>\n"
-                            "CUSTOM HEADER: OrderEngine\n\n"
-                            "CAPTURE: Always record rounding invariants.\n\n"
-                            "CUSTOM CONTRACT\n"
-                            "</critical_instructions>"
-                        )
+                        "systemMessage": {
+                            "systemMessage": (
+                                "<critical_instructions>\n"
+                                "CUSTOM HEADER: OrderEngine\n\n"
+                                "CAPTURE: Always record rounding invariants.\n\n"
+                                "CUSTOM CONTRACT\n"
+                                "</critical_instructions>"
+                            )
+                        }
                     }
                 ]
             },
@@ -395,7 +397,7 @@ prompt:
         expected_full: str = build_full_prompt(load_harvester_config(self.workspace))
         self.assertEqual(
             res_2,
-            {"injectSteps": [{"ephemeralMessage": expected_full}]},
+            {"injectSteps": [{"systemMessage": {"systemMessage": expected_full}}]},
         )
 
         # Case 3: Brand-new conversation without statusline or state resolves from transcript tool_calls
