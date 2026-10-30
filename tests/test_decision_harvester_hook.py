@@ -56,6 +56,17 @@ class TestDecisionHarvesterHook(unittest.TestCase):
             }
         )
 
+    def _append_user_step(
+        self, content: str = "user decision message", source: str = "USER_EXPLICIT"
+    ) -> None:
+        self._append_step(
+            {
+                "type": "USER_INPUT",
+                "source": source,
+                "content": content,
+            }
+        )
+
     def test_disabled_when_no_config_or_enabled_false(self) -> None:
         res_no_cfg = evaluate_pre_invocation(
             conv_id=self.conv_id,
@@ -80,7 +91,8 @@ class TestDecisionHarvesterHook(unittest.TestCase):
         self._write_config("enabled: true\nevery_n_messages: 3\n")
 
         # Messages 1 and 2: no injection
-        for _ in range(2):
+        for idx in range(2):
+            self._append_user_step(f"user message {idx + 1}")
             self._append_planner_step(50_000)
             res = evaluate_pre_invocation(
                 conv_id=self.conv_id,
@@ -90,7 +102,22 @@ class TestDecisionHarvesterHook(unittest.TestCase):
             )
             self.assertEqual(res, {"injectSteps": []})
 
-        # Message 3 (first N): injects FULL prompt
+        # Reactive wakeup from background task / subagent (source == SYSTEM) before message 3:
+        # Must NOT count as message 3 and must NOT trigger injection!
+        self._append_user_step(
+            "[Message] Subagent completed background work", source="SYSTEM"
+        )
+        self._append_planner_step(65_000)
+        res_sys_wakeup = evaluate_pre_invocation(
+            conv_id=self.conv_id,
+            transcript_path=str(self.transcript_file),
+            workspace_root=self.workspace,
+            state_dir=self.state_dir,
+        )
+        self.assertEqual(res_sys_wakeup, {"injectSteps": []})
+
+        # Message 3 (first N explicit user message): injects FULL prompt
+        self._append_user_step("user message 3")
         self._append_planner_step(80_000)
         res_3 = evaluate_pre_invocation(
             conv_id=self.conv_id,
@@ -108,8 +135,23 @@ class TestDecisionHarvesterHook(unittest.TestCase):
         self.assertIn("## Unconfirmed", msg_3)
         self.assertNotIn("{{", msg_3)
 
+        # Reactive wakeup right after message 3 (when counter is still 3):
+        # Must NOT re-inject on system wakeup!
+        self._append_user_step(
+            "[Message] Background task finished", source="SYSTEM"
+        )
+        self._append_planner_step(95_000)
+        res_sys_after_3 = evaluate_pre_invocation(
+            conv_id=self.conv_id,
+            transcript_path=str(self.transcript_file),
+            workspace_root=self.workspace,
+            state_dir=self.state_dir,
+        )
+        self.assertEqual(res_sys_after_3, {"injectSteps": []})
+
         # Messages 4 and 5: no injection
-        for _ in range(2):
+        for idx in range(2):
+            self._append_user_step(f"user message {idx + 4}")
             self._append_planner_step(110_000)
             res = evaluate_pre_invocation(
                 conv_id=self.conv_id,
@@ -120,6 +162,7 @@ class TestDecisionHarvesterHook(unittest.TestCase):
             self.assertEqual(res, {"injectSteps": []})
 
         # Message 6 (2N in same cycle): injects SHORT REMINDER prompt
+        self._append_user_step("user message 6")
         self._append_planner_step(140_000)
         res_6 = evaluate_pre_invocation(
             conv_id=self.conv_id,
@@ -138,6 +181,7 @@ class TestDecisionHarvesterHook(unittest.TestCase):
         # Compaction occurs (tokens drop from 140,000 -> 25,000): cycle resets!
         # Message 1 after compact:
         self._append_planner_step(25_000)
+        self._append_user_step("post-compact user message 1")
         res_post_1 = evaluate_pre_invocation(
             conv_id=self.conv_id,
             transcript_path=str(self.transcript_file),
@@ -147,6 +191,7 @@ class TestDecisionHarvesterHook(unittest.TestCase):
         self.assertEqual(res_post_1, {"injectSteps": []})
 
         # Message 2 after compact:
+        self._append_user_step("post-compact user message 2")
         self._append_planner_step(35_000)
         res_post_2 = evaluate_pre_invocation(
             conv_id=self.conv_id,
@@ -157,6 +202,7 @@ class TestDecisionHarvesterHook(unittest.TestCase):
         self.assertEqual(res_post_2, {"injectSteps": []})
 
         # Message 3 after compact (first N in new cycle): injects FULL prompt again!
+        self._append_user_step("post-compact user message 3")
         self._append_planner_step(45_000)
         res_post_3 = evaluate_pre_invocation(
             conv_id=self.conv_id,

@@ -542,29 +542,50 @@ def save_harvester_state(state_dir: Path, state: DecisionHarvesterState) -> None
         pass
 
 
-def detect_compaction_in_transcript(
+def is_explicit_user_message_step(step: dict[str, object]) -> bool:
+    if step.get("type") != "USER_INPUT":
+        return False
+    if step.get("source") == "SYSTEM":
+        return False
+    content_obj: object = step.get("content")
+    if not isinstance(content_obj, str):
+        return False
+    stripped: str = content_obj.strip()
+    if not stripped:
+        return False
+    if (
+        stripped == "/compact"
+        or stripped.startswith("/compact ")
+        or "<CONTEXT_SUMMARY>" in stripped
+        or stripped.startswith("<SYSTEM_MESSAGE>")
+    ):
+        return False
+    return True
+
+
+def analyze_transcript_delta(
     transcript_path: str,
-    last_planner_turn: int,
+    last_scanned_line: int,
     last_input_tokens: int,
-) -> tuple[bool, int, int]:
-    """Return (compacted_since_last_turn, new_last_planner_turn, new_last_input_tokens)."""
+) -> tuple[bool, int, int, int, bool]:
+    """Return (compacted, new_user_msgs, new_last_scanned_line, new_last_input_tokens, saw_any_user_input_in_file)."""
     target_file: Path | None = resolve_transcript_file(transcript_path)
     if target_file is None:
-        return False, last_planner_turn, last_input_tokens
+        return False, 0, last_scanned_line, last_input_tokens, False
 
     try:
         with open(target_file, "r", encoding="utf-8", errors="ignore") as f:
             lines: list[str] = f.readlines()
     except Exception:
-        return False, last_planner_turn, last_input_tokens
+        return False, 0, last_scanned_line, last_input_tokens, False
 
     compacted: bool = False
-    cur_turn: int = last_planner_turn
+    new_user_msgs: int = 0
+    cur_line: int = last_scanned_line
     cur_tokens: int = last_input_tokens
+    saw_any_user_input: bool = False
 
     for line_idx, raw_line in enumerate(lines, 1):
-        if line_idx <= last_planner_turn:
-            continue
         line_str: str = raw_line.strip()
         if not line_str:
             continue
@@ -576,6 +597,13 @@ def detect_compaction_in_transcript(
             continue
 
         step_type: object = step.get("type")
+        if step_type == "USER_INPUT":
+            saw_any_user_input = True
+
+        if line_idx <= last_scanned_line:
+            continue
+
+        cur_line = max(cur_line, line_idx)
         content_obj: object = step.get("content")
         if isinstance(content_obj, str):
             stripped_content: str = content_obj.strip()
@@ -585,6 +613,7 @@ def detect_compaction_in_transcript(
                 or stripped_content.startswith("/compact ")
             ):
                 compacted = True
+                new_user_msgs = 0
 
         if step_type == "PLANNER_RESPONSE":
             inp_tok: int = parse_non_negative_int(step.get("input_tokens"), 0)
@@ -593,13 +622,19 @@ def detect_compaction_in_transcript(
             if total_in > 0:
                 if cur_tokens > 0 and total_in < int(cur_tokens * COMPACT_DROP_RATIO):
                     compacted = True
+                    new_user_msgs = 0
                 cur_tokens = total_in
-                cur_turn = max(cur_turn, line_idx)
+        elif is_explicit_user_message_step(step):
+            new_user_msgs += 1
 
-    if not compacted and last_planner_turn >= 0 and is_manual_compact_in_transcript(transcript_path):
+    if (
+        not compacted
+        and last_scanned_line >= 0
+        and is_manual_compact_in_transcript(transcript_path)
+    ):
         compacted = True
 
-    return compacted, cur_turn, cur_tokens
+    return compacted, new_user_msgs, cur_line, cur_tokens, saw_any_user_input
 
 
 def resolve_workspace_root(
@@ -662,19 +697,32 @@ def evaluate_pre_invocation(
         if current_fp != state.decisions_fingerprint or target_missing_block:
             sync_decisions_index(workspace_root, config.decisions_dir)
 
-        compacted, new_turn, new_tokens = detect_compaction_in_transcript(
+        (
+            compacted,
+            new_user_msgs,
+            new_turn,
+            new_tokens,
+            saw_any_user_input,
+        ) = analyze_transcript_delta(
             transcript_path=transcript_path,
-            last_planner_turn=state.last_planner_turn,
+            last_scanned_line=state.last_planner_turn,
             last_input_tokens=state.last_input_tokens,
         )
 
         msgs: int = 0 if compacted else state.messages_since_cycle_start
         injected_in_cycle: bool = False if compacted else state.injected_in_cycle
 
-        msgs += 1
+        effective_new_user_msgs: int = (
+            new_user_msgs if saw_any_user_input else 1
+        )
+        msgs += effective_new_user_msgs
         inject_steps: list[dict[str, str]] = []
 
-        if msgs >= config.every_n_messages and (msgs % config.every_n_messages == 0):
+        if (
+            effective_new_user_msgs > 0
+            and msgs >= config.every_n_messages
+            and (msgs % config.every_n_messages == 0)
+        ):
             if not injected_in_cycle:
                 prompt_msg: str = build_full_prompt(config)
                 injected_in_cycle = True
