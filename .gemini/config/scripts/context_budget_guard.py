@@ -36,10 +36,11 @@ def build_warning_message(current_tokens: int, threshold_tokens: int) -> str:
     return (
         "<critical_instructions>\n"
         f"Context usage is at {pct:.1f}% ({current_tokens} / {threshold_tokens} tokens).\n"
-        "Keep calling tools continuously in this turn until the harness triggers auto-compaction on its own—ending your turn or waiting for compaction halts execution:\n"
-        "1. **When** context holds settled file edits or ledger/artifact updates not yet written to disk: state in one sentence which file you are writing now, dispatch only those write/edit tool calls in this step, and in the very next step after they return, immediately dispatch your next read/search/verification tool calls without ending your turn.\n"
-        "2. **When** all settled changes are already on disk: dispatch the next tool calls for the current task step immediately in this step.\n"
-        "3. **Guardrail**: Do NOT output a compaction `<summary>`, a `Read-next working set`, or a remaining-work recap in chat—the `<summary>` is generated only when the harness explicitly prompts for compaction after wiping the turn.\n"
+        "While unfinished work remains, keep calling tools continuously in this turn until the harness triggers auto-compaction on its own—ending your turn early or waiting for compaction halts execution:\n"
+        f"1. **When** context holds settled file edits or ledger/artifact updates not yet written to disk: notify the user in one sentence (in their language) that context is nearly full ({pct:.1f}%) so you will save `<file>` to disk first and then either continue with `<next action>` toward auto-compaction (if work remains) or finish the task (if no steps remain); dispatch only those write/edit tool calls in this step, and as soon as they return, immediately dispatch the next step's tool calls without ending your turn (or deliver the final completion report if the task is now complete).\n"
+        f"2. **When** all settled changes are already on disk and further task steps remain: notify the user in one sentence (in their language) that context is nearly full ({pct:.1f}%, all changes saved on disk) so you will continue with `<next action>` immediately toward auto-compaction, and dispatch the next tool calls for the current task step in this same step.\n"
+        "3. **When** all settled changes are already on disk and no further task steps remain: do not dispatch extra tool calls; deliver your final completion response and end your turn normally.\n"
+        "4. **Guardrail**: Aside from the single status sentence above (or the final completion response in case 3), do NOT output a compaction `<summary>`, a `Read-next working set`, or a remaining-work recap in chat—the `<summary>` is generated only when the harness explicitly prompts for compaction after wiping the turn.\n"
         "</critical_instructions>"
     )
 
