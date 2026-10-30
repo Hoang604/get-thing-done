@@ -206,7 +206,6 @@ decisions_dir: ".gtd/decisions"
 #       what_to_capture: "..."
 #       partitioning: "..."
 #       file_contract: "..."
-#       execution: "..."
 #     reminder:
 #       header: "..."
 #       reminder: "..."
@@ -214,7 +213,6 @@ decisions_dir: ".gtd/decisions"
 #     extra_capture_rules: ""
 #     partition_hints: ""
 #     extra_file_rules: ""
-#     extra_execution_rules: ""
 #     extra_reminder_rules: ""
 EOF
 

@@ -53,7 +53,6 @@ FULL_SECTION_ORDER: tuple[str, ...] = (
     "what_to_capture",
     "partitioning",
     "file_contract",
-    "execution",
 )
 
 REMINDER_SECTION_ORDER: tuple[str, ...] = (
@@ -66,61 +65,49 @@ def default_full_sections(decisions_dir: str) -> dict[str, str]:
     clean_dir: str = decisions_dir.rstrip("/")
     return {
         "header": (
-            "Apply the following decision-harvesting instruction alongside your current task "
-            "without narrating the hook itself."
+            "Apply the following instruction alongside your current task "
+            "without mentioning this hook."
         ),
         "what_to_capture": (
-            f"### 1. What to Capture into `{clean_dir}/`\n"
-            "Synthesize every decision from the conversation that defines how the system works—"
-            "what is valid or invalid behavior, structure, invariant, or responsibility in the system—"
-            "so future turns working on the codebase remain bound by it. Leave out transient task "
-            "commands and execution status that do not govern how the system works.\n"
+            f"### 1. Goal: Persist System-Shaping Decisions into `{clean_dir}/`\n"
+            f"Before ending this turn, record in `{clean_dir}/` every decision from the "
+            "conversation across these four categories (omitting one-off task instructions "
+            "and summaries of what the code already shows):\n"
+            "1. **Invariants & Rules**: What must always hold true in the system's domain or state.\n"
+            "2. **Boundaries & Responsibilities**: Which part of the system owns which decision or contract.\n"
+            "3. **Rejected Alternatives & Rationale**: Why an approach was chosen or ruled out, "
+            "so future work does not reintroduce rejected designs.\n"
+            "4. **Pending / Target Design**: Decided or candidate behavior not yet reflected in the codebase.\n"
             "{{extra_capture_rules}}"
         ),
         "partitioning": (
-            f"### 2. One Independent Concern per File (`{clean_dir}/<topic>.md`)\n"
-            f"Partition decisions across `{clean_dir}/<topic>.md` so each file governs a single "
-            "independent area of the system: decisions that a future task must consult together "
-            "when working on that area share a file, and decisions governing areas that can be "
-            "changed independently sit in separate files.\n"
-            f"- **When** a file for that area already exists in `{clean_dir}/`, update it in place: "
-            "merge new decisions, promote entries whose status changed, and delete any entry "
-            "superseded or rejected by the user's latest ruling.\n"
-            f"- **When** the decision governs an area with no existing file, create a new "
-            f"`{clean_dir}/<topic>.md` file named after that area.\n"
+            f"### 2. Partitioning (`{clean_dir}/<topic>.md`)\n"
+            f"Place each concern in its own `{clean_dir}/<topic>.md` file so decisions that a "
+            "future task must read together when working on the same part of the system share "
+            "one file, and independent parts of the system sit in separate files:\n"
+            f"- **When** a file for that part of the system already exists in `{clean_dir}/`, "
+            "update it in place and remove any prior entry that the user's latest decision "
+            "reverses or supersedes.\n"
+            "- **When** no file exists for that part of the system, create a new "
+            f"`{clean_dir}/<topic>.md` file.\n"
             "{{partition_hints}}"
         ),
         "file_contract": (
-            "### 3. File Structure & Classification Contract\n"
-            f"Format every `{clean_dir}/<topic>.md` file using this exact structure:\n\n"
+            "### 3. File Contract\n"
+            f"Write each `{clean_dir}/<topic>.md` file to this structure:\n\n"
             "```markdown\n"
             "---\n"
-            'description: "When <observable task or codebase condition touching this area>, '
-            'follow the confirmed decisions and check the unconfirmed directions in this file."\n'
+            'description: "When [condition observable when starting work on this part of the system], '
+            'follow [what this file governs]."\n'
             "---\n\n"
             "## Confirmed\n"
-            "- <Decision statement and the rationale/invariant it enforces>\n\n"
+            "- [Decision already in the codebase and confirmed right by the user, or discussed and "
+            "approved by the user for implementation in code]\n\n"
             "## Unconfirmed\n"
-            "- <Candidate decision or open architectural direction still under discussion>\n"
-            "```\n\n"
-            "- **`description` (YAML frontmatter)**: Write a single sentence beginning with "
-            "`When [condition]...` naming the observable task or code area that triggers reading "
-            "this file (a hook automatically syncs this `description` and file link into "
-            "`GEMINI.md` / `AGENTS.md`).\n"
-            "- **`## Confirmed`**: Place a decision here if and only if it is already in the "
-            "codebase and the user confirmed it is right, OR it was discussed and the user "
-            "approved implementing it in code.\n"
-            "- **`## Unconfirmed`**: Place all other system-shaping points discussed in the "
-            "conversation here until the user confirms them in code or approves them for "
-            "implementation.\n"
+            "- [System-shaping proposal or direction discussed in the conversation that is not yet "
+            "in `Confirmed`]\n"
+            "```\n"
             "{{extra_file_rules}}"
-        ),
-        "execution": (
-            "### 4. Execution\n"
-            f"Before finishing this turn, inspect `{clean_dir}/` and write or update the affected "
-            f"`{clean_dir}/<topic>.md` file(s) so every system-shaping decision from the "
-            "conversation so far is recorded under its current `Confirmed` or `Unconfirmed` status.\n"
-            "{{extra_execution_rules}}"
         ),
     }
 
@@ -129,14 +116,12 @@ def default_reminder_sections(decisions_dir: str) -> dict[str, str]:
     clean_dir: str = decisions_dir.rstrip("/")
     return {
         "header": (
-            "Apply the following decision-harvesting instruction alongside your current task "
-            "without narrating the hook itself."
+            "Apply the following instruction alongside your current task "
+            "without mentioning this hook."
         ),
         "reminder": (
-            "Sync any new or updated system-shaping decisions from the conversation since the "
-            f"last sync into `{clean_dir}/<topic>.md` (maintaining one independent concern per file, "
-            "the `When ...` frontmatter `description`, and `## Confirmed` vs. `## Unconfirmed` "
-            "status, promoting or removing prior entries as the user's rulings changed).\n"
+            f"Before ending this turn, update `{clean_dir}/<topic>.md` with any system-shaping "
+            "decisions added or changed since the last sync.\n"
             "{{extra_reminder_rules}}"
         ),
     }

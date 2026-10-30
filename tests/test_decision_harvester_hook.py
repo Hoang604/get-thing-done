@@ -130,7 +130,11 @@ class TestDecisionHarvesterHook(unittest.TestCase):
         self.assertEqual(len(steps_3), 1)
         msg_3 = steps_3[0].get("ephemeralMessage")
         assert isinstance(msg_3, str)
-        self.assertIn("### 1. What to Capture into `.gtd/decisions/`", msg_3)
+        self.assertIn(
+            "### 1. Goal: Persist System-Shaping Decisions into `.gtd/decisions/`",
+            msg_3,
+        )
+        self.assertIn("1. **Invariants & Rules**:", msg_3)
         self.assertIn("## Confirmed", msg_3)
         self.assertIn("## Unconfirmed", msg_3)
         self.assertNotIn("{{", msg_3)
@@ -175,8 +179,11 @@ class TestDecisionHarvesterHook(unittest.TestCase):
         self.assertEqual(len(steps_6), 1)
         msg_6 = steps_6[0].get("ephemeralMessage")
         assert isinstance(msg_6, str)
-        self.assertIn("Sync any new or updated system-shaping decisions", msg_6)
-        self.assertNotIn("### 1. What to Capture", msg_6)
+        self.assertIn(
+            "Before ending this turn, update `.gtd/decisions/<topic>.md` with any system-shaping decisions added or changed since the last sync.",
+            msg_6,
+        )
+        self.assertNotIn("### 1. Goal: Persist System-Shaping Decisions", msg_6)
 
         # Compaction occurs (tokens drop from 140,000 -> 25,000): cycle resets!
         # Message 1 after compact:
@@ -215,7 +222,10 @@ class TestDecisionHarvesterHook(unittest.TestCase):
         self.assertEqual(len(steps_post_3), 1)
         msg_post_3 = steps_post_3[0].get("ephemeralMessage")
         assert isinstance(msg_post_3, str)
-        self.assertIn("### 1. What to Capture into `.gtd/decisions/`", msg_post_3)
+        self.assertIn(
+            "### 1. Goal: Persist System-Shaping Decisions into `.gtd/decisions/`",
+            msg_post_3,
+        )
 
     def test_prompt_section_replace_and_slot_inject(self) -> None:
         self._write_config(
@@ -225,7 +235,7 @@ prompt:
   replace:
     full:
       header: "CUSTOM HEADER: {{project_name}}"
-      execution: "CUSTOM EXECUTION STEP"
+      file_contract: "CUSTOM FILE CONTRACT"
   inject:
     project_name: "OrderEngine"
     extra_capture_rules: "- Always record currency rounding invariants."
@@ -244,8 +254,8 @@ prompt:
         assert isinstance(msg, str)
         self.assertIn("CUSTOM HEADER: OrderEngine", msg)
         self.assertIn("- Always record currency rounding invariants.", msg)
-        self.assertIn("CUSTOM EXECUTION STEP", msg)
-        self.assertNotIn("Before finishing this turn, inspect", msg)
+        self.assertIn("CUSTOM FILE CONTRACT", msg)
+        self.assertNotIn("## Unconfirmed", msg)
         self.assertNotIn("{{", msg)
 
     def test_sync_decisions_index_target_priority_and_live_updates(self) -> None:
