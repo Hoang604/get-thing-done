@@ -19,6 +19,8 @@ from decision_harvester_hook import (
     evaluate_post_tool_use,
     evaluate_pre_invocation,
     load_harvester_config,
+    load_harvester_state,
+    resolve_workspace_root,
     sync_decisions_index,
 )
 
@@ -322,6 +324,106 @@ prompt:
             "When touching invoice or tax calculation, follow this updated file.",
             updated_agents_content,
         )
+
+    def test_pre_invocation_resolves_workspace_when_spawned_outside_project(
+        self,
+    ) -> None:
+        self._write_config("enabled: true\nevery_n_messages: 2\n")
+        unrelated_cwd: Path = self.temp_dir / "outside_cwd"
+        unrelated_cwd.mkdir(parents=True, exist_ok=True)
+        statusline_dir: Path = self.temp_dir / "statusline"
+
+        # Case 1: Statusline turn directory provides workspace for PreInvocation payload
+        turn_dir: Path = statusline_dir / self.conv_id / "turn-1"
+        turn_dir.mkdir(parents=True, exist_ok=True)
+        (turn_dir / "statusline_input.json").write_text(
+            json.dumps(
+                {
+                    "conversation_id": self.conv_id,
+                    "workspace": {
+                        "project_dir": str(self.workspace),
+                        "current_dir": str(self.workspace),
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        self._append_user_step("first message")
+        self._append_planner_step(20_000)
+        pre_payload: dict[str, object] = {
+            "conversationId": self.conv_id,
+            "transcriptPath": str(self.transcript_file),
+        }
+        resolved_1: Path = resolve_workspace_root(
+            payload=pre_payload,
+            fallback_root=unrelated_cwd,
+            state_dir=self.state_dir,
+            statusline_dir=statusline_dir,
+        )
+        self.assertEqual(resolved_1, self.workspace.resolve())
+
+        res_1 = evaluate_pre_invocation(
+            conv_id=self.conv_id,
+            transcript_path=str(self.transcript_file),
+            workspace_root=resolved_1,
+            state_dir=self.state_dir,
+        )
+        self.assertEqual(res_1, {"injectSteps": []})
+        saved_state = load_harvester_state(self.state_dir, self.conv_id)
+        self.assertEqual(saved_state.messages_since_cycle_start, 1)
+        self.assertEqual(saved_state.workspace_root, str(self.workspace.resolve()))
+
+        # Case 2: Even if statusline directory is removed, persisted state resolves workspace
+        shutil.rmtree(statusline_dir)
+        self._append_user_step("second message")
+        self._append_planner_step(30_000)
+        resolved_2: Path = resolve_workspace_root(
+            payload=pre_payload,
+            fallback_root=unrelated_cwd,
+            state_dir=self.state_dir,
+            statusline_dir=statusline_dir,
+        )
+        self.assertEqual(resolved_2, self.workspace.resolve())
+
+        res_2 = evaluate_pre_invocation(
+            conv_id=self.conv_id,
+            transcript_path=str(self.transcript_file),
+            workspace_root=resolved_2,
+            state_dir=self.state_dir,
+        )
+        expected_full: str = build_full_prompt(load_harvester_config(self.workspace))
+        self.assertEqual(
+            res_2,
+            {"injectSteps": [{"ephemeralMessage": expected_full}]},
+        )
+
+        # Case 3: Brand-new conversation without statusline or state resolves from transcript tool_calls
+        conv_from_transcript: str = "conv-transcript-only"
+        nested_file: Path = self.workspace / "src" / "app.py"
+        nested_file.parent.mkdir(parents=True, exist_ok=True)
+        self._append_step(
+            {
+                "type": "PLANNER_RESPONSE",
+                "source": "MODEL",
+                "tool_calls": [
+                    {
+                        "name": "read_file",
+                        "args": {"Path": str(nested_file)},
+                    }
+                ],
+            }
+        )
+        resolved_3: Path = resolve_workspace_root(
+            payload={
+                "conversationId": conv_from_transcript,
+                "transcriptPath": str(self.transcript_file),
+            },
+            fallback_root=unrelated_cwd,
+            state_dir=self.state_dir,
+            statusline_dir=statusline_dir,
+        )
+        self.assertEqual(resolved_3, self.workspace.resolve())
 
 
 if __name__ == "__main__":

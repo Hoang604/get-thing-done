@@ -67,9 +67,11 @@ RAW_INPUT=$(cat)
 # ─── Write Raw Input to tmp/conversation_id/turn-<x>/statusline_input.json ───
 if [ -n "$CONV_ID" ]; then
   TURN_VAL=$(cat "/tmp/agy_turn_${CONV_ID}" 2>/dev/null || echo "0")
-  SAVE_DIR="/tmp/agy_statusline/${CONV_ID}/turn-${TURN_VAL}"
+  CONV_STATUS_DIR="/tmp/agy_statusline/${CONV_ID}"
+  SAVE_DIR="${CONV_STATUS_DIR}/turn-${TURN_VAL}"
   mkdir -p "$SAVE_DIR" 2>/dev/null || true
   printf "%s\n" "$RAW_INPUT" > "${SAVE_DIR}/statusline_input.json" 2>/dev/null || true
+  printf "%s\n" "$RAW_INPUT" > "${CONV_STATUS_DIR}/latest.json" 2>/dev/null || true
 fi
 
 # ─── Helper Formatters ───────────────────────────────────────────────────────

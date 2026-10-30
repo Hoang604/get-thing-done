@@ -32,6 +32,7 @@ from compact_threshold_tracker import (
 )
 
 DEFAULT_STATE_DIR: Path = Path("/tmp/agy_decision_harvester_state")
+DEFAULT_STATUSLINE_DIR: Path = Path("/tmp/agy_statusline")
 DEFAULT_CONFIG_REL_PATH: str = ".gtd/config.yml"
 ALT_CONFIG_REL_PATH: str = ".gtd/config.yaml"
 DEFAULT_DECISIONS_REL_DIR: str = ".gtd/decisions"
@@ -145,6 +146,7 @@ class DecisionHarvesterState:
     last_planner_turn: int = -1
     last_input_tokens: int = 0
     decisions_fingerprint: str = ""
+    workspace_root: str = ""
 
 
 @dataclass(frozen=True)
@@ -495,6 +497,8 @@ def load_harvester_state(state_dir: Path, conv_id: str) -> DecisionHarvesterStat
     last_tokens: int = parse_non_negative_int(raw.get("last_input_tokens"), 0)
     fp_raw: object = raw.get("decisions_fingerprint")
     fp: str = fp_raw if isinstance(fp_raw, str) else ""
+    ws_raw: object = raw.get("workspace_root")
+    ws_root: str = ws_raw.strip() if isinstance(ws_raw, str) else ""
 
     return DecisionHarvesterState(
         conversation_id=clean_id,
@@ -503,6 +507,7 @@ def load_harvester_state(state_dir: Path, conv_id: str) -> DecisionHarvesterStat
         last_planner_turn=last_turn,
         last_input_tokens=last_tokens,
         decisions_fingerprint=fp,
+        workspace_root=ws_root,
     )
 
 
@@ -517,6 +522,7 @@ def save_harvester_state(state_dir: Path, state: DecisionHarvesterState) -> None
             "last_planner_turn": state.last_planner_turn,
             "last_input_tokens": state.last_input_tokens,
             "decisions_fingerprint": state.decisions_fingerprint,
+            "workspace_root": state.workspace_root,
         }
         tmp_file: Path = state_file.with_suffix(".json.tmp")
         tmp_file.write_text(
@@ -622,31 +628,166 @@ def analyze_transcript_delta(
     return compacted, new_user_msgs, cur_line, cur_tokens, saw_any_user_input
 
 
+TOOL_PATH_KEYS: tuple[str, ...] = (
+    "Path",
+    "Cwd",
+    "DirectoryPath",
+    "SearchPath",
+    "TargetFile",
+    "FilePath",
+)
+
+
+def _extract_workspace_paths_from_dict(obj: dict[str, object]) -> list[Path]:
+    out: list[Path] = []
+    for key in ("workspacePath", "cwd", "project_dir", "current_dir"):
+        val: object = obj.get(key)
+        if isinstance(val, str) and val.strip():
+            out.append(Path(os.path.expanduser(val.strip())))
+    ws_obj: object = obj.get("workspace")
+    if isinstance(ws_obj, dict):
+        for ws_key in ("project_dir", "current_dir"):
+            ws_val: object = ws_obj.get(ws_key)
+            if isinstance(ws_val, str) and ws_val.strip():
+                out.append(Path(os.path.expanduser(ws_val.strip())))
+    return out
+
+
+def _extract_statusline_workspace_candidates(
+    statusline_dir: Path, clean_conv_id: str
+) -> list[Path]:
+    if not clean_conv_id or clean_conv_id == "default":
+        return []
+    conv_dir: Path = statusline_dir / clean_conv_id
+    if not conv_dir.is_dir():
+        return []
+
+    json_files: list[Path] = []
+    latest_file: Path = conv_dir / "latest.json"
+    if latest_file.is_file():
+        json_files.append(latest_file)
+
+    turn_files: list[tuple[int, Path]] = []
+    for child in conv_dir.iterdir():
+        if not child.is_dir() or not child.name.startswith("turn-"):
+            continue
+        turn_num: int = parse_non_negative_int(child.name[5:], -1)
+        candidate_file: Path = child / "statusline_input.json"
+        if candidate_file.is_file():
+            turn_files.append((turn_num, candidate_file))
+
+    turn_files.sort(key=lambda item: item[0], reverse=True)
+    if turn_files:
+        json_files.append(turn_files[0][1])
+
+    out: list[Path] = []
+    for jf in json_files:
+        try:
+            parsed: object = json.loads(
+                jf.read_text(encoding="utf-8", errors="ignore")
+            )
+            if isinstance(parsed, dict):
+                out.extend(_extract_workspace_paths_from_dict(parsed))
+        except Exception:
+            continue
+    return out
+
+
+def _extract_transcript_workspace_candidates(transcript_path: str) -> list[Path]:
+    target_file: Path | None = resolve_transcript_file(transcript_path)
+    if target_file is None:
+        return []
+    try:
+        with open(target_file, "r", encoding="utf-8", errors="ignore") as f:
+            lines: list[str] = f.readlines()
+    except Exception:
+        return []
+
+    out: list[Path] = []
+    for raw_line in reversed(lines[-200:]):
+        line_str: str = raw_line.strip()
+        if not line_str:
+            continue
+        try:
+            step: object = json.loads(line_str)
+        except Exception:
+            continue
+        if not isinstance(step, dict):
+            continue
+        tool_calls_obj: object = step.get("tool_calls")
+        if not isinstance(tool_calls_obj, list):
+            continue
+        for tc in reversed(tool_calls_obj):
+            if not isinstance(tc, dict):
+                continue
+            args_obj: object = tc.get("args", tc.get("arguments"))
+            if isinstance(args_obj, str):
+                try:
+                    args_obj = json.loads(args_obj)
+                except Exception:
+                    args_obj = None
+            if not isinstance(args_obj, dict):
+                continue
+            for arg_key in TOOL_PATH_KEYS:
+                arg_val: object = args_obj.get(arg_key)
+                if isinstance(arg_val, str) and arg_val.strip():
+                    p: Path = Path(os.path.expanduser(arg_val.strip()))
+                    out.append(p if p.is_dir() else p.parent)
+    return out
+
+
 def resolve_workspace_root(
-    payload: dict[str, object], fallback_root: Path | None = None
+    payload: dict[str, object],
+    fallback_root: Path | None = None,
+    state_dir: Path = DEFAULT_STATE_DIR,
+    statusline_dir: Path = DEFAULT_STATUSLINE_DIR,
 ) -> Path:
     base: Path = fallback_root if fallback_root is not None else Path.cwd()
     candidates: list[Path] = []
 
-    for key in ("workspacePath", "cwd"):
-        val: object = payload.get(key)
-        if isinstance(val, str) and val.strip():
-            candidates.append(Path(os.path.expanduser(val.strip())))
+    candidates.extend(_extract_workspace_paths_from_dict(payload))
 
     tool_call_obj: object = payload.get("toolCall")
     if isinstance(tool_call_obj, dict):
         args_obj: object = tool_call_obj.get("args")
         if isinstance(args_obj, dict):
-            for arg_key in ("Path", "Cwd"):
+            for arg_key in TOOL_PATH_KEYS:
                 arg_val: object = args_obj.get(arg_key)
                 if isinstance(arg_val, str) and arg_val.strip():
                     p: Path = Path(os.path.expanduser(arg_val.strip()))
                     candidates.append(p if p.is_dir() else p.parent)
 
+    conv_id_obj: object = payload.get("conversationId")
+    clean_conv_id: str = sanitize_id(
+        conv_id_obj if isinstance(conv_id_obj, str) else "default"
+    )
+    if clean_conv_id and clean_conv_id != "default":
+        prior_state: DecisionHarvesterState = load_harvester_state(
+            state_dir, clean_conv_id
+        )
+        if prior_state.workspace_root:
+            candidates.append(
+                Path(os.path.expanduser(prior_state.workspace_root))
+            )
+        candidates.extend(
+            _extract_statusline_workspace_candidates(
+                statusline_dir, clean_conv_id
+            )
+        )
+
+    transcript_obj: object = payload.get("transcriptPath")
+    if isinstance(transcript_obj, str) and transcript_obj.strip():
+        candidates.extend(
+            _extract_transcript_workspace_candidates(transcript_obj.strip())
+        )
+
     candidates.append(base)
 
     for start_path in candidates:
-        curr: Path = start_path.resolve()
+        try:
+            curr: Path = start_path.resolve()
+        except Exception:
+            continue
         for ancestor in (curr, *curr.parents):
             if (ancestor / ".gtd").is_dir():
                 return ancestor
@@ -664,6 +805,7 @@ def evaluate_pre_invocation(
         return {"injectSteps": []}
 
     clean_conv_id: str = sanitize_id(conv_id or "default")
+    resolved_ws: str = str(workspace_root.resolve())
     with harvester_state_lock(state_dir, clean_conv_id):
         state: DecisionHarvesterState = load_harvester_state(state_dir, clean_conv_id)
 
@@ -722,6 +864,7 @@ def evaluate_pre_invocation(
             last_planner_turn=new_turn,
             last_input_tokens=new_tokens,
             decisions_fingerprint=current_fp,
+            workspace_root=resolved_ws,
         )
         save_harvester_state(state_dir, updated_state)
         return {"injectSteps": inject_steps}
@@ -745,6 +888,7 @@ def evaluate_post_tool_use(
     clean_conv_id: str = sanitize_id(
         conv_id_obj if isinstance(conv_id_obj, str) else "default"
     )
+    resolved_ws: str = str(workspace_root.resolve())
 
     with harvester_state_lock(state_dir, clean_conv_id):
         state: DecisionHarvesterState = load_harvester_state(state_dir, clean_conv_id)
@@ -764,13 +908,16 @@ def evaluate_post_tool_use(
 
         if should_sync:
             sync_decisions_index(workspace_root, config.decisions_dir)
+
+        if should_sync or state.workspace_root != resolved_ws:
             updated_state = DecisionHarvesterState(
                 conversation_id=state.conversation_id,
                 messages_since_cycle_start=state.messages_since_cycle_start,
                 injected_in_cycle=state.injected_in_cycle,
                 last_planner_turn=state.last_planner_turn,
                 last_input_tokens=state.last_input_tokens,
-                decisions_fingerprint=current_fp,
+                decisions_fingerprint=current_fp if should_sync else state.decisions_fingerprint,
+                workspace_root=resolved_ws,
             )
             save_harvester_state(state_dir, updated_state)
 
