@@ -3,6 +3,11 @@
 ## 1. Kiểm thử (Tests)
 - Chạy kiểm thử: `python3 -m unittest`.
 - **Tuyệt đối không chạy test** khi chỉ thao tác hoặc chỉnh sửa các file Markdown (`.md`) và script (`.sh`).
+- **Nguyên lý kiểm thử (4 tiêu chuẩn REAL test)**: Mọi bài test viết ra phải đạt chuẩn **REAL** theo cả 4 nguyên tắc sau:
+  1. **Contract**: Bài test bảo vệ một quy tắc mà code cam kết với bên gọi hoặc bên đọc đầu ra trên mọi đầu vào hợp lệ. Phát biểu được cam kết đó trong một câu mà không trích dẫn giá trị literal của test; nếu chỉ lặp lại giá trị kỳ vọng cố định hoặc ghim cứng câu chữ tĩnh thì đó là ghim kết quả (pinning outcome), không phải test hợp đồng.
+  2. **Kills a mutant**: Một chỉnh sửa hợp lý trên một dòng code sản phẩm (`file:line`, old → new) làm gãy quy tắc ở mục 1 phải được logic sản phẩm dẫn truyền tới assertion và làm test đỏ, mà chưa có bài test REAL nào khác trong phạm vi giết trực tiếp. Mọi phần kết quả do quy tắc mục 1 quyết định phải được kiểm tra để không lọt **surviving mutant**.
+  3. **Survives refactors**: Mọi chỉnh sửa giữ nguyên hợp đồng đều phải giữ cho test xanh. Assertion chỉ được quan sát những gì hợp đồng cam kết; bất kỳ chi tiết nội bộ hay câu chữ tĩnh nào được phép thay đổi khi refactor đều không được ghim vào test.
+  4. **Reaches the product**: Bài test đi vào code sản phẩm giống hệt cách caller thực tế gọi, bắt đầu từ trạng thái mà luồng thật tạo ra, và chỉ dùng stand-in có trạng thái (stateful contract) tại biên ngoài tiến trình (out-of-process) thay vì mock đếm lời gọi.
 
 ## 2. Nguyên tắc Single Source of Truth (SSoT)
 - **Phạm vi thư mục nguồn gốc (`.gemini/antigravity-cli/`)**: Thư mục này CHỈ chứa duy nhất nguồn của **Skills** (`skills/`) và **Custom Subagents** (`agents/`), tuyệt đối không chứa bất cứ thứ gì khác (không chứa file `.sh`, không chứa hook hay cấu hình nào khác).

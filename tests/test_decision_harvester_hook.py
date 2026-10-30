@@ -14,8 +14,11 @@ if str(SCRIPT_DIR) not in sys.path:
 from decision_harvester_hook import (
     MANAGED_BLOCK_END,
     MANAGED_BLOCK_START,
+    build_full_prompt,
+    build_reminder_prompt,
     evaluate_post_tool_use,
     evaluate_pre_invocation,
+    load_harvester_config,
     sync_decisions_index,
 )
 
@@ -116,6 +119,11 @@ class TestDecisionHarvesterHook(unittest.TestCase):
         )
         self.assertEqual(res_sys_wakeup, {"injectSteps": []})
 
+        cfg = load_harvester_config(self.workspace)
+        expected_full: str = build_full_prompt(cfg)
+        expected_reminder: str = build_reminder_prompt(cfg)
+        self.assertNotEqual(expected_full, expected_reminder)
+
         # Message 3 (first N explicit user message): injects FULL prompt
         self._append_user_step("user message 3")
         self._append_planner_step(80_000)
@@ -125,19 +133,10 @@ class TestDecisionHarvesterHook(unittest.TestCase):
             workspace_root=self.workspace,
             state_dir=self.state_dir,
         )
-        steps_3 = res_3.get("injectSteps")
-        assert isinstance(steps_3, list)
-        self.assertEqual(len(steps_3), 1)
-        msg_3 = steps_3[0].get("ephemeralMessage")
-        assert isinstance(msg_3, str)
-        self.assertIn(
-            "### 1. Goal: Persist System-Shaping Decisions into `.gtd/decisions/`",
-            msg_3,
+        self.assertEqual(
+            res_3,
+            {"injectSteps": [{"ephemeralMessage": expected_full}]},
         )
-        self.assertIn("1. **Invariants & Rules**:", msg_3)
-        self.assertIn("## Confirmed", msg_3)
-        self.assertIn("## Unconfirmed", msg_3)
-        self.assertNotIn("{{", msg_3)
 
         # Reactive wakeup right after message 3 (when counter is still 3):
         # Must NOT re-inject on system wakeup!
@@ -174,16 +173,10 @@ class TestDecisionHarvesterHook(unittest.TestCase):
             workspace_root=self.workspace,
             state_dir=self.state_dir,
         )
-        steps_6 = res_6.get("injectSteps")
-        assert isinstance(steps_6, list)
-        self.assertEqual(len(steps_6), 1)
-        msg_6 = steps_6[0].get("ephemeralMessage")
-        assert isinstance(msg_6, str)
-        self.assertIn(
-            "Before ending this turn, update `.gtd/decisions/<topic>.md` with any system-shaping decisions added or changed since the last sync.",
-            msg_6,
+        self.assertEqual(
+            res_6,
+            {"injectSteps": [{"ephemeralMessage": expected_reminder}]},
         )
-        self.assertNotIn("### 1. Goal: Persist System-Shaping Decisions", msg_6)
 
         # Compaction occurs (tokens drop from 140,000 -> 25,000): cycle resets!
         # Message 1 after compact:
@@ -217,14 +210,9 @@ class TestDecisionHarvesterHook(unittest.TestCase):
             workspace_root=self.workspace,
             state_dir=self.state_dir,
         )
-        steps_post_3 = res_post_3.get("injectSteps")
-        assert isinstance(steps_post_3, list)
-        self.assertEqual(len(steps_post_3), 1)
-        msg_post_3 = steps_post_3[0].get("ephemeralMessage")
-        assert isinstance(msg_post_3, str)
-        self.assertIn(
-            "### 1. Goal: Persist System-Shaping Decisions into `.gtd/decisions/`",
-            msg_post_3,
+        self.assertEqual(
+            res_post_3,
+            {"injectSteps": [{"ephemeralMessage": expected_full}]},
         )
 
     def test_prompt_section_replace_and_slot_inject(self) -> None:
@@ -235,10 +223,12 @@ prompt:
   replace:
     full:
       header: "CUSTOM HEADER: {{project_name}}"
-      file_contract: "CUSTOM FILE CONTRACT"
+      what_to_capture: "CAPTURE: {{extra_capture_rules}}"
+      partitioning: ""
+      file_contract: "CUSTOM CONTRACT"
   inject:
     project_name: "OrderEngine"
-    extra_capture_rules: "- Always record currency rounding invariants."
+    extra_capture_rules: "Always record rounding invariants."
 """
         )
 
@@ -248,15 +238,22 @@ prompt:
             workspace_root=self.workspace,
             state_dir=self.state_dir,
         )
-        steps = res.get("injectSteps")
-        assert isinstance(steps, list)
-        msg = steps[0].get("ephemeralMessage")
-        assert isinstance(msg, str)
-        self.assertIn("CUSTOM HEADER: OrderEngine", msg)
-        self.assertIn("- Always record currency rounding invariants.", msg)
-        self.assertIn("CUSTOM FILE CONTRACT", msg)
-        self.assertNotIn("## Unconfirmed", msg)
-        self.assertNotIn("{{", msg)
+        self.assertEqual(
+            res,
+            {
+                "injectSteps": [
+                    {
+                        "ephemeralMessage": (
+                            "<critical_instructions>\n"
+                            "CUSTOM HEADER: OrderEngine\n\n"
+                            "CAPTURE: Always record rounding invariants.\n\n"
+                            "CUSTOM CONTRACT\n"
+                            "</critical_instructions>"
+                        )
+                    }
+                ]
+            },
+        )
 
     def test_sync_decisions_index_target_priority_and_live_updates(self) -> None:
         self._write_config("enabled: true\nevery_n_messages: 5\n")
