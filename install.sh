@@ -47,16 +47,18 @@ chmod +x "$TARGET_DIR/config/scripts/track_turn.sh"
 chmod +x "$TARGET_DIR/config/scripts/critical_instructions.sh"
 chmod +x "$TARGET_DIR/config/scripts/critical_instructions_claude.sh"
 chmod +x "$TARGET_DIR/config/scripts/critical_instructions_opencode.sh"
-chmod +x "$TARGET_DIR/config/scripts/init-python-agent.sh"
+chmod +x "$TARGET_DIR/config/scripts/init-gtd-agent.sh"
 chmod +x "$TARGET_DIR/config/scripts/conditional_tool_guard.py"
 chmod +x "$TARGET_DIR/config/scripts/compact_threshold_tracker.py"
 chmod +x "$TARGET_DIR/config/scripts/context_budget_guard.py"
 chmod +x "$TARGET_DIR/config/scripts/read_file_widener.py"
 chmod +x "$TARGET_DIR/config/scripts/rtk_rewrite_hook.py"
 chmod +x "$TARGET_DIR/config/scripts/skill_usage_tracker.py"
+chmod +x "$TARGET_DIR/config/scripts/decision_harvester_hook.py"
 
+rm -f "$TARGET_DIR/config/scripts/init-python-agent.sh" "$HOME/.local/bin/init-python-agent"
 mkdir -p "$HOME/.local/bin"
-ln -sf "$TARGET_DIR/config/scripts/init-python-agent.sh" "$HOME/.local/bin/init-python-agent"
+ln -sf "$TARGET_DIR/config/scripts/init-gtd-agent.sh" "$HOME/.local/bin/init-gtd-agent"
 
 # Install rtk (Rust Token Killer) CLI if not present
 if ! command -v rtk >/dev/null 2>&1 && [ ! -x "$HOME/.local/bin/rtk" ] && [ ! -x "$HOME/.cargo/bin/rtk" ]; then

@@ -101,5 +101,26 @@
         ]
       }
     ]
+  },
+  "decision-harvester": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "python3 ~/.gemini/config/scripts/decision_harvester_hook.py",
+        "timeout": 10
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "write_file|edit_file|run_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.gemini/config/scripts/decision_harvester_hook.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
   }
 }
