@@ -50,7 +50,6 @@ class ConversationTokenState:
     warned_at_tokens: int = 0
     blocked_at_planner_turn: int = 0
     pending_turn_tokens: int = 0
-    blocked_in_last_turn: bool = False
     post_resumed_at_planner_turn: int = 0
     stop_resumed_at_planner_turn: int = 0
     post_planner_tokens: int = 0
@@ -353,7 +352,6 @@ def load_conversation_state(state_dir: Path, conv_id: str) -> ConversationTokenS
             raw.get("blocked_at_planner_turn"), 0
         ),
         pending_turn_tokens=parse_non_negative_int(raw.get("pending_turn_tokens"), 0),
-        blocked_in_last_turn=raw.get("blocked_in_last_turn") is True,
         post_resumed_at_planner_turn=parse_non_negative_int(
             raw.get("post_resumed_at_planner_turn"), 0
         ),
@@ -466,7 +464,6 @@ def sync_conversation_and_thresholds(
     warned_at_tokens: int = state.warned_at_tokens
     blocked_at_planner_turn: int = state.blocked_at_planner_turn
     pending_turn_tokens: int = state.pending_turn_tokens
-    blocked_in_last_turn: bool = state.blocked_in_last_turn
     post_resumed_at_planner_turn: int = state.post_resumed_at_planner_turn
     stop_resumed_at_planner_turn: int = state.stop_resumed_at_planner_turn
     compaction_count: int = state.compaction_count
@@ -538,7 +535,6 @@ def sync_conversation_and_thresholds(
             warned_in_cycle = False
             warned_at_tokens = 0
             blocked_at_planner_turn = 0
-            blocked_in_last_turn = False
             post_resumed_at_planner_turn = 0
             stop_resumed_at_planner_turn = 0
             pending_turn_tokens = 0
@@ -582,7 +578,6 @@ def sync_conversation_and_thresholds(
             warned_in_cycle = False
             warned_at_tokens = 0
             blocked_at_planner_turn = 0
-            blocked_in_last_turn = False
             post_resumed_at_planner_turn = 0
             stop_resumed_at_planner_turn = 0
             if not compacted_before_planner:
@@ -654,7 +649,6 @@ def sync_conversation_and_thresholds(
         warned_at_tokens=warned_at_tokens,
         blocked_at_planner_turn=blocked_at_planner_turn,
         pending_turn_tokens=pending_turn_tokens,
-        blocked_in_last_turn=blocked_in_last_turn,
         post_resumed_at_planner_turn=post_resumed_at_planner_turn,
         stop_resumed_at_planner_turn=stop_resumed_at_planner_turn,
         post_planner_tokens=post_planner_tokens,

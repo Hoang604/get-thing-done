@@ -239,7 +239,7 @@ class TestContextBudgetHooks(unittest.TestCase):
         )
         self.assertEqual(res_other_cmd, {"decision": "allow"})
 
-        # Subsequent PreInvocation injects the full ephemeralMessage once and clears blocked_in_last_turn
+        # Subsequent PreInvocation does NOT re-inject warning since PreToolUse already warned once in this cycle
         res_pre_inv = evaluate_budget_guard(
             conv_id=self.conv_id,
             fallback_model_name="Gemini 4 Argon (High)",
@@ -247,9 +247,7 @@ class TestContextBudgetHooks(unittest.TestCase):
             state_dir=self.state_dir,
             thresholds_file=self.thresholds_file,
         )
-        steps = res_pre_inv.get("injectSteps")
-        assert isinstance(steps, list)
-        self.assertEqual(len(steps), 1)
+        self.assertEqual(res_pre_inv, {"injectSteps": []})
 
         # Next turn (after agent wrote file, still at 232,000 >= 95% and NOT compacted yet):
         # calling read_file and rg must be ALLOWED instead of deadlocking

@@ -19,9 +19,9 @@ Every boundary milestone is governed strictly by two invariant tiers:
    > *Maximal value means every user finishes its **job** without friction.*
 
 > [!IMPORTANT]
-> **The Job Principle (Scope Definition):**
-> The **users** are everything that consumes an outcome of what the spec describes: whatever invokes it and whatever receives what it produces. A user is not necessarily a person; programs that call it, parse its output, or read what it stores are users too. Each user's **job** is what it is trying to get done with that outcome.
-> Scope is the users' jobs, not the sentences of the spec. Everything the users need to finish their jobs is in scope, including what the spec author left unwritten. Anything that serves a different job is out of scope.
+> **The Job Principle (Scope & Users):**
+> Trace outward from every module the task touches along its callers and registration points for as long as those callers remain within the code the task permits creating or modifying (`mutable scope`). The outermost boundary where callers sit outside that mutable scope is the **entry boundary**, the boundary where results return across it is the **exit boundary**, and the external actors that invoke the entry boundary or consume what crosses the exit boundary are the **users**; code inside the mutable scope is the implementation, never a user.
+> Each user's **job** is what that external actor is trying to get done across the mutable scope. Everything inside the mutable scope required for users to finish their jobs is in scope, including what the spec author left unwritten; anything serving a different job is out of scope.
 > **Friction** is any moment where a user must know, guess, or do something its job does not require.
 
 > [!IMPORTANT]
@@ -62,10 +62,10 @@ Reuse of what the system already has is governed by Minimal System Entropy above
 Reconstruct the users and jobs behind the spec, then ground them in physical codebase reality. Both run together: the jobs tell legwork where to look, and the codebase tells the jobs what already exists.
 
 ### Users, Jobs & Use Scenarios
-- **Users & Jobs:** Follow every outcome the spec describes to whatever invokes it and whatever receives it; each of those is a user. Name every user and the job it gets done, one line per user.
-- **Use Scenarios:** Take each user's position in turn: want only what that user wants and know only what that user knows, setting aside what the spec author intends and what the implementer knows about the internals. From that position, walk the user's path across every state the product can be in when its job is attempted, and record each distinct path as a scenario: a literal stimulus through the product's real entrypoint and the exact observable response that user receives.
-- **Observable Response** is the literal text, value, or error the user receives, written so that comparing it with the real response yields yes or no.
-- **Invariants:** A scenario fixes one literal input; an invariant states the rule that holds for every input its product state admits. For every scenario whose response depends on its input, write the rules the response obeys for all such inputs, each so that one counter-input would prove it false, and name the scenarios it spans.
+- **Users & Jobs:** Follow every outcome the spec describes outward to the entry and exit boundaries of the mutable scope (`The Job Principle`), and name every user outside that scope and the job it gets done, one line per user.
+- **Use Scenarios:** Take each user's position outside the mutable scope, wanting only what that user wants and knowing only what that user knows. Walk the user's path across every state the product can be in when its job is attempted, and record each distinct path as a scenario: the literal stimulus the user sends across the mutable scope's entry boundary and the exact observable response the user receives across its exit boundary.
+- **Observable Response:** What the user needs back across the mutable scope's exit boundary in that product state to finish its job, stated solely in terms that user outside the mutable scope already knows and written literally so that comparing it with a real run's output yields yes or no.
+- **Invariants:** A scenario fixes one literal input; an invariant states the rule that holds for every input its product state admits from entry boundary to exit boundary. For every scenario whose response depends on its input, write the rules the response obeys for all such inputs, each so that one counter-input would prove it false, and name the scenarios it spans.
 - **Implied Requirements:** Every requirement a scenario exposes that the spec leaves unwritten, each traced to the scenario that exposed it.
 
 ### Fixed-Point Scope Discovery
@@ -85,6 +85,11 @@ Every type, structure, or interface crossing a seam has its definition written i
 
 Partition the users' jobs into an ordered dependency graph of system boundaries: $B_1, B_2, \dots, B_n$.
 
+### Caller Boundary Promotion vs. `Caller Audit`
+For any caller $C$ inside the mutable scope that invokes a modified boundary $B$, test whether $C$ already holds values of the exact types $B$'s new signature requires, already receives the dependencies $B$ requires, and already translates every return value and error $B$ can produce into $C$'s own declared output:
+- **When all three hold:** $C$ changes only its call expression and belongs in $B$'s `Caller Audit`.
+- **When any of the three does not hold** ($C$ must construct or parse $B$'s input types, wire $B$'s dependencies, or handle/translate $B$'s return states or errors): $C$ is a distinct system boundary and must be assigned its own milestone with its own Tier 1 outcome, Tier 2 decisions, and `Literal Contracts` declaring $C$'s signature.
+
 ### Topological Enablement Rule
 Execution order follows dependency order. For every milestone $B_m$:
 - All prerequisite capabilities, types, and seams required by $B_m$ must be fully established by earlier milestones.
@@ -97,7 +102,7 @@ Formulate every milestone's **Observable Outcome** by the standard stated in the
 - **Lineage & Justification:** Every milestone exists for an explicit reason: either making one or more use scenarios runnable, or providing an unavoidable prerequisite required to implement later milestones cleanly and correctly.
 - **Composability Gate:** Every use scenario is made runnable by exactly one milestone, and no milestone serves anything outside the users' jobs.
 
-**Completion Criterion:** An ordered sequence of boundaries where each milestone has documented lineage justification, satisfies topological enablement, and every use scenario is assigned to the milestone that makes it runnable.
+**Completion Criterion:** An ordered sequence of boundaries where each milestone has documented lineage justification, satisfies topological enablement, every caller promoted by the Caller Boundary Promotion rule is assigned its own milestone, and every use scenario is assigned to the milestone that makes it runnable.
 
 ---
 
@@ -116,7 +121,7 @@ For every milestone in the graph, declare the physical blueprint across two cohe
   - *Maximal Value:* Choices that remove friction from this milestone's scenarios, each tied to the scenario state it serves.
 - **Literal Contracts & Strict Types:** Declare literal non-nullable domain models and boundary interfaces crossing the seam (`class` / `def` signatures with complete type annotations, docstrings, and `...` ellipses method bodies). Declare an abstract interface only when the seam has more than one implementation under present requirements; otherwise the contract is the concrete function or class itself.
 - **Ingress Caller & Terminal Sink Audit:**
-  - *Caller Audit (Ingress):* Audit all existing callers across the workspace. List every caller requiring updates, or certify: *"Caller Audit: 0 production callers found via search."*
+  - *Caller Audit (Ingress):* Audit all existing callers across the workspace that pass the `Caller Audit` test above (requiring only a call-expression update). List every such caller, or certify: *"Caller Audit: 0 pure call-expression callers found via search."*
   - *Terminal Sink Audit (Dataflow):* Trace return values, state mutations, or emitted events downstream to their terminal sink to prove data reaches its final destination.
 - **Retired Forms:** The Retirement Inventory entries this milestone makes obsolete, each at its location with its fate and the count of references that remain.
 - **File Manifest:** List every file this milestone creates, modifies, or deletes as `[NEW]`, `[MODIFY]`, or `[DELETE]` with a clickable link `[basename](file:///path#L<start>-L<end>)` whose `#L<start>-L<end>` range spans the exact lines this milestone mutates.
@@ -135,16 +140,16 @@ Compile the plan into `<Artifact Directory>/implementation_plan.md`. Every `impl
 ## Users, Jobs & Use Scenarios
 
 - **Users & Jobs:**
-  - <User>: <The job this user gets done, in one sentence>
+  - <User outside mutable scope>: <The job this user gets done across the mutable scope, in one sentence>
 - **Implied Requirements:** <Requirement the spec leaves unwritten> (exposed by S-xx)
 
 | # | User | Product State | Invocation | Observable Response |
 |---|---|---|---|---|
-| S-01 | <User from the list above> | <The situation the user and product are in when the user acts> | `<Exact command, request, or call the user makes>` | <Exact output, return value, or error the user receives> |
+| S-01 | <User from the list above> | <The situation the user and product are in when the user acts> | `<Exact stimulus sent into the mutable scope's entry boundary>` | <Exact response received across the mutable scope's exit boundary> |
 
 | # | Invariant | Spans |
 |---|---|---|
-| I-01 | <Rule that holds for every input the spanned scenarios' product state admits, stated so that one counter-input would prove it false> | S-01 |
+| I-01 | <Rule that holds for every input the spanned scenarios' product state admits from entry boundary to exit boundary, stated so that one counter-input would prove it false> | S-01 |
 
 ### Milestone 1: <Descriptive Title>
 
@@ -168,13 +173,12 @@ Compile the plan into `<Artifact Directory>/implementation_plan.md`. Every `impl
       ...
   ```
 - **Caller & Sink Audit:**
-  - Ingress: Called by `[NoteController.create](file:///src/controllers/notes.py#L45)`
+  - Ingress: `NoteController.create` at [notes.py](file:///src/controllers/notes.py#L45) must parse raw input into `NoteDraft` -> promoted to Milestone 2 (`0` pure call-expression callers)
   - Terminal Sink: Persisted via `[NoteRepository.insert](file:///src/storage/notes.py#L88)`
 - **Retired Forms:**
-  - `save_note(title, body, store=None)` at [notes.py](file:///src/controllers/notes.py#L52): deleted; its 3 call sites rewritten to `note_store.save`; 0 references remain
+  - `save_note(title, body, store=None)` at [notes.py](file:///src/controllers/notes.py#L52): deleted; call sites rewritten in Milestone 2; 0 references remain
 
 #### File Manifest
-- `[MODIFY]` [notes.py](file:///src/controllers/notes.py#L30-L65)
 - `[NEW]` [note_store.py](file:///src/note_store.py)
 
 ### Verification Matrix

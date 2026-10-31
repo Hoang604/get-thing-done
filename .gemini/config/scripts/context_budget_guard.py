@@ -41,10 +41,11 @@ def build_warning_message(current_tokens: int, threshold_tokens: int) -> str:
         "<critical_instructions>\n"
         f"Context usage is at {pct:.1f}% ({current_tokens} / {threshold_tokens} tokens). THIS IS A BUDGET WARNING, NOT A COMPACTION PROMPT.\n"
         "Auto-compaction triggers ONLY when your subsequent tool calls push tokens past 100% capacity mid-loop. Stopping tool calls or writing `<summary>` now freezes token growth below 100% and halts execution without compacting:\n"
-        f"1. **When** context holds settled file edits or ledger/artifact updates not yet written to disk: notify the user in one sentence (in their language) that context is at {pct:.1f}% so you are saving `<file>` first before continuing `<next action>`; dispatch only those write/edit tool calls in this step, and on the very next step after they return, immediately dispatch the tool calls for `<next action>` (do NOT output `<summary>` or stop after the save completes).\n"
-        f"2. **When** all settled changes are already on disk and further task steps remain: notify the user in one sentence (in their language) that context is at {pct:.1f}% (all changes saved on disk) and immediately dispatch the next tool calls for the current task step in this step and every following step until the harness wipes the turn for compaction.\n"
-        "3. **When** all settled changes are already on disk and 100% of the task is finished: do not dispatch extra tool calls; deliver your normal final completion report and end your turn.\n"
-        "4. **Strict Prohibition (applies to this step and all subsequent steps before compaction)**: Never output `<summary>`, `Context for governing # User Requests`, `Read-next working set`, or `Settled state and open work` in chat, and never end your turn after a save or read batch to wait for compaction—`<summary>` is written only when the harness explicitly prompts for it after wiping the conversation.\n"
+        f"1. **One-Time Notification Only**: Notify the user at most ONCE in this entire pre-compaction cycle (in one sentence, in their language, right now) that context is at {pct:.1f}%. NEVER repeat, re-announce, or mention context percentage or save status again on any subsequent tool step or turn.\n"
+        "2. **When context holds settled file edits or ledger/artifact updates not yet written to disk**: In your single one-sentence notice, state that you are saving `<file>` first before continuing `<next action>`; dispatch only those write/edit tool calls in this step, and on the very next step after they return, immediately and silently dispatch the tool calls for `<next action>` without repeating the context notice and without outputting `<summary>` or stopping.\n"
+        "3. **When all settled changes are already on disk and further task steps remain**: After your single one-sentence notice (if not already sent), immediately dispatch the next tool calls for the current task step now and silently keep dispatching tool calls on every following step until the harness wipes the turn for compaction.\n"
+        "4. **When all settled changes are already on disk and 100% of the task is finished**: Do not send a context warning or dispatch extra tool calls; deliver your normal final completion report and end your turn.\n"
+        "5. **Strict Prohibition (applies to this step and all subsequent steps before compaction)**: Never repeat the context-usage notice a second time, never output `<summary>`, `Context for governing # User Requests`, `Read-next working set`, or `Settled state and open work` in chat, and never end your turn after a save or read batch to wait for compaction—`<summary>` is written only when the harness explicitly prompts for it after wiping the conversation.\n"
         "</critical_instructions>"
     )
 
@@ -125,8 +126,9 @@ def evaluate_tool_budget_guard(
         display_tokens: int = max(projected_state.effective_tokens, block_threshold)
         blocked_state: ConversationTokenState = replace(
             apply_incoming_tool_tokens(state, 0),
+            warned_in_cycle=True,
+            warned_at_tokens=state.warned_at_tokens or display_tokens,
             blocked_at_planner_turn=current_planner_turn,
-            blocked_in_last_turn=True,
         )
         save_conversation_state(state_dir, blocked_state)
 
@@ -167,7 +169,7 @@ def evaluate_budget_guard(
         effective_tokens: int = state.effective_tokens
         warn_threshold: int = int(entry.compact_threshold * WARN_RATIO)
 
-        if effective_tokens < warn_threshold and not state.blocked_in_last_turn:
+        if effective_tokens < warn_threshold and state.blocked_at_planner_turn == 0:
             if state.warned_in_cycle:
                 save_conversation_state(
                     state_dir,
@@ -175,23 +177,21 @@ def evaluate_budget_guard(
                         state,
                         warned_in_cycle=False,
                         warned_at_tokens=0,
-                        blocked_in_last_turn=False,
                         post_resumed_at_planner_turn=0,
                         stop_resumed_at_planner_turn=0,
                     ),
                 )
             return {"injectSteps": []}
 
-        if state.blocked_in_last_turn or not state.warned_in_cycle:
+        if not state.warned_in_cycle:
             updated_state: ConversationTokenState = replace(
                 state,
                 warned_in_cycle=True,
                 warned_at_tokens=effective_tokens,
-                blocked_in_last_turn=False,
             )
             save_conversation_state(state_dir, updated_state)
             msg: str = build_warning_message(effective_tokens, entry.compact_threshold)
-            return {"injectSteps": [{"ephemeralMessage": msg}]}
+            return {"injectSteps": [{"systemMessage": {"systemMessage": msg}}]}
 
         return {"injectSteps": []}
 
@@ -215,9 +215,7 @@ def _check_premature_summary_continuation(
             thresholds_file=thresholds_file,
         )
         in_warning_window: bool = (
-            state.warned_in_cycle
-            or state.blocked_in_last_turn
-            or state.blocked_at_planner_turn > 0
+            state.warned_in_cycle or state.blocked_at_planner_turn > 0
         )
         resumed_turn: int = getattr(state, resumed_field, 0)
         if (
@@ -260,7 +258,7 @@ def evaluate_post_invocation_guard(
     if msg is None:
         return {"injectSteps": []}
     return {
-        "injectSteps": [{"ephemeralMessage": msg}],
+        "injectSteps": [{"systemMessage": {"systemMessage": msg}}],
         "terminationBehavior": "force_continue",
     }
 
