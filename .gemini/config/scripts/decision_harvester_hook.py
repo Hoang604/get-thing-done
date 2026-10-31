@@ -5,9 +5,9 @@ import os
 import re
 import sys
 from contextlib import contextmanager
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, Sequence
 
 try:
     import fcntl
@@ -81,13 +81,19 @@ def default_full_sections(decisions_dir: str) -> dict[str, str]:
             "3. **Rejected Alternatives & Rationale**: Why an approach was chosen or ruled out, "
             "so future work does not reintroduce rejected designs.\n"
             "4. **Pending / Target Design**: Decided or candidate behavior not yet reflected in the codebase.\n"
+            f"**When** the conversation has produced no new or changed decisions in these categories "
+            f"(or all such decisions are already recorded in `{clean_dir}/`), do nothing—do not "
+            f"create, edit, or touch any file in `{clean_dir}/`.\n"
             "{{extra_capture_rules}}"
         ),
         "partitioning": (
             f"### 2. Partitioning (`{clean_dir}/<topic>.md`)\n"
+            "{{existing_decisions}}\n"
             f"Place each concern in its own `{clean_dir}/<topic>.md` file so decisions that a "
             "future task must read together when working on the same part of the system share "
             "one file, and independent parts of the system sit in separate files:\n"
+            "- **When** no new or changed system-shaping decision exists to record, skip this "
+            f"step completely and do not write to `{clean_dir}/`.\n"
             f"- **When** a file for that part of the system already exists in `{clean_dir}/`, "
             "update it in place and remove any prior entry that the user's latest decision "
             "reverses or supersedes.\n"
@@ -123,8 +129,11 @@ def default_reminder_sections(decisions_dir: str) -> dict[str, str]:
             "without mentioning this hook."
         ),
         "reminder": (
-            f"Before ending this turn, update `{clean_dir}/<topic>.md` with any system-shaping "
-            "decisions added or changed since the last sync.\n"
+            f"Before ending this turn, check whether any system-shaping decisions were added or "
+            f"changed since the last sync. **When** none were added or changed, do nothing and "
+            f"do not touch `{clean_dir}/`. **When** new or changed decisions exist, update the "
+            f"matching `{clean_dir}/<topic>.md` file in place or create a new one.\n"
+            "{{existing_decisions}}\n"
             "{{extra_reminder_rules}}"
         ),
     }
@@ -148,6 +157,7 @@ class DecisionHarvesterState:
     last_planner_turn: int = -1
     decisions_fingerprint: str = ""
     workspace_root: str = ""
+    known_decision_files: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -287,8 +297,38 @@ def _apply_slots(text: str, slots: dict[str, str]) -> str:
     return INLINE_SLOT_RE.sub(replace_inline_slot, after_line_slots).strip()
 
 
-def build_full_prompt(config: DecisionHarvesterConfig) -> str:
+def render_existing_decisions_summary(
+    entries: Sequence[DecisionFileEntry],
+    decisions_dir: str = DEFAULT_DECISIONS_REL_DIR,
+) -> str:
+    clean_dir: str = decisions_dir.rstrip("/")
+    if not entries:
+        return f"Existing decision files in `{clean_dir}/` (0): none."
+    lines: list[str] = [f"Existing decision files in `{clean_dir}/` ({len(entries)}):"]
+    for entry in entries:
+        lines.append(f"- `{entry.rel_path}`: {entry.description}")
+    return "\n".join(lines)
+
+
+def _build_effective_slots(
+    config: DecisionHarvesterConfig,
+    entries: Sequence[DecisionFileEntry],
+) -> dict[str, str]:
+    return {
+        "existing_decisions": render_existing_decisions_summary(
+            entries, config.decisions_dir
+        ),
+        "existing_decisions_count": str(len(entries)),
+        **config.inject_slots,
+    }
+
+
+def build_full_prompt(
+    config: DecisionHarvesterConfig,
+    entries: Sequence[DecisionFileEntry] = (),
+) -> str:
     sections: dict[str, str] = default_full_sections(config.decisions_dir)
+    slots: dict[str, str] = _build_effective_slots(config, entries)
     assembled_parts: list[str] = []
 
     for sec_name in FULL_SECTION_ORDER:
@@ -297,13 +337,13 @@ def build_full_prompt(config: DecisionHarvesterConfig) -> str:
             if sec_name in config.replace_full
             else sections[sec_name]
         )
-        rendered: str = _apply_slots(raw_section, config.inject_slots)
+        rendered: str = _apply_slots(raw_section, slots)
         if rendered:
             assembled_parts.append(rendered)
 
     for extra_sec_name, extra_sec_body in config.replace_full.items():
         if extra_sec_name not in FULL_SECTION_ORDER:
-            rendered_extra: str = _apply_slots(extra_sec_body, config.inject_slots)
+            rendered_extra: str = _apply_slots(extra_sec_body, slots)
             if rendered_extra:
                 assembled_parts.append(rendered_extra)
 
@@ -311,8 +351,12 @@ def build_full_prompt(config: DecisionHarvesterConfig) -> str:
     return f"<critical_instructions>\n{body}\n</critical_instructions>"
 
 
-def build_reminder_prompt(config: DecisionHarvesterConfig) -> str:
+def build_reminder_prompt(
+    config: DecisionHarvesterConfig,
+    entries: Sequence[DecisionFileEntry] = (),
+) -> str:
     sections: dict[str, str] = default_reminder_sections(config.decisions_dir)
+    slots: dict[str, str] = _build_effective_slots(config, entries)
     assembled_parts: list[str] = []
 
     for sec_name in REMINDER_SECTION_ORDER:
@@ -321,13 +365,13 @@ def build_reminder_prompt(config: DecisionHarvesterConfig) -> str:
             if sec_name in config.replace_reminder
             else sections[sec_name]
         )
-        rendered: str = _apply_slots(raw_section, config.inject_slots)
+        rendered: str = _apply_slots(raw_section, slots)
         if rendered:
             assembled_parts.append(rendered)
 
     for extra_sec_name, extra_sec_body in config.replace_reminder.items():
         if extra_sec_name not in REMINDER_SECTION_ORDER:
-            rendered_extra: str = _apply_slots(extra_sec_body, config.inject_slots)
+            rendered_extra: str = _apply_slots(extra_sec_body, slots)
             if rendered_extra:
                 assembled_parts.append(rendered_extra)
 
@@ -499,6 +543,16 @@ def load_harvester_state(state_dir: Path, conv_id: str) -> DecisionHarvesterStat
     fp: str = fp_raw if isinstance(fp_raw, str) else ""
     ws_raw: object = raw.get("workspace_root")
     ws_root: str = ws_raw.strip() if isinstance(ws_raw, str) else ""
+    known_raw: object = raw.get("known_decision_files")
+    known_files: tuple[str, ...] = (
+        tuple(
+            item.strip()
+            for item in known_raw
+            if isinstance(item, str) and item.strip()
+        )
+        if isinstance(known_raw, list)
+        else ()
+    )
 
     return DecisionHarvesterState(
         conversation_id=clean_id,
@@ -507,6 +561,7 @@ def load_harvester_state(state_dir: Path, conv_id: str) -> DecisionHarvesterStat
         last_planner_turn=last_turn,
         decisions_fingerprint=fp,
         workspace_root=ws_root,
+        known_decision_files=known_files,
     )
 
 
@@ -514,14 +569,8 @@ def save_harvester_state(state_dir: Path, state: DecisionHarvesterState) -> None
     try:
         state_dir.mkdir(parents=True, exist_ok=True)
         state_file: Path = state_dir / f"{state.conversation_id}.json"
-        payload: dict[str, object] = {
-            "conversation_id": state.conversation_id,
-            "messages_since_cycle_start": state.messages_since_cycle_start,
-            "injected_in_cycle": state.injected_in_cycle,
-            "last_planner_turn": state.last_planner_turn,
-            "decisions_fingerprint": state.decisions_fingerprint,
-            "workspace_root": state.workspace_root,
-        }
+        payload: dict[str, object] = asdict(state)
+        payload["known_decision_files"] = list(state.known_decision_files)
         tmp_file: Path = state_file.with_suffix(".json.tmp")
         tmp_file.write_text(
             json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
@@ -776,13 +825,19 @@ def evaluate_pre_invocation(
     with harvester_state_lock(state_dir, clean_conv_id):
         state: DecisionHarvesterState = load_harvester_state(state_dir, clean_conv_id)
 
+        entries: list[DecisionFileEntry] = collect_decision_entries(
+            workspace_root, config.decisions_dir
+        )
+        current_files: tuple[str, ...] = tuple(e.rel_path for e in entries)
+        new_file_added: bool = any(
+            f not in state.known_decision_files for f in current_files
+        )
+
         current_fp: str = compute_decisions_fingerprint(
             workspace_root, config.decisions_dir
         )
         target_rules_file: Path = resolve_target_rules_file(workspace_root)
-        target_missing_block: bool = bool(
-            collect_decision_entries(workspace_root, config.decisions_dir)
-        ) and (
+        target_missing_block: bool = bool(entries) and (
             not target_rules_file.is_file()
             or MANAGED_BLOCK_START
             not in target_rules_file.read_text(encoding="utf-8", errors="ignore")
@@ -823,7 +878,9 @@ def evaluate_pre_invocation(
         )
 
         msgs: int = 0 if compacted else state.messages_since_cycle_start
-        injected_in_cycle: bool = False if compacted else state.injected_in_cycle
+        injected_in_cycle: bool = (
+            False if (compacted or new_file_added) else state.injected_in_cycle
+        )
 
         effective_new_user_msgs: int = (
             new_user_msgs if saw_any_user_input else 1
@@ -837,10 +894,10 @@ def evaluate_pre_invocation(
             and (msgs % config.every_n_messages == 0)
         ):
             if not injected_in_cycle:
-                prompt_msg: str = build_full_prompt(config)
+                prompt_msg: str = build_full_prompt(config, entries)
                 injected_in_cycle = True
             else:
-                prompt_msg = build_reminder_prompt(config)
+                prompt_msg = build_reminder_prompt(config, entries)
             inject_steps.append({"systemMessage": {"systemMessage": prompt_msg}})
 
         updated_state = DecisionHarvesterState(
@@ -850,6 +907,7 @@ def evaluate_pre_invocation(
             last_planner_turn=max(new_turn, compact_state.last_scanned_line),
             decisions_fingerprint=current_fp,
             workspace_root=resolved_ws,
+            known_decision_files=current_files,
         )
         save_harvester_state(state_dir, updated_state)
         return {"injectSteps": inject_steps}
@@ -877,6 +935,13 @@ def evaluate_post_tool_use(
 
     with harvester_state_lock(state_dir, clean_conv_id):
         state: DecisionHarvesterState = load_harvester_state(state_dir, clean_conv_id)
+        entries: list[DecisionFileEntry] = collect_decision_entries(
+            workspace_root, config.decisions_dir
+        )
+        current_files: tuple[str, ...] = tuple(e.rel_path for e in entries)
+        new_file_added: bool = any(
+            f not in state.known_decision_files for f in current_files
+        )
         current_fp: str = compute_decisions_fingerprint(
             workspace_root, config.decisions_dir
         )
@@ -894,14 +959,20 @@ def evaluate_post_tool_use(
         if should_sync:
             sync_decisions_index(workspace_root, config.decisions_dir)
 
-        if should_sync or state.workspace_root != resolved_ws:
+        if (
+            should_sync
+            or new_file_added
+            or current_files != state.known_decision_files
+            or state.workspace_root != resolved_ws
+        ):
             updated_state = DecisionHarvesterState(
                 conversation_id=state.conversation_id,
                 messages_since_cycle_start=state.messages_since_cycle_start,
-                injected_in_cycle=state.injected_in_cycle,
+                injected_in_cycle=False if new_file_added else state.injected_in_cycle,
                 last_planner_turn=state.last_planner_turn,
                 decisions_fingerprint=current_fp if should_sync else state.decisions_fingerprint,
                 workspace_root=resolved_ws,
+                known_decision_files=current_files,
             )
             save_harvester_state(state_dir, updated_state)
 

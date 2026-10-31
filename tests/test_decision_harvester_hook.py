@@ -73,6 +73,19 @@ class TestDecisionHarvesterHook(unittest.TestCase):
             }
         )
 
+    def _extract_injected_msg(self, res: dict[str, object]) -> str:
+        steps: object = res.get("injectSteps")
+        self.assertIsInstance(steps, list)
+        assert isinstance(steps, list)
+        self.assertEqual(len(steps), 1)
+        first: object = steps[0]
+        assert isinstance(first, dict)
+        sys_msg: object = first.get("systemMessage")
+        assert isinstance(sys_msg, dict)
+        msg: object = sys_msg.get("systemMessage")
+        assert isinstance(msg, str)
+        return msg
+
     def test_disabled_when_no_config_or_enabled_false(self) -> None:
         res_no_cfg = evaluate_pre_invocation(
             conv_id=self.conv_id,
@@ -181,7 +194,81 @@ class TestDecisionHarvesterHook(unittest.TestCase):
             {"injectSteps": [{"systemMessage": {"systemMessage": expected_reminder}}]},
         )
 
-        # Compaction occurs (tokens drop from 140,000 -> 25,000): cycle resets!
+        # Adding a new decision file resets injected_in_cycle so the next N (message 9)
+        # injects the FULL prompt again (including existing decision count + description)!
+        decisions_dir: Path = self.workspace / ".gtd" / "decisions"
+        decisions_dir.mkdir(parents=True, exist_ok=True)
+        arch_file: Path = decisions_dir / "architecture.md"
+        arch_file.write_text(
+            '---\ndescription: "When changing hook architecture, follow this file."\n---\n\n## Confirmed\n- Single tracker.\n',
+            encoding="utf-8",
+        )
+        evaluate_post_tool_use(
+            payload={
+                "conversationId": self.conv_id,
+                "toolCall": {"name": "write_file", "args": {"Path": str(arch_file)}},
+            },
+            workspace_root=self.workspace,
+            state_dir=self.state_dir,
+        )
+
+        for idx in range(2):
+            self._append_user_step(f"user message {idx + 7}")
+            self._append_planner_step(145_000)
+            self.assertEqual(
+                evaluate_pre_invocation(
+                    conv_id=self.conv_id,
+                    transcript_path=str(self.transcript_file),
+                    workspace_root=self.workspace,
+                    state_dir=self.state_dir,
+                ),
+                {"injectSteps": []},
+            )
+
+        self._append_user_step("user message 9")
+        self._append_planner_step(150_000)
+        res_9 = evaluate_pre_invocation(
+            conv_id=self.conv_id,
+            transcript_path=str(self.transcript_file),
+            workspace_root=self.workspace,
+            state_dir=self.state_dir,
+        )
+        injected_9: str = self._extract_injected_msg(res_9)
+        self.assertIn("### 1. Goal: Persist System-Shaping Decisions", injected_9)
+        self.assertIn("Existing decision files in `.gtd/decisions/` (1):", injected_9)
+        self.assertIn(
+            "- `.gtd/decisions/architecture.md`: When changing hook architecture, follow this file.",
+            injected_9,
+        )
+        self.assertIn("do nothing—do not create, edit, or touch any file", injected_9)
+
+        # Next milestone (message 12) with NO new file added -> back to REMINDER prompt (also with file list)
+        for idx in range(2):
+            self._append_user_step(f"user message {idx + 10}")
+            self._append_planner_step(155_000)
+            evaluate_pre_invocation(
+                conv_id=self.conv_id,
+                transcript_path=str(self.transcript_file),
+                workspace_root=self.workspace,
+                state_dir=self.state_dir,
+            )
+        self._append_user_step("user message 12")
+        self._append_planner_step(160_000)
+        res_12 = evaluate_pre_invocation(
+            conv_id=self.conv_id,
+            transcript_path=str(self.transcript_file),
+            workspace_root=self.workspace,
+            state_dir=self.state_dir,
+        )
+        injected_12: str = self._extract_injected_msg(res_12)
+        self.assertNotIn("### 1. Goal: Persist System-Shaping Decisions", injected_12)
+        self.assertIn("Existing decision files in `.gtd/decisions/` (1):", injected_12)
+        self.assertIn(
+            "- `.gtd/decisions/architecture.md`: When changing hook architecture, follow this file.",
+            injected_12,
+        )
+
+        # Compaction occurs (tokens drop from 160,000 -> 25,000): cycle resets!
         # Simulate compact-threshold-tracker running FIRST in PostInvocation / PreInvocation
         # before decision-harvester runs:
         self._append_planner_step(25_000)
@@ -222,8 +309,8 @@ class TestDecisionHarvesterHook(unittest.TestCase):
             state_dir=self.state_dir,
         )
         self.assertEqual(
-            res_post_3,
-            {"injectSteps": [{"systemMessage": {"systemMessage": expected_full}}]},
+            self._extract_injected_msg(res_post_3),
+            injected_9,
         )
 
     def test_prompt_section_replace_and_slot_inject(self) -> None:
