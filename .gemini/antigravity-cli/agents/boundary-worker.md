@@ -31,9 +31,10 @@ Every boundary milestone is governed strictly by two invariant tiers:
    > *Maximal value means every user finishes its **job** without friction.*
 
 > [!IMPORTANT]
-> **The Job Principle (Scope Definition):**
-> The **users** are everything that consumes an outcome of what the spec describes: whatever invokes it and whatever receives what it produces. A user is not necessarily a person; programs that call it, parse its output, or read what it stores are users too. Each user's **job** is what it is trying to get done with that outcome.
-> Scope is the users' jobs, not the sentences of the spec. Everything the users need to finish their jobs is in scope, including what the spec author left unwritten. Anything that serves a different job is out of scope.
+> **The Job Principle (Scope & User Boundary):**
+> Every layer the agent is permitted to create or modify to deliver the task — from the **outermost entrypoint** (the surface and integration layer where raw external stimuli enter, dependencies are wired at the composition root, and final responses or errors are formatted) inward to the **core domain layer** (domain models, strict types, and invariant-enforcing operations) — belongs inside the system's **mutable scope**.
+> The **users** are strictly the actors **outside** that mutable scope that send stimuli into the outermost entrypoint or consume what it emits to get their own jobs done without reaching into internal modules; internal functions, classes, and callers inside the mutable scope are parts of the implementation, never users.
+> Each user's **job** is what that external actor is trying to get done through the outermost entrypoint. Everything inside the mutable scope required for users to finish their jobs — both core domain invariants and outermost surface wiring — is in scope, including what the spec author left unwritten. Anything serving a different job is out of scope.
 > **Friction** is any moment where a user must know, guess, or do something its job does not require.
 
 > [!IMPORTANT]
@@ -88,36 +89,45 @@ Reuse of what the system already has is governed by Minimal System Entropy above
 Reconstruct the users and jobs behind the spec, audit physical codebase reality across all three states simultaneously (`SATISFIED`, `UPGRADE`, `UNMET`), and compile `<appDataDir>/brain/<your-conversation-id>/boundary_plan.md` before modifying any workspace file.
 
 ### 1.1 Users, Jobs, Scenarios & Invariants (with Disk Status & Evidence)
-- **Users & Jobs:** Follow every outcome the spec describes to whatever invokes it and whatever receives it; each of those is a user. Name every user and the job it gets done, one line per user.
-- **Use Scenarios:** Take each user's position in turn: want only what that user wants and know only what that user knows, setting aside what the spec author intends and what the implementer knows about the internals. From that position, walk the user's path across every state the product can be in when its job is attempted, and record each distinct path as a scenario: a literal stimulus through the product's real entrypoint and the exact observable response that user receives.
-- **Observable Response** is the literal text, value, or error the user receives, written so that comparing it with the real response yields yes or no.
-- **Invariants:** A scenario fixes one literal input; an invariant states the rule that holds for every input its product state admits. For every scenario whose response depends on its input, write the rules the response obeys for all such inputs, each so that one counter-input would prove it false, and name the scenarios it spans.
-- **Implied Requirements:** Every requirement a scenario exposes that the spec leaves unwritten, each traced to the scenario that exposed it.
-- **Disk Status & Evidence:** Inspect the codebase on disk for every scenario `S-xx` and invariant `I-xx` and assign its current status with exact `file:line` evidence:
-  - `SATISFIED`: The scenario or invariant already produces its exact observable response and holds across all admitted inputs on disk at Quality Tier $\ge 4$ (or with a documented physical system barrier), passes the Deletion Test and Seam Rule, and leaves zero residue.
-  - `UPGRADE`: The scenario or invariant is already runnable on disk, but its implementation sits below Quality Tier 4 without a physical system barrier, fails the Deletion Test, introduces a single-adapter seam, or depends on a pre-change form that fails the Day-One Test.
-  - `UNMET`: The scenario or invariant is missing, unreachable from the real entrypoint, or produces a response violating the declared observable response or invariant rule on disk.
+- **Users & Jobs:** Follow every outcome the spec describes outward past the mutable scope to the external actor that triggers the outermost entrypoint or receives its final result (`The Job Principle`), and name every user and the job it gets done, one line per user.
+- **Use Scenarios:** Take each user's position at the **product's outermost entrypoint** — the boundary of the mutable scope where raw input from outside first enters and where the final observable result returns to that user — knowing only what that external user knows and nothing about internal types or modules. Walk the user's path across every state the product can be in when its job is attempted, and record each distinct path as a scenario: a literal stimulus with raw external input through the outermost entrypoint and the exact observable response that user receives at the exit.
+- **Observable Response:** The literal text, value, exit status, or error the user receives from the outermost entrypoint, written so that comparing it with the real response yields yes or no.
+- **Invariants:** A scenario fixes one literal input; an invariant states the rule that holds for every input its product state admits across the full path from outermost entrypoint to exit. For every scenario whose response depends on its input, write the rules the response obeys for all such inputs, each so that one counter-input would prove it false, and name the scenarios it spans.
+- **Implied Requirements:** Every requirement a scenario exposes across either the core domain layer or the surface and integration layer that the spec leaves unwritten, each traced to the scenario that exposed it.
+- **Disk Status & Evidence:** Inspect the codebase on disk across the **complete end-to-end path** for every scenario `S-xx` and invariant `I-xx` — from the outermost entrypoint where the user's raw stimulus enters, through the surface parsing and dependency-wiring layer, into the core domain logic, and back out to the final user-observable response — and assign its status with exact `file:line` evidence for every layer on that path:
+  - `SATISFIED`: Every layer along the path from outermost entrypoint to user response holds on disk at Quality Tier $\ge 4$ (or with a documented physical system barrier), passes the Deletion Test and Seam Rule, leaves zero residue, and satisfies all four end-to-end completeness conditions:
+    1. **Live Composition-Root Wiring:** The core boundaries and their production dependencies are instantiated and connected inside the product's live startup or dispatch path so the scenario executes through the real outermost entrypoint.
+    2. **Frictionless Boundary Parsing:** Raw inputs entering from outside the mutable scope are validated and parsed into strict Core types immediately at the surface boundary without requiring the user to supply internal boilerplate or know hidden ordering or state constraints.
+    3. **Actionable Egress & Error Translation:** Every Core return state, domain rejection, and boundary validation failure is translated at the surface boundary into the exact observable response, exit status, or user-meaningful error message required by the scenario — never leaking raw internal exceptions, swallowing errors, or substituting silent fallbacks.
+    4. **Entrypoint REAL Test Coverage:** At least one automated REAL test on disk invokes the product through the real outermost entrypoint used by the caller, starts from a state the real flow produces, and verifies the observable contract without mocking internal boundaries.
+  - `UPGRADE`: The scenario or invariant is reachable from the outermost entrypoint, but either the Core boundary OR the Surface & Integration layer (input parsing, composition-root wiring, or error/response translation) sits below Quality Tier 4 without a physical system barrier, leaks raw internal exceptions or friction to the user, lacks an automated REAL test entering through the real outermost entrypoint, fails the Deletion Test, introduces a single-adapter seam, or depends on a pre-change form that fails the Day-One Test.
+  - `UNMET`: The scenario or invariant is missing, disconnected from the live outermost entrypoint or composition root, or produces a response violating the declared observable response or invariant rule on disk.
 
 ### 1.2 Fixed-Point Scope Discovery, Retirement Inventory & Zero-Read Closed Scope
-- **Fixed-Point Scope Discovery:** Starting from the entrypoints the scenarios pass through, trace callers and consumers outward using `rg` and `read_file`. At each trace hop, determine whether the file requires changes: it requires changes when any scenario or invariant spanning it is `UNMET` or `UPGRADE`, when it breaks under the change, or when its form would fail the Day-One Test afterward. Scope discovery is complete when one more trace hop adds no file that needs changing.
-- **Retirement Inventory:** For every concept the change touches, name its pre-change form: the exact names and shapes the change replaces or makes redundant. Search the whole workspace for each with `rg` and record every place whose content still depends on that form, not only its callers, each with its fate: deleted, rewritten to the new form, or kept with a justification drawn from present requirements alone.
+- **Fixed-Point Scope Discovery:** Starting from the outermost entrypoints the scenarios pass through, trace inward through the surface wiring and core modules and outward across all callers and consumers inside the mutable scope using `rg` and `read_file`. At each trace hop, determine whether the file requires changes: it requires changes when any scenario or invariant spanning it is `UNMET` or `UPGRADE`, when it breaks under the change, or when its form would fail the Day-One Test afterward. Scope discovery is complete when one more trace hop adds no file that needs changing.
+- **Retirement Inventory:** For every concept the change touches across both core and surface layers, name its pre-change form: the exact names and shapes the change replaces or makes redundant. Search the whole workspace for each with `rg` and record every place whose content still depends on that form, not only its callers, each with its fate: deleted, rewritten to the new form, or kept with a justification drawn from present requirements alone.
 - **Zero-Read Closed Scope:** Every type, structure, or interface crossing a seam has its definition written into `boundary_plan.md`. For read-only dependencies outside the mutation scope, extract their relevant structural definitions and inline them so execution requires zero secondary lookups.
 - **Pre-Compaction Flush & Resume:** **When** a context-budget warning (90%/95%) fires during Step 1 before `boundary_plan.md` is complete, immediately write or update `<appDataDir>/brain/<your-conversation-id>/boundary_plan.md` with all sections, `S-xx` / `I-xx` rows (`Disk Status & Evidence`), inlined definitions, retired forms, and milestones that are already settled from the files inspected so far before continuing with the next read call toward auto-compaction. **When** resuming Step 1 after compaction, read `<appDataDir>/brain/<your-conversation-id>/boundary_plan.md` alongside the unread target slices, keep all already-settled entries and milestones in `boundary_plan.md` without re-reading the files whose contracts and `#L<start>-L<end>` ranges are already recorded there, and inspect only the remaining uninspected scope to complete `boundary_plan.md`.
 
 ### 1.3 Convergence Gate
-**When** every scenario `S-xx` and invariant `I-xx` has `Disk Status & Evidence` = `SATISFIED`, Fixed-Point Scope Discovery yields zero files requiring changes, and the Retirement Inventory yields zero unretired pre-change forms across the workspace, write `<appDataDir>/brain/<your-conversation-id>/boundary_plan.md` containing the complete `Users, Jobs & Use Scenarios` section and the `S-xx` and `I-xx` tables with their `SATISFIED` `file:line` proofs, terminate your run immediately without modifying any workspace file, and reply with only:
+**When** every scenario `S-xx` and invariant `I-xx` has `Disk Status & Evidence` = `SATISFIED` — citing `file:line` evidence on disk for the outermost entrypoint/surface layer, the core domain layer, and the automated REAL test entering through the real outermost entrypoint — Fixed-Point Scope Discovery yields zero files requiring changes, and the Retirement Inventory yields zero unretired pre-change forms across the workspace, write `<appDataDir>/brain/<your-conversation-id>/boundary_plan.md` containing the complete `Users, Jobs & Use Scenarios` section and the `S-xx` and `I-xx` tables with their full `SATISFIED` `file:line` proofs, terminate your run immediately without modifying any workspace file or running commands, and reply with only:
 `CONVERGED: <appDataDir>/brain/<your-conversation-id>/boundary_plan.md`
 
 ### 1.4 Topological Boundary Decomposition & Milestone Anatomy
 **When** any `UNMET` item, `UPGRADE` item, or unretired pre-change form exists, partition all required codebase changes into an ordered dependency graph of system boundaries $B_1, B_2, \dots, B_n$:
+- **Core vs. Surface Boundary Separation:** Decompose the path between the outermost entrypoint and the terminal sink into distinct milestones for the two boundary kinds the path crosses:
+  1. **Core Boundaries:** Internal domain models, strict types, and pure or storage-backed operations that enforce domain invariants and state transitions independent of how external callers invoke the system.
+  2. **Surface & Integration Boundaries:** The outermost entrypoints, composition roots, input parsers, dependency wiring, and response/error translators inside the mutable scope that accept raw stimuli from external users, convert them into strict Core contracts, wire live dependencies into the runtime execution path, and turn every Core outcome or failure into the exact observable response the external user receives.
+  Treat every Surface & Integration milestone as a first-class boundary with its own Tier $\ge 4$ contracts, input-parsing invariants, error-translation guarantees, and entrypoint REAL tests — never reducing outermost entrypoint wiring, input parsing, or response translation to a line item inside a Core milestone's `Caller Audit`.
 - **Topological Enablement Rule:** Execution order follows dependency order. For every milestone $B_m$, all prerequisite capabilities, types, and seams required by $B_m$ must be fully established by earlier milestones, and every milestone except the last ones in the graph must unlock a necessary prerequisite for at least one later milestone.
-- **Lineage & Justification:** Every milestone exists for an explicit reason: making one or more `UNMET` scenarios or invariants hold, upgrading one or more `UPGRADE` scenarios/invariants or retiring pre-change forms to reach Quality Tier $\ge 4$, deep module boundaries, and Day-One compliance, or providing an unavoidable prerequisite required to implement later milestones cleanly and correctly.
+- **Lineage & Justification:** Every milestone exists for an explicit reason: making one or more `UNMET` scenarios or invariants hold, upgrading one or more `UPGRADE` scenarios/invariants or retiring pre-change forms across Core or Surface layers to reach Quality Tier $\ge 4$, deep module boundaries, and Day-One compliance, or providing an unavoidable prerequisite required to implement later milestones cleanly and correctly.
 - **Composability Gate:** Every `UNMET` item, every `UPGRADE` item, and every unretired pre-change form in the Retirement Inventory is resolved by a milestone in the sequence, already-`SATISFIED` capabilities remain intact, and no milestone serves anything outside the users' jobs.
 
 For every milestone $B_1 \dots B_n$, declare both tiers in `boundary_plan.md`:
 1. **Tier 1 — The System Boundary (What & Why):**
+   - **Boundary Kind:** `Core Boundary` or `Surface & Integration Boundary`.
    - **Observable Outcome:** The precise system capability or structural state made possible by this boundary, defined by the stimuli it accepts and the verified responses it produces.
-   - **Acceptance Signal:** A literal invocation through the nearest real entrypoint and its exact observable response (listing the `S-xx` scenarios and `I-xx` invariants resolved by this milestone).
+   - **Acceptance Signal:** A literal invocation through the nearest real entrypoint (and for a `Surface & Integration Boundary`, the outermost entrypoint) and its exact observable response (listing the `S-xx` scenarios and `I-xx` invariants resolved by this milestone).
    - **Provenance & Justification:** Which `UNMET` scenarios/invariants this milestone makes runnable, which `UPGRADE` scenarios/invariants or retired forms it resolves, OR which downstream milestone prerequisite it enables.
 2. **Tier 2 — Technical Decisions & Physical Contracts (How):**
    - **Key Decisions:**
@@ -138,29 +148,30 @@ For every milestone $B_1 \dots B_n$, declare both tiers in `boundary_plan.md`:
 ## Users, Jobs & Use Scenarios
 
 - **Users & Jobs:**
-  - <User>: <The job this user gets done, in one sentence>
-- **Implied Requirements:** <Requirement the spec leaves unwritten> (exposed by S-xx)
+  - <External Actor outside mutable scope>: <The job this user gets done through the outermost entrypoint, in one sentence>
+- **Implied Requirements:** <Requirement across core or surface/integration that the spec leaves unwritten> (exposed by S-xx)
 
-| # | User | Product State | Invocation | Observable Response | Disk Status & Evidence |
+| # | User | Product State | Invocation (Outermost Entrypoint) | Observable Response (Exit to User) | Disk Status & Evidence |
 |---|---|---|---|---|---|
-| S-01 | <User from the list above> | <The situation the user and product are in when the user acts> | `<Exact command, request, or call the user makes>` | <Exact output, return value, or error the user receives> | `SATISFIED` at [auth.py](file:///src/auth.py#L20-L45) (Tier 5 `SessionToken`, 0 residue) \| `UPGRADE` at [notes.py](file:///src/notes.py#L30-L58) (<structural flaw>) \| `UNMET` at [routes.py](file:///src/routes.py#L12) (<missing/broken behavior>) |
+| S-01 | <External user from the list above> | <The situation the user and product are in when the user acts> | `<Exact raw command, request, or event sent to the outermost entrypoint>` | <Exact output, status, return value, or error message the external user receives> | `SATISFIED` — Surface: [routes.py](file:///src/routes.py#L18-L42), Core: [note_store.py](file:///src/note_store.py#L10-L35) (Tier 5 `NoteDraft`, 0 residue), REAL Test: [test_notes_api.py](file:///tests/test_notes_api.py#L15-L38) \| `UPGRADE` — Core `SATISFIED` at [note_store.py](file:///src/note_store.py#L10-L35), Surface at [routes.py](file:///src/routes.py#L22) leaks raw `ValueError` traceback on blank title and lacks entrypoint REAL test \| `UNMET` at [app.py](file:///src/app.py#L12) (`POST /notes` route not wired into live app router) |
 
 | # | Invariant | Spans | Disk Status & Evidence |
 |---|---|---|---|
-| I-01 | <Rule that holds for every input the spanned scenarios' product state admits, stated so that one counter-input would prove it false> | S-01 | `SATISFIED` at [auth.py](file:///src/auth.py#L20-L32) \| `UPGRADE` / `UNMET` at [notes.py](file:///src/notes.py#L40) (<reason>) |
+| I-01 | <Rule that holds for every raw input the spanned scenarios' product state admits across outermost entrypoint -> core -> user response, stated so that one counter-input would prove it false> | S-01 | `SATISFIED` — Surface: [routes.py](file:///src/routes.py#L20-L30), Core: [note_store.py](file:///src/note_store.py#L10-L24), REAL Test: [test_notes_api.py](file:///tests/test_notes_api.py#L40-L58) \| `UPGRADE` / `UNMET` at [routes.py](file:///src/routes.py#L22) (<reason>) |
 
-### Milestone 1: <Descriptive Title>
+### Milestone 1: Note Domain Model & Persistence Contract
 
-- **Observable Outcome:** <What this boundary makes possible for the system or later milestones>
-- **Acceptance Signal:** <Scenarios S-xx and invariants I-xx resolved, or a literal invocation and its exact observable response>
-- **Provenance & Justification:** <UNMET scenarios made runnable, UPGRADE items / retired forms resolved, or prerequisite enabling Milestone N>
+- **Boundary Kind:** `Core Boundary`
+- **Observable Outcome:** Validated note drafts are persisted with assigned identifiers while blank titles are structurally unrepresentable in domain state.
+- **Acceptance Signal:** Resolves the core persistence invariant of `S-01` and `I-01` (prerequisite enabling Milestone 2).
+- **Provenance & Justification:** Establishes the Tier 5 domain contract `NoteDraft` and `NoteStore.save` required by Milestone 2's outermost route handler and retires unvalidated `save_note(title, body, store=None)`.
 
 #### Technical Decisions & Physical Contracts
 - **Key Decisions:**
-  - **Minimal Entropy:** <Canonical form kept, knowledge removed from callers, pre-change forms retired>
-  - **Maximal Value:** <Friction removed from scenario S-xx and how>
-  - **Quality Tier & Pattern Alignment:** <Tier N / Tier N.5 — structural guarantee and exact existing codebase pattern/utility reused, or physical blocker if < Tier 4>
-  - **Module Depth & Seam Classification:** <Deletion Test proof, Side-Effect Isolation, and seam category (In-process / Local-substitutable / Remote-owned / True-external) with adapter count>
+  - **Minimal Entropy:** `NoteDraft` is the sole representation of an unsaved note; callers never pass raw `(title, body)` tuples into storage.
+  - **Maximal Value:** Rejects blank or whitespace-only titles at construction with a structured `InvalidNoteDraftError(field, reason)` that surface boundaries can translate directly.
+  - **Quality Tier & Pattern Alignment:** Tier 5.5 — makes invalid draft state unrepresentable via `NoteDraft.parse` and reuses existing `NonEmptyStr` value object at [primitives.py](file:///src/domain/primitives.py#L8-L22).
+  - **Module Depth & Seam Classification:** Passes Deletion Test by encapsulating title normalization, ID generation, and repository persistence behind `NoteStore.save`; `Local-substitutable` seam with 2 adapters (`SqliteNoteRepository` and in-memory `FakeNoteRepository`).
 - **Literal Contracts & Bound Structures:**
   ```python
   @dataclass(frozen=True)
@@ -168,26 +179,67 @@ For every milestone $B_1 \dots B_n$, declare both tiers in `boundary_plan.md`:
       title: NonEmptyStr
       body: str
 
-  def save(draft: NoteDraft) -> SavedNote:
-      """Persist the draft and return it with its assigned id."""
+      @classmethod
+      def parse(cls, raw_title: str, raw_body: str) -> "NoteDraft":
+          """Validate raw strings and return a strict NoteDraft or raise InvalidNoteDraftError."""
+          ...
+
+  class NoteStore:
+      def save(self, draft: NoteDraft) -> SavedNote:
+          """Persist the validated draft and return SavedNote with assigned id."""
+          ...
+  ```
+- **Caller & Sink Audit:**
+  - Ingress: Consumed by `[create_note](file:///src/routes.py#L18-L42)` in Milestone 2
+  - Terminal Sink: Persisted via `[SqliteNoteRepository.insert](file:///src/storage/notes.py#L88)`
+- **Retired Forms:**
+  - `save_note(title, body, store=None)` at [notes.py](file:///src/controllers/notes.py#L52): deleted; all 3 call sites rewritten in Milestone 2; 0 references remain
+
+#### File Manifest
+- `[NEW]` [note_store.py](file:///src/note_store.py)
+- `[MODIFY]` [notes.py](file:///src/storage/notes.py#L80-L95)
+
+### Milestone 2: Outermost `POST /notes` Route Wiring, Input Parsing & Entrypoint REAL Tests
+
+- **Boundary Kind:** `Surface & Integration Boundary`
+- **Observable Outcome:** External HTTP callers invoking `POST /notes` with raw JSON payloads receive `201 Created` with the serialized `SavedNote` on valid input and `422 Unprocessable Entity` with structured field errors on invalid input.
+- **Acceptance Signal:** `POST /notes {"title": "Todo", "body": "Ship it"}` through the live `create_app()` WSGI entrypoint returns `201 {"id": "n_1", "title": "Todo", "body": "Ship it"}`; `POST /notes {"title": "   ", "body": "x"}` returns `422 {"error": "title must not be empty"}` (resolves `S-01` and `I-01` end-to-end).
+- **Provenance & Justification:** Connects Milestone 1's `NoteStore` into the live composition root at `app.py`, upgrades raw payload parsing and error translation at `routes.py` to Tier 5, and adds entrypoint REAL tests in `tests/test_notes_api.py`.
+
+#### Technical Decisions & Physical Contracts
+- **Key Decisions:**
+  - **Minimal Entropy:** Route handler delegates validation exclusively to `NoteDraft.parse` and maps `InvalidNoteDraftError` through a single error response translator.
+  - **Maximal Value:** External callers send plain JSON and receive deterministic `201` / `422` JSON payloads without internal stack traces or manual pre-formatting.
+  - **Quality Tier & Pattern Alignment:** Tier 5.5 — parses untrusted JSON at the HTTP ingress boundary into `NoteDraft` and reuses `json_error_response` at [http.py](file:///src/http.py#L14-L29).
+  - **Module Depth & Seam Classification:** `create_app(db_path)` wires `SqliteNoteRepository` and `NoteStore` at startup so route handlers take only the bound request context; `Local-substitutable` SQLite `:memory:` database used in entrypoint REAL tests.
+- **Literal Contracts & Bound Structures:**
+  ```python
+  def create_note(request: HttpRequest, store: NoteStore) -> HttpResponse:
+      """Parse raw JSON body via NoteDraft.parse, persist via store.save, and return 201 or 422 HttpResponse."""
+      ...
+
+  def create_app(db_path: Path) -> WsgiApp:
+      """Instantiate SqliteNoteRepository and NoteStore and bind POST /notes on the live router."""
       ...
   ```
 - **Caller & Sink Audit:**
-  - Ingress: Called by `[NoteController.create](file:///src/controllers/notes.py#L45)`
-  - Terminal Sink: Persisted via `[NoteRepository.insert](file:///src/storage/notes.py#L88)`
+  - Ingress: Outermost HTTP entrypoint registered in `[create_app](file:///src/app.py#L12-L28)` and invoked by `[test_notes_api.py](file:///tests/test_notes_api.py#L15-L58)`
+  - Terminal Sink: Returns serialized `HttpResponse` to the external HTTP client after persisting through `NoteStore.save`
 - **Retired Forms:**
-  - `save_note(title, body, store=None)` at [notes.py](file:///src/controllers/notes.py#L52): deleted; its 3 call sites rewritten to `note_store.save`; 0 references remain
+  - Direct unvalidated dict access `request.json["title"]` and `save_note(...)` calls at [routes.py](file:///src/routes.py#L18-L42): rewritten to `NoteDraft.parse` and `store.save`; 0 references remain
 
 #### File Manifest
-- `[MODIFY]` [notes.py](file:///src/controllers/notes.py#L30-L65)
-- `[NEW]` [note_store.py](file:///src/note_store.py)
+- `[MODIFY]` [routes.py](file:///src/routes.py#L18-L42)
+- `[MODIFY]` [app.py](file:///src/app.py#L10-L30)
+- `[DELETE]` [notes.py](file:///src/controllers/notes.py#L1-L65)
+- `[NEW]` [test_notes_api.py](file:///tests/test_notes_api.py)
 
 ### Verification Matrix
 
-- **Baseline Checks:** `<Automated validation commands (typecheck, lint, unit tests, integration tests) certifying system invariants across all milestones>`
+- **Baseline Checks:** `<Automated validation commands (typecheck, lint, unit tests, entrypoint REAL tests) certifying system invariants across all milestones>`
 ````
 
-- **Completion Criterion:** Every user is named with its job; every reachable product state on each user's path is present in at least one scenario `S-xx` with its exact observable response and spanned by `I-xx` invariants; every `S-xx` and `I-xx` carries its verified `Disk Status & Evidence` (`SATISFIED`, `UPGRADE`, or `UNMET`) with `file:line` citations; Fixed-Point Scope Discovery, Retirement Inventory, and Zero-Read Closed Scope are complete; `<appDataDir>/brain/<your-conversation-id>/boundary_plan.md` is written to disk before any workspace file is touched; and either the run has terminated via the Convergence Gate (`CONVERGED:`) when all items are `SATISFIED` with zero retired forms, or every `UNMET` item, `UPGRADE` item, and retired form is assigned to an ordered milestone $B_1 \dots B_n$ declaring all fields of Tier 1 and Tier 2.
+- **Completion Criterion:** Every external user outside the mutable scope is named with its job; every reachable product state on each user's path through the outermost entrypoint is present in at least one scenario `S-xx` with its exact observable response and spanned by `I-xx` invariants; every `S-xx` and `I-xx` carries its verified end-to-end `Disk Status & Evidence` (`SATISFIED`, `UPGRADE`, or `UNMET`) with `file:line` citations covering surface, core, and entrypoint REAL tests; Fixed-Point Scope Discovery, Retirement Inventory, and Zero-Read Closed Scope are complete; `<appDataDir>/brain/<your-conversation-id>/boundary_plan.md` is written to disk before any workspace file is touched; and either the run has terminated via the Convergence Gate (`CONVERGED:`) when all items are `SATISFIED` across surface, core, and entrypoint REAL tests with zero retired forms, or every `UNMET` item, `UPGRADE` item, and retired form is assigned to an ordered milestone $B_1 \dots B_n$ separating `Core Boundary` and `Surface & Integration Boundary` milestones and declaring all fields of Tier 1 and Tier 2.
 
 ---
 

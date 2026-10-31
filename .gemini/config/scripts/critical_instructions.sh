@@ -16,18 +16,15 @@ STATE_DIR="${AGY_COMPACT_STATE_DIR:-/tmp/agy_compact_state}"
 COUNTER_FILE="${AGY_CI_COUNTER_FILE:-/tmp/agy_ci_turn_${CLEAN_CONV_ID}}"
 STATE_FILE="${STATE_DIR}/${CLEAN_CONV_ID}.json"
 
-T=0
-LAST_INJECT_T=0
+INITIALIZED=0
 LAST_INJECT_TOKENS=0
 LAST_INJECT_COMPACT_COUNT=0
 if [ -f "$COUNTER_FILE" ]; then
-  read -r T LAST_INJECT_T LAST_INJECT_TOKENS LAST_INJECT_COMPACT_COUNT < "$COUNTER_FILE"
-  [[ "$T" =~ ^[0-9]+$ ]] || T=0
-  [[ "$LAST_INJECT_T" =~ ^[0-9]+$ ]] || LAST_INJECT_T=0
+  read -r INITIALIZED LAST_INJECT_TOKENS LAST_INJECT_COMPACT_COUNT < "$COUNTER_FILE"
+  [[ "$INITIALIZED" =~ ^[0-9]+$ ]] || INITIALIZED=0
   [[ "$LAST_INJECT_TOKENS" =~ ^[0-9]+$ ]] || LAST_INJECT_TOKENS=0
   [[ "$LAST_INJECT_COMPACT_COUNT" =~ ^[0-9]+$ ]] || LAST_INJECT_COMPACT_COUNT=0
 fi
-T=$((T + 1))
 
 CUR_TOKENS=0
 COMPACT_COUNT=0
@@ -39,8 +36,8 @@ if [ -f "$STATE_FILE" ]; then
   [[ "$COMPACT_COUNT" =~ ^[0-9]+$ ]] || COMPACT_COUNT=0
 fi
 
-# Backfill baseline token count once the first PLANNER_RESPONSE reports input tokens
-if (( LAST_INJECT_TOKENS == 0 && CUR_TOKENS > 0 )); then
+# Backfill baseline token count on first report or reset baseline when post-compaction tokens drop
+if (( (LAST_INJECT_TOKENS == 0 || CUR_TOKENS < LAST_INJECT_TOKENS) && CUR_TOKENS > 0 )); then
   LAST_INJECT_TOKENS=$CUR_TOKENS
 fi
 
@@ -72,12 +69,12 @@ EOF
 
 footer="</critical_instructions>"
 
-# Inject instructions as a persistent systemMessage at T=1, after 5 turns, after >=30k token growth, or after compaction
-if (( T == 1 || LAST_INJECT_T == 0 || T - LAST_INJECT_T >= 5 || CUR_TOKENS - LAST_INJECT_TOKENS >= 30000 || COMPACT_DROP == 1 )); then
-  LAST_INJECT_T=$T
+# Inject instructions as a persistent systemMessage on first turn, after >=30k token growth, or after compaction
+if (( INITIALIZED == 0 || CUR_TOKENS - LAST_INJECT_TOKENS >= 30000 || COMPACT_DROP == 1 )); then
+  INITIALIZED=1
   LAST_INJECT_TOKENS=$CUR_TOKENS
   LAST_INJECT_COMPACT_COUNT=$COMPACT_COUNT
-  echo "$T $LAST_INJECT_T $LAST_INJECT_TOKENS $LAST_INJECT_COMPACT_COUNT" > "$COUNTER_FILE"
+  echo "$INITIALIZED $LAST_INJECT_TOKENS $LAST_INJECT_COMPACT_COUNT" > "$COUNTER_FILE"
   message="${header}
 ${ci_1}
 ${ci_2}
@@ -85,6 +82,6 @@ ${ci_3}
 ${footer}"
   jq -n --arg msg "$message" '{ "injectSteps": [ { "systemMessage": { "systemMessage": $msg } } ] }'
 else
-  echo "$T $LAST_INJECT_T $LAST_INJECT_TOKENS $LAST_INJECT_COMPACT_COUNT" > "$COUNTER_FILE"
+  echo "$INITIALIZED $LAST_INJECT_TOKENS $LAST_INJECT_COMPACT_COUNT" > "$COUNTER_FILE"
   jq -n '{ "injectSteps": [] }'
 fi
