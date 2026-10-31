@@ -1,9 +1,43 @@
 {
   "statusline-tracker": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "~/.gemini/config/scripts/track_turn.sh pre_invocation"
+      }
+    ],
     "PostInvocation": [
       {
         "type": "command",
-        "command": "~/.gemini/config/scripts/track_turn.sh"
+        "command": "~/.gemini/config/scripts/track_turn.sh post_invocation"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "ask_question",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.gemini/config/scripts/track_turn.sh pre_ask"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "ask_question",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.gemini/config/scripts/track_turn.sh post_ask"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "~/.gemini/config/scripts/track_turn.sh stop"
       }
     ]
   },
@@ -118,6 +152,32 @@
             "type": "command",
             "command": "python3 ~/.gemini/config/scripts/decision_harvester_hook.py",
             "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "worktree-isolation-guard": {
+    "PreToolUse": [
+      {
+        "matcher": "read_file|edit_file|write_file|run_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.gemini/config/scripts/worktree_isolation_guard.py pre",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "read_file|run_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.gemini/config/scripts/worktree_isolation_guard.py post",
+            "timeout": 5
           }
         ]
       }

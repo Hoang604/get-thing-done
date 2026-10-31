@@ -42,6 +42,10 @@ RAW_INPUT=$(cat)
   read -r QWK_FRAC
   read -r QWK_RESET
   read -r EMAIL
+  read -r TASK_COUNT
+  read -r PENDING_INPUTS
+  read -r RUNNING_SUBAGENTS
+  read -r TOOL_CONFIRM_PENDING
   read -r DUMMY
 } <<< "$(
   echo "$RAW_INPUT" | jq -r '
@@ -60,8 +64,12 @@ RAW_INPUT=$(cat)
     (.quota["gemini-weekly"].remaining_fraction // .quota["3p-weekly"].remaining_fraction // .quotas["gemini-weekly"].remaining_fraction // ."gemini-weekly".remaining_fraction // ""),
     (.quota["gemini-weekly"].reset_in_seconds // .quota["3p-weekly"].reset_in_seconds // .quotas["gemini-weekly"].reset_in_seconds // ."gemini-weekly".reset_in_seconds // ""),
     (.email // .user.email // ""),
+    (.task_count // 0),
+    (.pending_input_count // 0),
+    ([.subagents[]? | select(.status == "running")] | length),
+    (.tool_confirmation_pending // false),
     "EOF"
-  ' 2>/dev/null || printf "idle\n0\n\nfalse\n\n80\n0\n0\n0\n\n\n\n\n\n\nEOF\n"
+  ' 2>/dev/null || printf "idle\n0\n\nfalse\n\n80\n0\n0\n0\n\n\n\n\n\n\n0\n0\n0\nfalse\nEOF\n"
 )"
 
 # ─── Write Raw Input to tmp/conversation_id/turn-<x>/statusline_input.json ───
@@ -177,18 +185,106 @@ format_cost() {
   echo "$c" | sed 's/\([0-9]*\.[0-9]*[1-9]\)0*/\1/;s/\.0*$//'
 }
 
+format_run_duration() {
+  local sec="${1:-0}"
+  sec=${sec%.*}
+  if [ -z "$sec" ] || [ "$sec" -lt 0 ] 2>/dev/null; then
+    sec=0
+  fi
+  local d=$((sec / 86400))
+  local rem=$((sec % 86400))
+  local h=$((rem / 3600))
+  local rem2=$((rem % 3600))
+  local m=$((rem2 / 60))
+  local s=$((rem2 % 60))
+
+  if [ "$d" -gt 0 ]; then
+    echo "${d}d ${h}h ${m}m"
+  elif [ "$h" -gt 0 ]; then
+    echo "${h}h ${m}m ${s}s"
+  elif [ "$m" -gt 0 ]; then
+    echo "${m}m ${s}s"
+  else
+    echo "${s}s"
+  fi
+}
+
 # ─── Computed Values ─────────────────────────────────────────────────────────
 PCT_FMT=$(LC_NUMERIC=C printf "%.1f" "$USED_PCT")
 PCT_INT=${USED_PCT%.*}; PCT_INT=${PCT_INT:-0}
 
+# ─── Continuous Run Timer ────────────────────────────────────────────────────
+NOW=$(date +%s)
+RUN_ACTIVE=0
+RUN_START_TS=0
+RUN_LAST_ELAPSED=0
+RUN_AWAITING_ASK=0
+
+if [ -n "$CONV_ID" ]; then
+  RUN_FILE="/tmp/agy_cumulative_${CONV_ID}.run"
+  if [ -f "$RUN_FILE" ]; then
+    {
+      read -r RUN_ACTIVE || true
+      read -r RUN_START_TS || true
+      read -r RUN_LAST_ELAPSED || true
+      read -r RUN_AWAITING_ASK || true
+    } < "$RUN_FILE"
+    RUN_ACTIVE=${RUN_ACTIVE:-0}
+    RUN_START_TS=${RUN_START_TS:-0}
+    RUN_LAST_ELAPSED=${RUN_LAST_ELAPSED:-0}
+    RUN_AWAITING_ASK=${RUN_AWAITING_ASK:-0}
+  fi
+
+  IS_QUIESCENT=0
+  if { [ "$STATE" = "idle" ] || [ "$STATE" = "error" ]; } && [ "${TASK_COUNT:-0}" -le 0 ] 2>/dev/null && [ "${PENDING_INPUTS:-0}" -le 0 ] 2>/dev/null && [ "${RUNNING_SUBAGENTS:-0}" -le 0 ] 2>/dev/null; then
+    IS_QUIESCENT=1
+  fi
+
+  if [ "$IS_QUIESCENT" -eq 1 ]; then
+    if [ "$RUN_ACTIVE" -eq 1 ] && [ "$RUN_START_TS" -gt 0 ] 2>/dev/null; then
+      RUN_LAST_ELAPSED=$((NOW - RUN_START_TS))
+      [ "$RUN_LAST_ELAPSED" -lt 0 ] && RUN_LAST_ELAPSED=0
+    fi
+    RUN_ACTIVE=0
+    RUN_AWAITING_ASK=0
+  elif [ "$RUN_AWAITING_ASK" -eq 1 ] 2>/dev/null || [ "$TOOL_CONFIRM_PENDING" = "true" ] || [ "$STATE" = "reviewing" ]; then
+    if [ "$RUN_ACTIVE" -eq 1 ] && [ "$RUN_START_TS" -gt 0 ] 2>/dev/null; then
+      RUN_LAST_ELAPSED=$((NOW - RUN_START_TS))
+      [ "$RUN_LAST_ELAPSED" -lt 0 ] && RUN_LAST_ELAPSED=0
+    fi
+    RUN_ACTIVE=0
+  else
+    if [ "$RUN_ACTIVE" -eq 0 ] || [ "$RUN_START_TS" -le 0 ] 2>/dev/null; then
+      RUN_ACTIVE=1
+      RUN_START_TS="$NOW"
+      RUN_LAST_ELAPSED=0
+    else
+      RUN_LAST_ELAPSED=$((NOW - RUN_START_TS))
+      [ "$RUN_LAST_ELAPSED" -lt 0 ] && RUN_LAST_ELAPSED=0
+    fi
+  fi
+
+  printf "%s\n%s\n%s\n%s\n" "$RUN_ACTIVE" "$RUN_START_TS" "$RUN_LAST_ELAPSED" "$RUN_AWAITING_ASK" > "$RUN_FILE" 2>/dev/null || true
+fi
+
 # ─── State Indicator ─────────────────────────────────────────────────────────
 case "$STATE" in
-  idle)     S="${FG_BRIGHT_GREEN}${B}● READY${R}" ;;
-  thinking) S="${FG_BRIGHT_YELLOW}${B}◆ THINKING${R}" ;;
-  working)  S="${FG_BRIGHT_CYAN}${B}⚙ WORKING${R}" ;;
-  tool_use) S="${FG_BRIGHT_MAGENTA}${B}🔧 TOOL${R}" ;;
-  *)        S="${FG_WHITE}${B}⏳ $(echo "$STATE" | tr '[:lower:]' '[:upper:]')${R}" ;;
+  idle)      S="${FG_BRIGHT_GREEN}${B}● READY${R}" ;;
+  thinking)  S="${FG_BRIGHT_YELLOW}${B}◆ THINKING${R}" ;;
+  working)   S="${FG_BRIGHT_CYAN}${B}⚙ WORKING${R}" ;;
+  tool_use)  S="${FG_BRIGHT_MAGENTA}${B}🔧 TOOL${R}" ;;
+  reviewing) S="${FG_BRIGHT_YELLOW}${B}👁 REVIEWING${R}" ;;
+  error)     S="${FG_BRIGHT_RED}${B}✖ ERROR${R}" ;;
+  *)         S="${FG_WHITE}${B}⏳ $(echo "$STATE" | tr '[:lower:]' '[:upper:]')${R}" ;;
 esac
+
+if [ "$RUN_ACTIVE" -eq 1 ] 2>/dev/null; then
+  RUN_DUR=$(format_run_duration "$RUN_LAST_ELAPSED")
+  S="${S} ${FG_WHITE}${RUN_DUR}${R}"
+elif [ "$RUN_START_TS" -gt 0 ] 2>/dev/null; then
+  RUN_DUR=$(format_run_duration "$RUN_LAST_ELAPSED")
+  S="${S} ${FG_GRAY}worked ${FG_WHITE}${RUN_DUR}${R}"
+fi
 
 # ─── VCS Branch ──────────────────────────────────────────────────────────────
 V=""

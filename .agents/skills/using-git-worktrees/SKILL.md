@@ -1,6 +1,7 @@
 ---
 name: using-git-worktrees
 description: Use when starting feature work that needs isolation from current workspace or before executing implementation plans - ensures an isolated workspace exists via native tools or git worktree fallback
+disable-model-invocation: true
 ---
 
 # Using Git Worktrees
@@ -60,71 +61,68 @@ Only proceed to Step 1b if you have no native worktree tool available.
 
 **Only use this if Step 1a does not apply** — you have no native worktree tool available. Create a worktree manually using git.
 
-#### Directory Selection
+#### Directory Selection, `.gitignore` Verification & Worktree Creation (Single-Turn Execution)
 
-Follow this priority order. Explicit user preference always beats observed filesystem state.
+Follow this directory priority order (explicit user preference always beats observed filesystem state):
+1. User-declared worktree directory preference in instructions.
+2. Existing `.worktrees` (preferred) or `worktrees` directory at project root.
+3. Default to `.worktrees` at project root.
 
-1. **Check your instructions for a declared worktree directory preference.** If the user has already specified one, use it without asking.
-
-2. **Check for an existing project-local worktree directory:**
-   ```bash
-   ls -d .worktrees 2>/dev/null     # Preferred (hidden)
-   ls -d worktrees 2>/dev/null      # Alternative
-   ```
-   If found, use it. If both exist, `.worktrees` wins.
-
-3. **If there is no other guidance available**, default to `.worktrees/` at the project root.
-
-#### Safety Verification (project-local directories only)
-
-**MUST verify directory is ignored before creating worktree:**
+**Execute directory selection, `.gitignore` verification/commit, and `git worktree add` in a single `run_command` call within one turn:**
 
 ```bash
-git check-ignore -q .worktrees 2>/dev/null || git check-ignore -q worktrees 2>/dev/null
+LOCATION=$(if [ -d .worktrees ]; then echo ".worktrees"; elif [ -d worktrees ]; then echo "worktrees"; else echo ".worktrees"; fi) && \
+if ! git check-ignore -q "$LOCATION" 2>/dev/null && ! rg -n "^/?${LOCATION}/?$" .gitignore >/dev/null 2>&1; then \
+  printf "\n%s/\n" "$LOCATION" >> .gitignore && git add .gitignore && git commit -m "chore: ignore $LOCATION directory"; \
+fi && \
+WORKTREE_PATH="$(pwd -P)/$LOCATION/$BRANCH_NAME" && \
+git worktree add "$WORKTREE_PATH" -b "$BRANCH_NAME"
 ```
 
-**If NOT ignored:** Add to .gitignore, commit the change, then proceed.
-
-**Why critical:** Prevents accidentally committing worktree contents to repository.
-
-#### Create the Worktree
-
-```bash
-# Determine path based on chosen location
-path="$LOCATION/$BRANCH_NAME"
-
-git worktree add "$path" -b "$BRANCH_NAME"
-cd "$path"
-```
+**Stateless Shell & Hook Isolation Rule (AGY / Non-Persistent Shells):**
+Once `git worktree add "$WORKTREE_PATH"` succeeds, the session's `worktree-isolation-guard` hook automatically locks this conversation to `"$WORKTREE_PATH"` and blocks any `read_file`, `edit_file`, `write_file`, or `run_command` targeting the main repository checkout:
+- Because each `run_command` starts in a fresh shell at the original workspace root, prefix **every** subsequent `run_command` with `cd "$WORKTREE_PATH" && ...` (including Step 2 and Step 3 below).
+- Pass full paths inside `"$WORKTREE_PATH/..."` for every `read_file`, `edit_file`, and `write_file` call until `finishing-a-development-branch` is invoked.
 
 **Sandbox fallback:** If `git worktree add` fails with a permission error (sandbox denial), tell the user the sandbox blocked worktree creation and you're working in the current directory instead. Then run setup and baseline tests in place.
 
 ## Step 2: Project Setup
 
-Auto-detect and run appropriate setup:
+Auto-detect and run appropriate setup inside `"$WORKTREE_PATH"`:
 
 ```bash
-# Node.js
-if [ -f package.json ]; then npm install; fi
+cd "$WORKTREE_PATH" && {
+  # Copy untracked local environment files if present in main repo
+  MAIN_ROOT=$(git -C "$(git rev-parse --git-common-dir)/.." rev-parse --show-toplevel)
+  for env_file in .env .env.local .env.development .env.test; do
+    if [ -f "$MAIN_ROOT/$env_file" ] && [ ! -e "$env_file" ]; then
+      cp "$MAIN_ROOT/$env_file" "$env_file"
+    fi
+  done
 
-# Rust
-if [ -f Cargo.toml ]; then cargo build; fi
+  # Node.js
+  if [ -f package.json ]; then npm install; fi
 
-# Python
-if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-if [ -f pyproject.toml ]; then poetry install; fi
+  # Rust
+  if [ -f Cargo.toml ]; then cargo build; fi
 
-# Go
-if [ -f go.mod ]; then go mod download; fi
+  # Python
+  if [ -f uv.lock ]; then uv sync;
+  elif [ -f poetry.lock ]; then poetry install;
+  elif [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+  # Go
+  if [ -f go.mod ]; then go mod download; fi
+}
 ```
 
 ## Step 3: Verify Clean Baseline
 
-Run tests to ensure workspace starts clean:
+Run tests inside `"$WORKTREE_PATH"` to ensure workspace starts clean:
 
 ```bash
-# Use project-appropriate command
-npm test / cargo test / pytest / go test ./...
+# Use project-appropriate command inside the worktree
+cd "$WORKTREE_PATH" && <npm test / cargo test / pytest / python3 -m unittest / go test ./...>
 ```
 
 **If tests fail:** Report failures, ask whether to proceed or investigate.

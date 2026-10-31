@@ -55,6 +55,7 @@ chmod +x "$TARGET_DIR/config/scripts/read_file_widener.py"
 chmod +x "$TARGET_DIR/config/scripts/rtk_rewrite_hook.py"
 chmod +x "$TARGET_DIR/config/scripts/skill_usage_tracker.py"
 chmod +x "$TARGET_DIR/config/scripts/decision_harvester_hook.py"
+chmod +x "$TARGET_DIR/config/scripts/worktree_isolation_guard.py"
 
 rm -f "$TARGET_DIR/config/scripts/init-python-agent.sh" "$HOME/.local/bin/init-python-agent"
 mkdir -p "$HOME/.local/bin"

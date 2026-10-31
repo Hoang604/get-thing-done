@@ -1,6 +1,7 @@
 ---
 name: finishing-a-development-branch
 description: Use when implementation is complete, all tests pass, and you need to decide how to integrate the work
+disable-model-invocation: true
 ---
 
 # Finishing a Development Branch
@@ -11,9 +12,11 @@ description: Use when implementation is complete, all tests pass, and you need t
 
 **Announce at start:** "I'm using the finishing-a-development-branch skill to complete this work."
 
+**Worktree Isolation Hook Note:** Reading this `SKILL.md` file automatically releases the session's `worktree-isolation-guard` lock so that Steps 5 and 6 can access `MAIN_ROOT` to merge and remove the worktree. While running Steps 1–3 inside a linked worktree on a stateless shell (such as AGY), prefix shell commands targeting the worktree with `cd "$WORKTREE_PATH" && ...`.
+
 ## Step 1: Verify Tests
 
-Run the project's full test suite (`npm test` / `cargo test` / `pytest` / `go test ./...`).
+Run the project's full test suite inside the active worktree (`cd "$WORKTREE_PATH" && <npm test / cargo test / pytest / python3 -m unittest / go test ./...>`).
 
 **If tests fail**, report the failures and stop — the menu comes after a green suite:
 
