@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 import json
-import os
-import re
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 SCRIPT_DIR: Path = Path(__file__).resolve().parent
@@ -10,104 +9,72 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from compact_threshold_tracker import (
-    CHARS_PER_TOKEN,
     DEFAULT_STATE_DIR,
     DEFAULT_THRESHOLDS_FILE,
     ConversationTokenState,
-    ModelThresholdEntry,
+    apply_incoming_tool_tokens,
+    compute_usage_percentage,
     conversation_state_lock,
-    measure_post_planner_transcript_tokens,
-    parse_non_negative_int,
+    estimate_tool_call_tokens,
     save_conversation_state,
     sync_conversation_and_thresholds,
 )
 
 WARN_RATIO: float = 0.90
 BLOCK_RATIO: float = 0.95
-MAX_READ_FILE_LINES: int = 800
-MAX_READ_FILE_BYTES: int = 46_080
-GUARDED_COMMAND_RE: re.Pattern[str] = re.compile(r"\b(?:rg|grep|cat)\b")
+NON_CONTINUABLE_STOP_REASONS: frozenset[str] = frozenset(
+    {
+        "USER_CANCELED",
+        "ERROR",
+        "MAX_INVOCATIONS",
+        "MAX_FORCED_INVOCATIONS",
+        "MAX_TOKEN_BUDGET_EXCEEDED",
+    }
+)
 
 
 def build_warning_message(current_tokens: int, threshold_tokens: int) -> str:
-    pct: float = (
-        (current_tokens / threshold_tokens) * 100.0 if threshold_tokens > 0 else 90.0
+    pct: float = compute_usage_percentage(
+        current_tokens, threshold_tokens, fallback=90.0
     )
     return (
         "<critical_instructions>\n"
-        f"Context usage is at {pct:.1f}% ({current_tokens} / {threshold_tokens} tokens).\n"
-        "While unfinished work remains, keep calling tools continuously in this turn until the harness triggers auto-compaction on its own—ending your turn early or waiting for compaction halts execution:\n"
-        f"1. **When** context holds settled file edits or ledger/artifact updates not yet written to disk: notify the user in one sentence (in their language) that context is nearly full ({pct:.1f}%) so you will save `<file>` to disk first and then either continue with `<next action>` toward auto-compaction (if work remains) or finish the task (if no steps remain); dispatch only those write/edit tool calls in this step, and as soon as they return, immediately dispatch the next step's tool calls without ending your turn (or deliver the final completion report if the task is now complete).\n"
-        f"2. **When** all settled changes are already on disk and further task steps remain: notify the user in one sentence (in their language) that context is nearly full ({pct:.1f}%, all changes saved on disk) so you will continue with `<next action>` immediately toward auto-compaction, and dispatch the next tool calls for the current task step in this same step.\n"
-        "3. **When** all settled changes are already on disk and no further task steps remain: do not dispatch extra tool calls; deliver your final completion response and end your turn normally.\n"
-        "4. **Guardrail**: Aside from the single status sentence above (or the final completion response in case 3), do NOT output a compaction `<summary>`, a `Read-next working set`, or a remaining-work recap in chat—the `<summary>` is generated only when the harness explicitly prompts for compaction after wiping the turn.\n"
+        f"Context usage is at {pct:.1f}% ({current_tokens} / {threshold_tokens} tokens). THIS IS A BUDGET WARNING, NOT A COMPACTION PROMPT.\n"
+        "Auto-compaction triggers ONLY when your subsequent tool calls push tokens past 100% capacity mid-loop. Stopping tool calls or writing `<summary>` now freezes token growth below 100% and halts execution without compacting:\n"
+        f"1. **When** context holds settled file edits or ledger/artifact updates not yet written to disk: notify the user in one sentence (in their language) that context is at {pct:.1f}% so you are saving `<file>` first before continuing `<next action>`; dispatch only those write/edit tool calls in this step, and on the very next step after they return, immediately dispatch the tool calls for `<next action>` (do NOT output `<summary>` or stop after the save completes).\n"
+        f"2. **When** all settled changes are already on disk and further task steps remain: notify the user in one sentence (in their language) that context is at {pct:.1f}% (all changes saved on disk) and immediately dispatch the next tool calls for the current task step in this step and every following step until the harness wipes the turn for compaction.\n"
+        "3. **When** all settled changes are already on disk and 100% of the task is finished: do not dispatch extra tool calls; deliver your normal final completion report and end your turn.\n"
+        "4. **Strict Prohibition (applies to this step and all subsequent steps before compaction)**: Never output `<summary>`, `Context for governing # User Requests`, `Read-next working set`, or `Settled state and open work` in chat, and never end your turn after a save or read batch to wait for compaction—`<summary>` is written only when the harness explicitly prompts for it after wiping the conversation.\n"
         "</critical_instructions>"
     )
 
 
 def build_subsequent_block_message(current_tokens: int, threshold_tokens: int) -> str:
-    pct: float = (
-        (current_tokens / threshold_tokens) * 100.0 if threshold_tokens > 0 else 95.0
+    pct: float = compute_usage_percentage(
+        current_tokens, threshold_tokens, fallback=95.0
     )
     return (
         f"DEFERRED FOR 1 STEP (context at {pct:.1f}%: {current_tokens}/{threshold_tokens} tokens): "
         "This read/search call is paused for this single step so you can persist in-hand work to disk first. "
-        "The budget guard unlocks on the very next step—re-dispatch this call immediately after your persist tool call returns, without ending your turn."
+        "The budget guard unlocks on the very next step—immediately re-dispatch this call as soon as your persist tool call returns, without outputting `<summary>` or ending your turn."
     )
 
 
-def estimate_read_file_tokens(args: dict[str, object]) -> int:
-    filepath_obj: object = args.get("Path")
-    if not isinstance(filepath_obj, str) or not os.path.isfile(filepath_obj):
-        return 0
-    try:
-        with open(filepath_obj, "r", encoding="utf-8", errors="ignore") as f:
-            lines: list[str] = f.readlines()
-    except Exception:
-        return 0
-
-    total_lines: int = len(lines)
-    if total_lines == 0:
-        return 0
-
-    start_raw: int = parse_non_negative_int(args.get("StartLine"), 1)
-    start_line: int = max(1, start_raw)
-    end_raw: int = parse_non_negative_int(args.get("EndLine"), total_lines)
-    end_line: int = min(total_lines, max(start_line, end_raw))
-    end_line = min(end_line, start_line + MAX_READ_FILE_LINES - 1)
-
-    selected: list[str] = lines[start_line - 1 : end_line]
-    raw_chars: int = sum(len(line) + 6 for line in selected)
-    capped_chars: int = min(raw_chars, MAX_READ_FILE_BYTES)
-    return int(capped_chars / CHARS_PER_TOKEN)
-
-
-def is_guarded_run_command(args: dict[str, object]) -> bool:
-    cmd_obj: object = args.get("CommandLine")
-    if not isinstance(cmd_obj, str) or not cmd_obj.strip():
-        return False
-    return bool(GUARDED_COMMAND_RE.search(cmd_obj))
-
-
-def estimate_cat_command_tokens(args: dict[str, object]) -> int:
-    cmd_obj: object = args.get("CommandLine")
-    if not isinstance(cmd_obj, str) or not re.search(r"\bcat\b", cmd_obj):
-        return 0
-    cwd_obj: object = args.get("Cwd")
-    base_dir: Path = (
-        Path(cwd_obj) if isinstance(cwd_obj, str) and cwd_obj.strip() else Path.cwd()
+def build_premature_summary_continue_message(
+    current_tokens: int, threshold_tokens: int
+) -> str:
+    pct: float = compute_usage_percentage(
+        current_tokens, threshold_tokens, fallback=95.0
     )
-    total_chars: int = 0
-    for token in re.findall(r"[^\s|;&><\"']+", cmd_obj):
-        if token in ("cat", "-") or token.startswith("-"):
-            continue
-        candidate: Path = Path(token) if os.path.isabs(token) else base_dir / token
-        if candidate.is_file():
-            try:
-                total_chars += min(candidate.stat().st_size, MAX_READ_FILE_BYTES)
-            except Exception:
-                pass
-    return int(total_chars / CHARS_PER_TOKEN)
+    return (
+        "<critical_instructions>\n"
+        f"PREMATURE COMPACTION SUMMARY DETECTED (context is at {pct:.1f}%: {current_tokens} / {threshold_tokens} tokens — auto-compaction has NOT occurred yet).\n"
+        "The harness has NOT compacted the conversation and did NOT prompt you for a `<summary>`. Outputting `<summary>` (or `Context for governing # User Requests` / `Read-next working set` / `Settled state and open work`) in chat and stopping halts execution and prevents auto-compaction from triggering.\n"
+        "Resume the current task immediately in this turn:\n"
+        "1. Do NOT apologize, do NOT explain why you output `<summary>`, and do NOT output another summary or status recap.\n"
+        "2. Immediately dispatch the concrete tool calls (`edit_file`, `write_file`, `read_file`, `run_command`, etc.) for the next uncompleted step of the task, and keep calling tools continuously until the harness triggers auto-compaction on its own (or deliver the final completion report only if 100% of the task is already finished on disk).\n"
+        "</critical_instructions>"
+    )
 
 
 def evaluate_tool_budget_guard(
@@ -121,16 +88,8 @@ def evaluate_tool_budget_guard(
     if not conv_id.strip():
         return {"decision": "allow"}
 
-    tool_name_obj: object = tool_call.get("name")
-    tool_name: str = tool_name_obj if isinstance(tool_name_obj, str) else ""
-    args_obj: object = tool_call.get("args")
-    args: dict[str, object] = args_obj if isinstance(args_obj, dict) else {}
-
-    if tool_name == "read_file":
-        incoming_tokens: int = estimate_read_file_tokens(args)
-    elif tool_name == "run_command" and is_guarded_run_command(args):
-        incoming_tokens = estimate_cat_command_tokens(args)
-    else:
+    incoming_tokens: int | None = estimate_tool_call_tokens(tool_call)
+    if incoming_tokens is None:
         return {"decision": "allow"}
 
     with conversation_state_lock(state_dir, conv_id):
@@ -142,15 +101,9 @@ def evaluate_tool_budget_guard(
             thresholds_file=thresholds_file,
         )
 
-        planner_line, post_planner_tokens = measure_post_planner_transcript_tokens(
-            transcript_path
-        )
-        current_planner_turn: int = max(state.last_turn, planner_line, 1)
-        accumulated_turn_tokens: int = max(
-            state.pending_turn_tokens, post_planner_tokens
-        )
-        projected_tokens: int = (
-            state.last_tokens + accumulated_turn_tokens + incoming_tokens
+        current_planner_turn: int = max(state.last_turn, 1)
+        projected_state: ConversationTokenState = apply_incoming_tool_tokens(
+            state, incoming_tokens
         )
         block_threshold: int = int(entry.compact_threshold * BLOCK_RATIO)
         already_blocked_in_turn: bool = (
@@ -161,41 +114,21 @@ def evaluate_tool_budget_guard(
         )
 
         if not already_blocked_in_turn and (
-            already_reminded_in_cycle or projected_tokens < block_threshold
+            already_reminded_in_cycle
+            or projected_state.effective_tokens < block_threshold
         ):
-            if accumulated_turn_tokens + incoming_tokens != state.pending_turn_tokens:
-                save_conversation_state(
-                    state_dir,
-                    ConversationTokenState(
-                        conversation_id=state.conversation_id,
-                        model_id=state.model_id,
-                        last_turn=state.last_turn,
-                        last_tokens=state.last_tokens,
-                        warned_in_cycle=state.warned_in_cycle,
-                        warned_at_tokens=state.warned_at_tokens,
-                        blocked_at_planner_turn=state.blocked_at_planner_turn,
-                        pending_turn_tokens=accumulated_turn_tokens + incoming_tokens,
-                        blocked_in_last_turn=state.blocked_in_last_turn,
-                    ),
-                )
+            if projected_state != state:
+                save_conversation_state(state_dir, projected_state)
             return {"decision": "allow"}
 
         is_first_block_in_turn: bool = not already_blocked_in_turn
-        display_tokens: int = max(projected_tokens, block_threshold)
-        save_conversation_state(
-            state_dir,
-            ConversationTokenState(
-                conversation_id=state.conversation_id,
-                model_id=state.model_id,
-                last_turn=state.last_turn,
-                last_tokens=state.last_tokens,
-                warned_in_cycle=state.warned_in_cycle,
-                warned_at_tokens=state.warned_at_tokens,
-                blocked_at_planner_turn=current_planner_turn,
-                pending_turn_tokens=accumulated_turn_tokens,
-                blocked_in_last_turn=True,
-            ),
+        display_tokens: int = max(projected_state.effective_tokens, block_threshold)
+        blocked_state: ConversationTokenState = replace(
+            apply_incoming_tool_tokens(state, 0),
+            blocked_at_planner_turn=current_planner_turn,
+            blocked_in_last_turn=True,
         )
+        save_conversation_state(state_dir, blocked_state)
 
         if is_first_block_in_turn:
             reason_msg: str = build_warning_message(
@@ -231,40 +164,29 @@ def evaluate_budget_guard(
             thresholds_file=thresholds_file,
         )
 
-        _, post_planner_tokens = measure_post_planner_transcript_tokens(transcript_path)
-        effective_tokens: int = state.last_tokens + max(
-            state.pending_turn_tokens, post_planner_tokens
-        )
+        effective_tokens: int = state.effective_tokens
         warn_threshold: int = int(entry.compact_threshold * WARN_RATIO)
 
         if effective_tokens < warn_threshold and not state.blocked_in_last_turn:
             if state.warned_in_cycle:
                 save_conversation_state(
                     state_dir,
-                    ConversationTokenState(
-                        conversation_id=state.conversation_id,
-                        model_id=state.model_id,
-                        last_turn=state.last_turn,
-                        last_tokens=state.last_tokens,
+                    replace(
+                        state,
                         warned_in_cycle=False,
                         warned_at_tokens=0,
-                        blocked_at_planner_turn=state.blocked_at_planner_turn,
-                        pending_turn_tokens=state.pending_turn_tokens,
                         blocked_in_last_turn=False,
+                        post_resumed_at_planner_turn=0,
+                        stop_resumed_at_planner_turn=0,
                     ),
                 )
             return {"injectSteps": []}
 
         if state.blocked_in_last_turn or not state.warned_in_cycle:
-            updated_state: ConversationTokenState = ConversationTokenState(
-                conversation_id=state.conversation_id,
-                model_id=state.model_id,
-                last_turn=state.last_turn,
-                last_tokens=state.last_tokens,
+            updated_state: ConversationTokenState = replace(
+                state,
                 warned_in_cycle=True,
                 warned_at_tokens=effective_tokens,
-                blocked_at_planner_turn=state.blocked_at_planner_turn,
-                pending_turn_tokens=state.pending_turn_tokens,
                 blocked_in_last_turn=False,
             )
             save_conversation_state(state_dir, updated_state)
@@ -274,16 +196,115 @@ def evaluate_budget_guard(
         return {"injectSteps": []}
 
 
+def _check_premature_summary_continuation(
+    conv_id: str,
+    fallback_model_name: str,
+    transcript_path: str,
+    resumed_field: str,
+    state_dir: Path,
+    thresholds_file: Path,
+) -> str | None:
+    if not conv_id.strip():
+        return None
+    with conversation_state_lock(state_dir, conv_id):
+        state, entry = sync_conversation_and_thresholds(
+            conv_id=conv_id,
+            fallback_model_name=fallback_model_name,
+            transcript_path=transcript_path,
+            state_dir=state_dir,
+            thresholds_file=thresholds_file,
+        )
+        in_warning_window: bool = (
+            state.warned_in_cycle
+            or state.blocked_in_last_turn
+            or state.blocked_at_planner_turn > 0
+        )
+        resumed_turn: int = getattr(state, resumed_field, 0)
+        if (
+            not in_warning_window
+            or not state.has_premature_summary
+            or state.last_turn <= 0
+            or resumed_turn == state.last_turn
+        ):
+            return None
+
+        save_conversation_state(
+            state_dir,
+            replace(
+                state,
+                warned_in_cycle=True,
+                warned_at_tokens=state.warned_at_tokens or state.effective_tokens,
+                **{resumed_field: state.last_turn},
+            ),
+        )
+        return build_premature_summary_continue_message(
+            state.effective_tokens, entry.compact_threshold
+        )
+
+
+def evaluate_post_invocation_guard(
+    conv_id: str,
+    fallback_model_name: str,
+    transcript_path: str,
+    state_dir: Path = DEFAULT_STATE_DIR,
+    thresholds_file: Path = DEFAULT_THRESHOLDS_FILE,
+) -> dict[str, object]:
+    msg: str | None = _check_premature_summary_continuation(
+        conv_id,
+        fallback_model_name,
+        transcript_path,
+        "post_resumed_at_planner_turn",
+        state_dir,
+        thresholds_file,
+    )
+    if msg is None:
+        return {"injectSteps": []}
+    return {
+        "injectSteps": [{"ephemeralMessage": msg}],
+        "terminationBehavior": "force_continue",
+    }
+
+
+def evaluate_stop_guard(
+    conv_id: str,
+    fallback_model_name: str,
+    transcript_path: str,
+    termination_reason: str = "NO_TOOL_CALL",
+    state_dir: Path = DEFAULT_STATE_DIR,
+    thresholds_file: Path = DEFAULT_THRESHOLDS_FILE,
+) -> dict[str, object]:
+    if termination_reason.strip().upper() in NON_CONTINUABLE_STOP_REASONS:
+        return {"decision": "allow"}
+    msg: str | None = _check_premature_summary_continuation(
+        conv_id,
+        fallback_model_name,
+        transcript_path,
+        "stop_resumed_at_planner_turn",
+        state_dir,
+        thresholds_file,
+    )
+    if msg is None:
+        return {"decision": "allow"}
+    return {"decision": "continue", "reason": msg}
+
+
 def main() -> None:
+    mode: str = sys.argv[1].strip().lower() if len(sys.argv) > 1 else ""
     try:
         raw_input: str = sys.stdin.read()
         payload: object = json.loads(raw_input) if raw_input.strip() else {}
     except Exception:
-        print(json.dumps({"injectSteps": []}))
+        if mode == "stop":
+            print(json.dumps({"decision": "allow"}))
+        else:
+            print(json.dumps({"injectSteps": []}))
         return
 
     if not isinstance(payload, dict):
-        print(json.dumps({"injectSteps": []}))
+        if mode == "stop":
+            print(json.dumps({"decision": "allow"}))
+        else:
+            print(json.dumps({"injectSteps": []}))
         return
 
     conv_id_obj: object = payload.get("conversationId")
@@ -294,6 +315,29 @@ def main() -> None:
 
     transcript_obj: object = payload.get("transcriptPath")
     transcript_path: str = transcript_obj if isinstance(transcript_obj, str) else ""
+
+    if mode in ("post_invocation", "post"):
+        post_result: dict[str, object] = evaluate_post_invocation_guard(
+            conv_id=conv_id,
+            fallback_model_name=model_name,
+            transcript_path=transcript_path,
+        )
+        print(json.dumps(post_result))
+        return
+
+    term_reason_obj: object = payload.get("terminationReason")
+    if mode == "stop" or isinstance(term_reason_obj, str):
+        term_reason: str = (
+            term_reason_obj if isinstance(term_reason_obj, str) else "NO_TOOL_CALL"
+        )
+        stop_result: dict[str, object] = evaluate_stop_guard(
+            conv_id=conv_id,
+            fallback_model_name=model_name,
+            transcript_path=transcript_path,
+            termination_reason=term_reason,
+        )
+        print(json.dumps(stop_result))
+        return
 
     tool_call_obj: object = payload.get("toolCall")
     if isinstance(tool_call_obj, dict):

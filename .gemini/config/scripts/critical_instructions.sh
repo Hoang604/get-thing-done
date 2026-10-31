@@ -12,39 +12,41 @@ if [ -z "$CLEAN_CONV_ID" ]; then
   CLEAN_CONV_ID="default"
 fi
 
-COUNTER_FILE="/tmp/agy_ci_turn_${CLEAN_CONV_ID}"
-STATE_FILE="/tmp/agy_compact_state/${CLEAN_CONV_ID}.json"
+STATE_DIR="${AGY_COMPACT_STATE_DIR:-/tmp/agy_compact_state}"
+COUNTER_FILE="${AGY_CI_COUNTER_FILE:-/tmp/agy_ci_turn_${CLEAN_CONV_ID}}"
+STATE_FILE="${STATE_DIR}/${CLEAN_CONV_ID}.json"
 
 T=0
 LAST_INJECT_T=0
 LAST_INJECT_TOKENS=0
+LAST_INJECT_COMPACT_COUNT=0
 if [ -f "$COUNTER_FILE" ]; then
-  read -r T LAST_INJECT_T LAST_INJECT_TOKENS < "$COUNTER_FILE"
+  read -r T LAST_INJECT_T LAST_INJECT_TOKENS LAST_INJECT_COMPACT_COUNT < "$COUNTER_FILE"
   [[ "$T" =~ ^[0-9]+$ ]] || T=0
   [[ "$LAST_INJECT_T" =~ ^[0-9]+$ ]] || LAST_INJECT_T=0
   [[ "$LAST_INJECT_TOKENS" =~ ^[0-9]+$ ]] || LAST_INJECT_TOKENS=0
+  [[ "$LAST_INJECT_COMPACT_COUNT" =~ ^[0-9]+$ ]] || LAST_INJECT_COMPACT_COUNT=0
 fi
 T=$((T + 1))
 
-LAST_TOKENS=0
-PENDING_TOKENS=0
+CUR_TOKENS=0
+COMPACT_COUNT=0
 if [ -f "$STATE_FILE" ]; then
-  read -r LAST_TOKENS PENDING_TOKENS < <(
-    jq -r '[(.last_tokens // 0 | floor), (.pending_turn_tokens // 0 | floor)] | @tsv' "$STATE_FILE" 2>/dev/null || echo "0 0"
+  read -r CUR_TOKENS COMPACT_COUNT < <(
+    jq -r '[(.effective_tokens // 0), (.compaction_count // 0)] | @tsv' "$STATE_FILE" 2>/dev/null || echo "0 0"
   )
-  [[ "$LAST_TOKENS" =~ ^[0-9]+$ ]] || LAST_TOKENS=0
-  [[ "$PENDING_TOKENS" =~ ^[0-9]+$ ]] || PENDING_TOKENS=0
+  [[ "$CUR_TOKENS" =~ ^[0-9]+$ ]] || CUR_TOKENS=0
+  [[ "$COMPACT_COUNT" =~ ^[0-9]+$ ]] || COMPACT_COUNT=0
 fi
-CUR_TOKENS=$((LAST_TOKENS + PENDING_TOKENS))
 
 # Backfill baseline token count once the first PLANNER_RESPONSE reports input tokens
-if (( LAST_INJECT_TOKENS == 0 && LAST_TOKENS > 0 )); then
-  LAST_INJECT_TOKENS=$LAST_TOKENS
+if (( LAST_INJECT_TOKENS == 0 && CUR_TOKENS > 0 )); then
+  LAST_INJECT_TOKENS=$CUR_TOKENS
 fi
 
-# Detect context compaction drop (< 65% of last injected token count)
+# Compaction state comes directly from compact_threshold_tracker.py
 COMPACT_DROP=0
-if (( LAST_INJECT_TOKENS > 0 && CUR_TOKENS > 0 && CUR_TOKENS * 100 < LAST_INJECT_TOKENS * 65 )); then
+if (( COMPACT_COUNT > LAST_INJECT_COMPACT_COUNT )); then
   COMPACT_DROP=1
 fi
 
@@ -74,7 +76,8 @@ footer="</critical_instructions>"
 if (( T == 1 || LAST_INJECT_T == 0 || T - LAST_INJECT_T >= 5 || CUR_TOKENS - LAST_INJECT_TOKENS >= 30000 || COMPACT_DROP == 1 )); then
   LAST_INJECT_T=$T
   LAST_INJECT_TOKENS=$CUR_TOKENS
-  echo "$T $LAST_INJECT_T $LAST_INJECT_TOKENS" > "$COUNTER_FILE"
+  LAST_INJECT_COMPACT_COUNT=$COMPACT_COUNT
+  echo "$T $LAST_INJECT_T $LAST_INJECT_TOKENS $LAST_INJECT_COMPACT_COUNT" > "$COUNTER_FILE"
   message="${header}
 ${ci_1}
 ${ci_2}
@@ -82,6 +85,6 @@ ${ci_3}
 ${footer}"
   jq -n --arg msg "$message" '{ "injectSteps": [ { "systemMessage": { "systemMessage": $msg } } ] }'
 else
-  echo "$T $LAST_INJECT_T $LAST_INJECT_TOKENS" > "$COUNTER_FILE"
+  echo "$T $LAST_INJECT_T $LAST_INJECT_TOKENS $LAST_INJECT_COMPACT_COUNT" > "$COUNTER_FILE"
   jq -n '{ "injectSteps": [] }'
 fi

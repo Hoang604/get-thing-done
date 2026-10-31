@@ -4,7 +4,7 @@ import os
 import re
 import sys
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Iterator
 
@@ -18,18 +18,19 @@ MAX_COMPACT_THRESHOLD: int = 250_000
 MIN_AUTO_COMPACT_TOKENS: int = 160_000
 COMPACT_DROP_RATIO: float = 0.65
 CHARS_PER_TOKEN: float = 3.0
+MAX_READ_FILE_LINES: int = 800
+MAX_READ_FILE_BYTES: int = 46_080
+GUARDED_COMMAND_RE: re.Pattern[str] = re.compile(r"\b(?:rg|grep|cat)\b")
 
-DEFAULT_STATE_DIR: Path = Path("/tmp/agy_compact_state")
-DEFAULT_THRESHOLDS_FILE: Path = (
-    Path.home() / ".gemini" / "config" / "compact_thresholds.json"
+DEFAULT_STATE_DIR: Path = Path(
+    os.environ.get("AGY_COMPACT_STATE_DIR", "/tmp/agy_compact_state")
 )
-
-
-@dataclass(frozen=True)
-class StatuslineSnapshot:
-    turn_num: int
-    total_input_tokens: int
-    model_id: str
+DEFAULT_THRESHOLDS_FILE: Path = Path(
+    os.environ.get(
+        "AGY_THRESHOLDS_FILE",
+        str(Path.home() / ".gemini" / "config" / "compact_thresholds.json"),
+    )
+)
 
 
 @dataclass(frozen=True)
@@ -42,14 +43,44 @@ class ModelThresholdEntry:
 @dataclass(frozen=True)
 class ConversationTokenState:
     conversation_id: str
-    model_id: str
-    last_turn: int
-    last_tokens: int
-    warned_in_cycle: bool
-    warned_at_tokens: int
+    model_id: str = ""
+    last_turn: int = -1
+    last_tokens: int = 0
+    warned_in_cycle: bool = False
+    warned_at_tokens: int = 0
     blocked_at_planner_turn: int = 0
     pending_turn_tokens: int = 0
     blocked_in_last_turn: bool = False
+    post_resumed_at_planner_turn: int = 0
+    stop_resumed_at_planner_turn: int = 0
+    post_planner_tokens: int = 0
+    effective_tokens: int = 0
+    has_premature_summary: bool = False
+    compaction_count: int = 0
+    last_compaction_turn: int = 0
+    last_scanned_line: int = 0
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "effective_tokens",
+            compute_effective_tokens(
+                self.last_tokens,
+                self.pending_turn_tokens,
+                self.post_planner_tokens,
+            ),
+        )
+
+
+PREMATURE_SUMMARY_TAG_RE: re.Pattern[str] = re.compile(
+    r"^[ \t]*</?summary>[ \t]*$|(?:^|\n)[ \t]*<summary>[ \t]*\r?\n[ \t]*(?:#{1,6}|\d+[\.\)]|[-*]|\*\*)",
+    re.IGNORECASE | re.MULTILINE,
+)
+PREMATURE_SUMMARY_HEADING_RE: re.Pattern[str] = re.compile(
+    r"^[ \t]*(?:#{1,6}[ \t]*(?:\d+[\.\)][ \t]*)?|(?:\d+[\.\)]|[-*])[ \t]+\*{0,2}|\*{2})"
+    r"(?:Context for governing[ \t]+`?#?[ \t]*User Requests`?|Read-next working set|Settled state and open work)\b",
+    re.IGNORECASE | re.MULTILINE,
+)
 
 
 @contextmanager
@@ -83,6 +114,135 @@ def parse_non_negative_int(val: object, fallback: int = 0) -> int:
     if isinstance(val, float) and val >= 0:
         return int(val)
     return fallback
+
+
+def compute_effective_tokens(
+    last_tokens: int,
+    pending_turn_tokens: int,
+    post_planner_tokens: int,
+    incoming_tokens: int = 0,
+) -> int:
+    return (
+        max(0, last_tokens)
+        + max(0, pending_turn_tokens, post_planner_tokens)
+        + max(0, incoming_tokens)
+    )
+
+
+def compute_usage_percentage(
+    tokens: int, threshold: int, fallback: float = 0.0
+) -> float:
+    if threshold <= 0:
+        return fallback
+    return (max(0, tokens) / threshold) * 100.0
+
+
+def apply_incoming_tool_tokens(
+    state: ConversationTokenState, incoming_tokens: int
+) -> ConversationTokenState:
+    accumulated: int = max(state.pending_turn_tokens, state.post_planner_tokens) + max(
+        0, incoming_tokens
+    )
+    return replace(state, pending_turn_tokens=accumulated)
+
+
+def estimate_read_file_tokens(args: dict[str, object]) -> int:
+    filepath_obj: object = args.get("Path")
+    if not isinstance(filepath_obj, str) or not os.path.isfile(filepath_obj):
+        return 0
+    try:
+        with open(filepath_obj, "r", encoding="utf-8", errors="ignore") as f:
+            lines: list[str] = f.readlines()
+    except Exception:
+        return 0
+
+    total_lines: int = len(lines)
+    if total_lines == 0:
+        return 0
+
+    start_raw: int = parse_non_negative_int(args.get("StartLine"), 1)
+    start_line: int = max(1, start_raw)
+    end_raw: int = parse_non_negative_int(args.get("EndLine"), total_lines)
+    end_line: int = min(total_lines, max(start_line, end_raw))
+    end_line = min(end_line, start_line + MAX_READ_FILE_LINES - 1)
+
+    selected: list[str] = lines[start_line - 1 : end_line]
+    raw_chars: int = sum(len(line) + 6 for line in selected)
+    capped_chars: int = min(raw_chars, MAX_READ_FILE_BYTES)
+    return int(capped_chars / CHARS_PER_TOKEN)
+
+
+def is_guarded_run_command(args: dict[str, object]) -> bool:
+    cmd_obj: object = args.get("CommandLine")
+    if not isinstance(cmd_obj, str) or not cmd_obj.strip():
+        return False
+    return bool(GUARDED_COMMAND_RE.search(cmd_obj))
+
+
+def estimate_cat_command_tokens(args: dict[str, object]) -> int:
+    cmd_obj: object = args.get("CommandLine")
+    if not isinstance(cmd_obj, str) or not re.search(r"\bcat\b", cmd_obj):
+        return 0
+    cwd_obj: object = args.get("Cwd")
+    base_dir: Path = (
+        Path(cwd_obj) if isinstance(cwd_obj, str) and cwd_obj.strip() else Path.cwd()
+    )
+    total_chars: int = 0
+    for token in re.findall(r"[^\s|;&><\"']+", cmd_obj):
+        if token in ("cat", "-") or token.startswith("-"):
+            continue
+        candidate: Path = Path(token) if os.path.isabs(token) else base_dir / token
+        if candidate.is_file():
+            try:
+                total_chars += min(candidate.stat().st_size, MAX_READ_FILE_BYTES)
+            except Exception:
+                pass
+    return int(total_chars / CHARS_PER_TOKEN)
+
+
+def estimate_tool_call_tokens(tool_call: dict[str, object]) -> int | None:
+    tool_name_obj: object = tool_call.get("name")
+    tool_name: str = tool_name_obj if isinstance(tool_name_obj, str) else ""
+    args_obj: object = tool_call.get("args")
+    args: dict[str, object] = args_obj if isinstance(args_obj, dict) else {}
+
+    if tool_name == "read_file":
+        return estimate_read_file_tokens(args)
+    if tool_name == "run_command" and is_guarded_run_command(args):
+        return estimate_cat_command_tokens(args)
+    return None
+
+
+def extract_planner_input_tokens(step: dict[str, object]) -> int:
+    if step.get("type") != "PLANNER_RESPONSE":
+        return 0
+    inp_tokens: int = parse_non_negative_int(step.get("input_tokens"), 0)
+    cache_read_tokens: int = parse_non_negative_int(step.get("cache_read_tokens"), 0)
+    return inp_tokens + cache_read_tokens
+
+
+def is_compaction_token_drop(prev_tokens: int, cur_tokens: int) -> bool:
+    return (
+        prev_tokens > 0
+        and cur_tokens > 0
+        and cur_tokens < int(prev_tokens * COMPACT_DROP_RATIO)
+    )
+
+
+def is_compaction_step(step: dict[str, object]) -> bool:
+    step_type: object = step.get("type")
+    if step_type == "CHECKPOINT":
+        return True
+    content_obj: object = step.get("content")
+    if isinstance(content_obj, str):
+        stripped: str = content_obj.strip()
+        if (
+            "<CONTEXT_SUMMARY>" in stripped
+            or stripped == "/compact"
+            or stripped.startswith("/compact ")
+        ):
+            return True
+    return False
 
 
 def compute_effective_threshold(
@@ -166,76 +326,45 @@ def save_thresholds_db(
 def load_conversation_state(state_dir: Path, conv_id: str) -> ConversationTokenState:
     state_file: Path = state_dir / f"{conv_id}.json"
     if not state_file.is_file():
-        return ConversationTokenState(
-            conversation_id=conv_id,
-            model_id="",
-            last_turn=-1,
-            last_tokens=0,
-            warned_in_cycle=False,
-            warned_at_tokens=0,
-            blocked_at_planner_turn=0,
-            pending_turn_tokens=0,
-            blocked_in_last_turn=False,
-        )
+        return ConversationTokenState(conversation_id=conv_id)
     try:
         raw: object = json.loads(
             state_file.read_text(encoding="utf-8", errors="ignore")
         )
     except Exception:
-        return ConversationTokenState(
-            conversation_id=conv_id,
-            model_id="",
-            last_turn=-1,
-            last_tokens=0,
-            warned_in_cycle=False,
-            warned_at_tokens=0,
-            blocked_at_planner_turn=0,
-            pending_turn_tokens=0,
-            blocked_in_last_turn=False,
-        )
-
+        return ConversationTokenState(conversation_id=conv_id)
     if not isinstance(raw, dict):
-        return ConversationTokenState(
-            conversation_id=conv_id,
-            model_id="",
-            last_turn=-1,
-            last_tokens=0,
-            warned_in_cycle=False,
-            warned_at_tokens=0,
-            blocked_at_planner_turn=0,
-            pending_turn_tokens=0,
-            blocked_in_last_turn=False,
-        )
+        return ConversationTokenState(conversation_id=conv_id)
 
     model_id_raw: object = raw.get("model_id")
-    model_id: str = model_id_raw if isinstance(model_id_raw, str) else ""
     last_turn_raw: object = raw.get("last_turn")
-    last_turn: int = (
-        last_turn_raw
-        if isinstance(last_turn_raw, int) and not isinstance(last_turn_raw, bool)
-        else -1
-    )
-    last_tokens: int = parse_non_negative_int(raw.get("last_tokens"), 0)
-    warned_raw: object = raw.get("warned_in_cycle")
-    warned: bool = warned_raw if isinstance(warned_raw, bool) else False
-    warned_at: int = parse_non_negative_int(raw.get("warned_at_tokens"), 0)
-    blocked_turn: int = parse_non_negative_int(raw.get("blocked_at_planner_turn"), 0)
-    pending_tokens: int = parse_non_negative_int(raw.get("pending_turn_tokens"), 0)
-    blocked_last_raw: object = raw.get("blocked_in_last_turn")
-    blocked_last: bool = (
-        blocked_last_raw if isinstance(blocked_last_raw, bool) else False
-    )
-
     return ConversationTokenState(
         conversation_id=conv_id,
-        model_id=model_id,
-        last_turn=last_turn,
-        last_tokens=last_tokens,
-        warned_in_cycle=warned,
-        warned_at_tokens=warned_at,
-        blocked_at_planner_turn=blocked_turn,
-        pending_turn_tokens=pending_tokens,
-        blocked_in_last_turn=blocked_last,
+        model_id=model_id_raw if isinstance(model_id_raw, str) else "",
+        last_turn=(
+            last_turn_raw
+            if isinstance(last_turn_raw, int) and not isinstance(last_turn_raw, bool)
+            else -1
+        ),
+        last_tokens=parse_non_negative_int(raw.get("last_tokens"), 0),
+        warned_in_cycle=raw.get("warned_in_cycle") is True,
+        warned_at_tokens=parse_non_negative_int(raw.get("warned_at_tokens"), 0),
+        blocked_at_planner_turn=parse_non_negative_int(
+            raw.get("blocked_at_planner_turn"), 0
+        ),
+        pending_turn_tokens=parse_non_negative_int(raw.get("pending_turn_tokens"), 0),
+        blocked_in_last_turn=raw.get("blocked_in_last_turn") is True,
+        post_resumed_at_planner_turn=parse_non_negative_int(
+            raw.get("post_resumed_at_planner_turn"), 0
+        ),
+        stop_resumed_at_planner_turn=parse_non_negative_int(
+            raw.get("stop_resumed_at_planner_turn"), 0
+        ),
+        post_planner_tokens=parse_non_negative_int(raw.get("post_planner_tokens"), 0),
+        has_premature_summary=raw.get("has_premature_summary") is True,
+        compaction_count=parse_non_negative_int(raw.get("compaction_count"), 0),
+        last_compaction_turn=parse_non_negative_int(raw.get("last_compaction_turn"), 0),
+        last_scanned_line=parse_non_negative_int(raw.get("last_scanned_line"), 0),
     )
 
 
@@ -243,20 +372,10 @@ def save_conversation_state(state_dir: Path, state: ConversationTokenState) -> N
     try:
         state_dir.mkdir(parents=True, exist_ok=True)
         state_file: Path = state_dir / f"{state.conversation_id}.json"
-        payload: dict[str, object] = {
-            "conversation_id": state.conversation_id,
-            "model_id": state.model_id,
-            "last_turn": state.last_turn,
-            "last_tokens": state.last_tokens,
-            "warned_in_cycle": state.warned_in_cycle,
-            "warned_at_tokens": state.warned_at_tokens,
-            "blocked_at_planner_turn": state.blocked_at_planner_turn,
-            "pending_turn_tokens": state.pending_turn_tokens,
-            "blocked_in_last_turn": state.blocked_in_last_turn,
-        }
         tmp_file: Path = state_file.with_suffix(".json.tmp")
         tmp_file.write_text(
-            json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+            json.dumps(asdict(state), indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
         )
         os.replace(tmp_file, state_file)
     except Exception:
@@ -302,128 +421,13 @@ def resolve_transcript_file(
     return None
 
 
-def measure_post_planner_transcript_tokens(transcript_path: str) -> tuple[int, int]:
-    """Return (last_planner_line_num, estimated_tokens_since_last_planner) using CHARS_PER_TOKEN."""
-    target_file: Path | None = resolve_transcript_file(
-        transcript_path, prefer_full=True
+def is_premature_summary_text(text: str) -> bool:
+    if not text or not text.strip():
+        return False
+    return bool(
+        PREMATURE_SUMMARY_TAG_RE.search(text)
+        or PREMATURE_SUMMARY_HEADING_RE.search(text)
     )
-    if target_file is None:
-        return 0, 0
-    try:
-        with open(target_file, "r", encoding="utf-8", errors="ignore") as f:
-            lines: list[str] = f.readlines()
-    except Exception:
-        return 0, 0
-
-    last_planner_line: int = 0
-    planner_out_tokens: int = 0
-    post_chars: int = 0
-
-    for line_idx, raw_line in enumerate(lines, 1):
-        line_str: str = raw_line.strip()
-        if not line_str:
-            continue
-        try:
-            step: object = json.loads(line_str)
-        except Exception:
-            continue
-        if not isinstance(step, dict):
-            continue
-        if step.get("type") == "PLANNER_RESPONSE":
-            inp_tok: int = parse_non_negative_int(step.get("input_tokens"), 0)
-            cache_tok: int = parse_non_negative_int(step.get("cache_read_tokens"), 0)
-            if inp_tok + cache_tok > 0:
-                last_planner_line = line_idx
-                planner_out_tokens = parse_non_negative_int(
-                    step.get("output_tokens"), 0
-                )
-                post_chars = 0
-        elif last_planner_line > 0:
-            content_obj: object = step.get("content")
-            error_obj: object = step.get("error")
-            if isinstance(content_obj, str):
-                post_chars += len(content_obj)
-            if isinstance(error_obj, str):
-                post_chars += len(error_obj)
-
-    estimated_post_tokens: int = planner_out_tokens + int(post_chars / CHARS_PER_TOKEN)
-    return last_planner_line, estimated_post_tokens
-
-
-def is_manual_compact_in_transcript(transcript_path: str) -> bool:
-    target_file: Path | None = resolve_transcript_file(transcript_path)
-    if target_file is None:
-        return False
-    try:
-        with open(target_file, "r", encoding="utf-8", errors="ignore") as f:
-            lines: list[str] = f.readlines()
-    except Exception:
-        return False
-
-    for line in reversed(lines[-30:]):
-        line_str: str = line.strip()
-        if not line_str:
-            continue
-        try:
-            step: object = json.loads(line_str)
-        except Exception:
-            continue
-        if not isinstance(step, dict):
-            continue
-        if step.get("type") == "USER_INPUT" and step.get("source") != "SYSTEM":
-            content: object = step.get("content")
-            if isinstance(content, str):
-                stripped: str = content.strip()
-                return stripped == "/compact" or stripped.startswith("/compact ")
-    return False
-
-
-def collect_transcript_snapshots(
-    transcript_path: str,
-    fallback_model_name: str,
-    after_turn: int,
-) -> list[StatuslineSnapshot]:
-    target_file: Path | None = resolve_transcript_file(transcript_path)
-    if target_file is None:
-        return []
-
-    try:
-        with open(target_file, "r", encoding="utf-8", errors="ignore") as f:
-            lines: list[str] = f.readlines()
-    except Exception:
-        return []
-
-    snapshots: list[StatuslineSnapshot] = []
-    model_str: str = fallback_model_name.strip()
-
-    for line_idx, raw_line in enumerate(lines, 1):
-        if line_idx <= after_turn:
-            continue
-        line_str: str = raw_line.strip()
-        if not line_str:
-            continue
-        try:
-            step: object = json.loads(line_str)
-        except Exception:
-            continue
-        if not isinstance(step, dict) or step.get("type") != "PLANNER_RESPONSE":
-            continue
-
-        inp_tokens: int = parse_non_negative_int(step.get("input_tokens"), 0)
-        cache_read_tokens: int = parse_non_negative_int(
-            step.get("cache_read_tokens"), 0
-        )
-        total_in: int = inp_tokens + cache_read_tokens
-        if total_in > 0:
-            snapshots.append(
-                StatuslineSnapshot(
-                    turn_num=line_idx,
-                    total_input_tokens=total_in,
-                    model_id=model_str,
-                )
-            )
-
-    return snapshots
 
 
 def model_slug(name: str) -> str:
@@ -453,12 +457,6 @@ def sync_conversation_and_thresholds(
     state: ConversationTokenState = load_conversation_state(state_dir, clean_conv_id)
     db: dict[str, ModelThresholdEntry] = load_thresholds_db(thresholds_file)
 
-    snapshots: list[StatuslineSnapshot] = collect_transcript_snapshots(
-        transcript_path=transcript_path,
-        fallback_model_name=fallback_model_name,
-        after_turn=state.last_turn,
-    )
-
     cur_model: str = resolve_model_key(
         db, state.model_id or fallback_model_name or "default"
     )
@@ -469,11 +467,101 @@ def sync_conversation_and_thresholds(
     blocked_at_planner_turn: int = state.blocked_at_planner_turn
     pending_turn_tokens: int = state.pending_turn_tokens
     blocked_in_last_turn: bool = state.blocked_in_last_turn
+    post_resumed_at_planner_turn: int = state.post_resumed_at_planner_turn
+    stop_resumed_at_planner_turn: int = state.stop_resumed_at_planner_turn
+    compaction_count: int = state.compaction_count
+    last_compaction_turn: int = state.last_compaction_turn
+    start_after: int = max(state.last_turn, state.last_scanned_line, 0)
+    scan_from: int = max(0, state.last_turn - 1) if state.last_turn > 0 else 0
+    last_scanned_line: int = start_after
+    planner_out_tokens: int = 0
+    post_chars: int = 0
+    has_premature_summary: bool = state.has_premature_summary
     db_dirty: bool = False
 
-    for idx, snap in enumerate(snapshots):
-        if snap.model_id:
-            cur_model = resolve_model_key(db, snap.model_id)
+    target_file: Path | None = resolve_transcript_file(
+        transcript_path, prefer_full=True
+    )
+    lines: list[str] = []
+    if target_file is not None:
+        try:
+            with open(target_file, "r", encoding="utf-8", errors="ignore") as f:
+                lines = f.readlines()
+        except Exception:
+            lines = []
+
+    saw_manual_compact: bool = False
+    model_str: str = fallback_model_name.strip()
+
+    for line_idx, raw_line in enumerate(lines, 1):
+        if line_idx <= scan_from:
+            continue
+        line_str: str = raw_line.strip()
+        if not line_str:
+            continue
+        try:
+            step: object = json.loads(line_str)
+        except Exception:
+            continue
+        if not isinstance(step, dict):
+            continue
+
+        step_type: object = step.get("type")
+        cur_tokens: int = extract_planner_input_tokens(step)
+        content_obj: object = step.get("content")
+        error_obj: object = step.get("error")
+
+        if step_type == "PLANNER_RESPONSE" and cur_tokens > 0:
+            planner_out_tokens = parse_non_negative_int(step.get("output_tokens"), 0)
+            post_chars = 0
+            has_premature_summary = is_premature_summary_text(
+                content_obj if isinstance(content_obj, str) else ""
+            )
+        elif prev_turn > 0 or line_idx > start_after:
+            if is_compaction_step(step):
+                planner_out_tokens = 0
+                post_chars = 0
+                has_premature_summary = False
+            else:
+                if step_type == "USER_INPUT" and step.get("source") != "SYSTEM":
+                    has_premature_summary = False
+                if isinstance(content_obj, str):
+                    post_chars += len(content_obj)
+                if isinstance(error_obj, str):
+                    post_chars += len(error_obj)
+
+        if line_idx <= start_after:
+            continue
+        last_scanned_line = max(last_scanned_line, line_idx)
+
+        if is_compaction_step(step):
+            warned_in_cycle = False
+            warned_at_tokens = 0
+            blocked_at_planner_turn = 0
+            blocked_in_last_turn = False
+            post_resumed_at_planner_turn = 0
+            stop_resumed_at_planner_turn = 0
+            pending_turn_tokens = 0
+            if last_compaction_turn <= prev_turn:
+                compaction_count += 1
+            last_compaction_turn = line_idx
+            if (
+                step_type == "USER_INPUT"
+                and step.get("source") != "SYSTEM"
+                and isinstance(content_obj, str)
+                and (
+                    content_obj.strip() == "/compact"
+                    or content_obj.strip().startswith("/compact ")
+                )
+            ):
+                saw_manual_compact = True
+            continue
+
+        if cur_tokens <= 0:
+            continue
+
+        if model_str:
+            cur_model = resolve_model_key(db, model_str)
 
         entry: ModelThresholdEntry = db.get(
             cur_model,
@@ -484,25 +572,28 @@ def sync_conversation_and_thresholds(
             ),
         )
 
-        cur_tokens: int = snap.total_input_tokens
-        # Advancing to a new PLANNER_RESPONSE incorporates prior turn tool outputs
         pending_turn_tokens = 0
+        compacted_before_planner: bool = (
+            last_compaction_turn > 0 and last_compaction_turn > prev_turn
+        )
+        token_drop: bool = is_compaction_token_drop(prev_tokens, cur_tokens)
 
-        if prev_tokens > 0 and cur_tokens < int(prev_tokens * COMPACT_DROP_RATIO):
-            # Compaction drop detected: reset cycle flags for the new post-compact cycle
+        if token_drop or compacted_before_planner:
             warned_in_cycle = False
             warned_at_tokens = 0
             blocked_at_planner_turn = 0
             blocked_in_last_turn = False
+            post_resumed_at_planner_turn = 0
+            stop_resumed_at_planner_turn = 0
+            if not compacted_before_planner:
+                compaction_count += 1
+            last_compaction_turn = line_idx
 
-            is_latest_transition: bool = idx == len(snapshots) - 1
-            manual_compact: bool = (
-                is_manual_compact_in_transcript(transcript_path)
-                if is_latest_transition
-                else False
-            )
-
-            if prev_tokens >= MIN_AUTO_COMPACT_TOKENS and not manual_compact:
+            if (
+                token_drop
+                and prev_tokens >= MIN_AUTO_COMPACT_TOKENS
+                and not saw_manual_compact
+            ):
                 new_last_auto: int = min(prev_tokens, MAX_COMPACT_THRESHOLD)
                 new_threshold: int = compute_effective_threshold(
                     entry.max_safe_tokens, new_last_auto
@@ -513,8 +604,8 @@ def sync_conversation_and_thresholds(
                     last_auto_compact_tokens=new_last_auto,
                 )
                 db_dirty = True
+            saw_manual_compact = False
         else:
-            # Normal non-compacting progression: prev_tokens survived without auto-compact
             candidate_safe: int = min(
                 max(entry.max_safe_tokens, prev_tokens), MAX_COMPACT_THRESHOLD
             )
@@ -530,7 +621,7 @@ def sync_conversation_and_thresholds(
                 db_dirty = True
 
         prev_tokens = cur_tokens
-        prev_turn = max(prev_turn, snap.turn_num)
+        prev_turn = max(prev_turn, line_idx)
 
     final_entry: ModelThresholdEntry = db.get(
         cur_model,
@@ -544,6 +635,16 @@ def sync_conversation_and_thresholds(
     if db_dirty:
         save_thresholds_db(thresholds_file, db)
 
+    post_planner_tokens: int = (
+        0
+        if (last_compaction_turn > 0 and last_compaction_turn > prev_turn)
+        else (
+            planner_out_tokens + int(post_chars / CHARS_PER_TOKEN)
+            if prev_turn > 0
+            else 0
+        )
+    )
+
     new_state: ConversationTokenState = ConversationTokenState(
         conversation_id=clean_conv_id,
         model_id=cur_model,
@@ -554,8 +655,15 @@ def sync_conversation_and_thresholds(
         blocked_at_planner_turn=blocked_at_planner_turn,
         pending_turn_tokens=pending_turn_tokens,
         blocked_in_last_turn=blocked_in_last_turn,
+        post_resumed_at_planner_turn=post_resumed_at_planner_turn,
+        stop_resumed_at_planner_turn=stop_resumed_at_planner_turn,
+        post_planner_tokens=post_planner_tokens,
+        has_premature_summary=has_premature_summary,
+        compaction_count=compaction_count,
+        last_compaction_turn=last_compaction_turn,
+        last_scanned_line=max(last_scanned_line, prev_turn),
     )
-    if new_state != state:
+    if new_state != state or not (state_dir / f"{clean_conv_id}.json").is_file():
         save_conversation_state(state_dir, new_state)
 
     return new_state, final_entry

@@ -11,6 +11,7 @@ SCRIPT_DIR: Path = (
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
+from compact_threshold_tracker import sync_conversation_and_thresholds
 from decision_harvester_hook import (
     MANAGED_BLOCK_END,
     MANAGED_BLOCK_START,
@@ -181,9 +182,17 @@ class TestDecisionHarvesterHook(unittest.TestCase):
         )
 
         # Compaction occurs (tokens drop from 140,000 -> 25,000): cycle resets!
-        # Message 1 after compact:
+        # Simulate compact-threshold-tracker running FIRST in PostInvocation / PreInvocation
+        # before decision-harvester runs:
         self._append_planner_step(25_000)
         self._append_user_step("post-compact user message 1")
+        sync_conversation_and_thresholds(
+            conv_id=self.conv_id,
+            fallback_model_name="Gemini 4 Argon (High)",
+            transcript_path=str(self.transcript_file),
+            state_dir=self.state_dir / "compact_state",
+            thresholds_file=self.state_dir / "compact_thresholds.json",
+        )
         res_post_1 = evaluate_pre_invocation(
             conv_id=self.conv_id,
             transcript_path=str(self.transcript_file),

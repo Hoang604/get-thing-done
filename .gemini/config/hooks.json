@@ -42,11 +42,79 @@
     ]
   },
   "compact-threshold-tracker": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "python3 ~/.gemini/config/scripts/compact_threshold_tracker.py",
+        "timeout": 10
+      }
+    ],
     "PostInvocation": [
       {
         "type": "command",
         "command": "python3 ~/.gemini/config/scripts/compact_threshold_tracker.py",
         "timeout": 10
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "python3 ~/.gemini/config/scripts/compact_threshold_tracker.py",
+        "timeout": 10
+      }
+    ]
+  },
+  "worktree-isolation-guard": {
+    "PreToolUse": [
+      {
+        "matcher": "read_file|edit_file|write_file|run_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.gemini/config/scripts/worktree_isolation_guard.py pre",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "read_file|run_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.gemini/config/scripts/worktree_isolation_guard.py post",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "read-file-widener": {
+    "PreToolUse": [
+      {
+        "matcher": "read_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.gemini/config/scripts/read_file_widener.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "rtk-rewrite": {
+    "PreToolUse": [
+      {
+        "matcher": "run_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.gemini/config/scripts/rtk_rewrite_hook.py",
+            "timeout": 5
+          }
+        ]
       }
     ]
   },
@@ -55,6 +123,20 @@
       {
         "type": "command",
         "command": "python3 ~/.gemini/config/scripts/context_budget_guard.py",
+        "timeout": 10
+      }
+    ],
+    "PostInvocation": [
+      {
+        "type": "command",
+        "command": "python3 ~/.gemini/config/scripts/context_budget_guard.py post_invocation",
+        "timeout": 10
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "python3 ~/.gemini/config/scripts/context_budget_guard.py stop",
         "timeout": 10
       }
     ],
@@ -94,34 +176,6 @@
       }
     ]
   },
-  "read-file-widener": {
-    "PreToolUse": [
-      {
-        "matcher": "read_file",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 ~/.gemini/config/scripts/read_file_widener.py",
-            "timeout": 5
-          }
-        ]
-      }
-    ]
-  },
-  "rtk-rewrite": {
-    "PreToolUse": [
-      {
-        "matcher": "run_command",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 ~/.gemini/config/scripts/rtk_rewrite_hook.py",
-            "timeout": 5
-          }
-        ]
-      }
-    ]
-  },
   "skill-usage-tracker": {
     "PostToolUse": [
       {
@@ -152,32 +206,6 @@
             "type": "command",
             "command": "python3 ~/.gemini/config/scripts/decision_harvester_hook.py",
             "timeout": 10
-          }
-        ]
-      }
-    ]
-  },
-  "worktree-isolation-guard": {
-    "PreToolUse": [
-      {
-        "matcher": "read_file|edit_file|write_file|run_command",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 ~/.gemini/config/scripts/worktree_isolation_guard.py pre",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "read_file|run_command",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 ~/.gemini/config/scripts/worktree_isolation_guard.py post",
-            "timeout": 5
           }
         ]
       }

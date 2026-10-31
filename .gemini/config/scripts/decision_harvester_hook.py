@@ -24,11 +24,13 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from compact_threshold_tracker import (
-    COMPACT_DROP_RATIO,
-    is_manual_compact_in_transcript,
+    DEFAULT_STATE_DIR as DEFAULT_COMPACT_STATE_DIR,
+    DEFAULT_THRESHOLDS_FILE,
+    conversation_state_lock,
     parse_non_negative_int,
     resolve_transcript_file,
     sanitize_id,
+    sync_conversation_and_thresholds,
 )
 
 DEFAULT_STATE_DIR: Path = Path("/tmp/agy_decision_harvester_state")
@@ -144,7 +146,6 @@ class DecisionHarvesterState:
     messages_since_cycle_start: int = 0
     injected_in_cycle: bool = False
     last_planner_turn: int = -1
-    last_input_tokens: int = 0
     decisions_fingerprint: str = ""
     workspace_root: str = ""
 
@@ -494,7 +495,6 @@ def load_harvester_state(state_dir: Path, conv_id: str) -> DecisionHarvesterStat
         if isinstance(last_turn_raw, int) and not isinstance(last_turn_raw, bool)
         else -1
     )
-    last_tokens: int = parse_non_negative_int(raw.get("last_input_tokens"), 0)
     fp_raw: object = raw.get("decisions_fingerprint")
     fp: str = fp_raw if isinstance(fp_raw, str) else ""
     ws_raw: object = raw.get("workspace_root")
@@ -505,7 +505,6 @@ def load_harvester_state(state_dir: Path, conv_id: str) -> DecisionHarvesterStat
         messages_since_cycle_start=msgs,
         injected_in_cycle=injected,
         last_planner_turn=last_turn,
-        last_input_tokens=last_tokens,
         decisions_fingerprint=fp,
         workspace_root=ws_root,
     )
@@ -520,7 +519,6 @@ def save_harvester_state(state_dir: Path, state: DecisionHarvesterState) -> None
             "messages_since_cycle_start": state.messages_since_cycle_start,
             "injected_in_cycle": state.injected_in_cycle,
             "last_planner_turn": state.last_planner_turn,
-            "last_input_tokens": state.last_input_tokens,
             "decisions_fingerprint": state.decisions_fingerprint,
             "workspace_root": state.workspace_root,
         }
@@ -554,26 +552,23 @@ def is_explicit_user_message_step(step: dict[str, object]) -> bool:
     return True
 
 
-def analyze_transcript_delta(
+def count_user_messages_since(
     transcript_path: str,
-    last_scanned_line: int,
-    last_input_tokens: int,
-) -> tuple[bool, int, int, int, bool]:
-    """Return (compacted, new_user_msgs, new_last_scanned_line, new_last_input_tokens, saw_any_user_input_in_file)."""
+    after_line: int,
+) -> tuple[int, int, bool]:
+    """Return (new_user_msgs, new_last_scanned_line, saw_any_user_input_in_file)."""
     target_file: Path | None = resolve_transcript_file(transcript_path)
     if target_file is None:
-        return False, 0, last_scanned_line, last_input_tokens, False
+        return 0, after_line, False
 
     try:
         with open(target_file, "r", encoding="utf-8", errors="ignore") as f:
             lines: list[str] = f.readlines()
     except Exception:
-        return False, 0, last_scanned_line, last_input_tokens, False
+        return 0, after_line, False
 
-    compacted: bool = False
     new_user_msgs: int = 0
-    cur_line: int = last_scanned_line
-    cur_tokens: int = last_input_tokens
+    cur_line: int = after_line
     saw_any_user_input: bool = False
 
     for line_idx, raw_line in enumerate(lines, 1):
@@ -587,45 +582,17 @@ def analyze_transcript_delta(
         if not isinstance(step, dict):
             continue
 
-        step_type: object = step.get("type")
-        if step_type == "USER_INPUT":
+        if step.get("type") == "USER_INPUT":
             saw_any_user_input = True
 
-        if line_idx <= last_scanned_line:
+        if line_idx <= after_line:
             continue
 
         cur_line = max(cur_line, line_idx)
-        content_obj: object = step.get("content")
-        if isinstance(content_obj, str):
-            stripped_content: str = content_obj.strip()
-            if (
-                "<CONTEXT_SUMMARY>" in stripped_content
-                or stripped_content == "/compact"
-                or stripped_content.startswith("/compact ")
-            ):
-                compacted = True
-                new_user_msgs = 0
-
-        if step_type == "PLANNER_RESPONSE":
-            inp_tok: int = parse_non_negative_int(step.get("input_tokens"), 0)
-            cache_tok: int = parse_non_negative_int(step.get("cache_read_tokens"), 0)
-            total_in: int = inp_tok + cache_tok
-            if total_in > 0:
-                if cur_tokens > 0 and total_in < int(cur_tokens * COMPACT_DROP_RATIO):
-                    compacted = True
-                    new_user_msgs = 0
-                cur_tokens = total_in
-        elif is_explicit_user_message_step(step):
+        if is_explicit_user_message_step(step):
             new_user_msgs += 1
 
-    if (
-        not compacted
-        and last_scanned_line >= 0
-        and is_manual_compact_in_transcript(transcript_path)
-    ):
-        compacted = True
-
-    return compacted, new_user_msgs, cur_line, cur_tokens, saw_any_user_input
+    return new_user_msgs, cur_line, saw_any_user_input
 
 
 TOOL_PATH_KEYS: tuple[str, ...] = (
@@ -824,16 +791,35 @@ def evaluate_pre_invocation(
         if current_fp != state.decisions_fingerprint or target_missing_block:
             sync_decisions_index(workspace_root, config.decisions_dir)
 
-        (
-            compacted,
-            new_user_msgs,
-            new_turn,
-            new_tokens,
-            saw_any_user_input,
-        ) = analyze_transcript_delta(
+        compact_state_dir: Path = (
+            DEFAULT_COMPACT_STATE_DIR
+            if state_dir == DEFAULT_STATE_DIR
+            else state_dir / "compact_state"
+        )
+        thresholds_file: Path = (
+            DEFAULT_THRESHOLDS_FILE
+            if state_dir == DEFAULT_STATE_DIR
+            else state_dir / "compact_thresholds.json"
+        )
+        with conversation_state_lock(compact_state_dir, clean_conv_id):
+            compact_state, _ = sync_conversation_and_thresholds(
+                conv_id=clean_conv_id,
+                fallback_model_name="",
+                transcript_path=transcript_path,
+                state_dir=compact_state_dir,
+                thresholds_file=thresholds_file,
+            )
+
+        compacted: bool = (
+            state.last_planner_turn >= 0
+            and compact_state.last_compaction_turn > state.last_planner_turn
+        )
+        scan_after: int = max(
+            state.last_planner_turn, compact_state.last_compaction_turn
+        )
+        new_user_msgs, new_turn, saw_any_user_input = count_user_messages_since(
             transcript_path=transcript_path,
-            last_scanned_line=state.last_planner_turn,
-            last_input_tokens=state.last_input_tokens,
+            after_line=scan_after,
         )
 
         msgs: int = 0 if compacted else state.messages_since_cycle_start
@@ -861,8 +847,7 @@ def evaluate_pre_invocation(
             conversation_id=clean_conv_id,
             messages_since_cycle_start=msgs,
             injected_in_cycle=injected_in_cycle,
-            last_planner_turn=new_turn,
-            last_input_tokens=new_tokens,
+            last_planner_turn=max(new_turn, compact_state.last_scanned_line),
             decisions_fingerprint=current_fp,
             workspace_root=resolved_ws,
         )
@@ -915,7 +900,6 @@ def evaluate_post_tool_use(
                 messages_since_cycle_start=state.messages_since_cycle_start,
                 injected_in_cycle=state.injected_in_cycle,
                 last_planner_turn=state.last_planner_turn,
-                last_input_tokens=state.last_input_tokens,
                 decisions_fingerprint=current_fp if should_sync else state.decisions_fingerprint,
                 workspace_root=resolved_ws,
             )
