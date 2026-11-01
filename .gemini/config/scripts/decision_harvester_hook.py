@@ -73,17 +73,22 @@ def default_full_sections(decisions_dir: str) -> dict[str, str]:
         ),
         "what_to_capture": (
             f"### 1. Goal: Persist System-Shaping Decisions into `{clean_dir}/`\n"
-            f"Before ending this turn, record in `{clean_dir}/` every decision from the "
-            "conversation across these four categories (omitting one-off task instructions "
-            "and summaries of what the code already shows):\n"
+            f"**When** either this hook prompts you in the current turn or the user confirms a decision "
+            f"in the current turn, record in `{clean_dir}/` every user decision from the conversation "
+            "across these four categories (omitting one-off task instructions, summaries of what the code "
+            "already shows, exploratory user questions, and agent proposals or implementation choices the "
+            "user has not confirmed):\n"
             "1. **Invariants & Rules**: What must always hold true in the system's domain or state.\n"
             "2. **Boundaries & Responsibilities**: Which part of the system owns which decision or contract.\n"
             "3. **Rejected Alternatives & Rationale**: Why an approach was chosen or ruled out, "
             "so future work does not reintroduce rejected designs.\n"
             "4. **Pending / Target Design**: Decided or candidate behavior not yet reflected in the codebase.\n"
-            f"**When** the conversation has produced no new or changed decisions in these categories "
-            f"(or all such decisions are already recorded in `{clean_dir}/`), do nothing—do not "
-            f"create, edit, or touch any file in `{clean_dir}/`.\n"
+            f"**When** neither trigger holds on the current turn, or **when** the conversation has produced "
+            f"no new or changed user decisions in these categories (or all such decisions are already recorded "
+            f"in `{clean_dir}/`), do nothing—do not create, edit, or touch any file in `{clean_dir}/`.\n"
+            f"**When** you are about to create or edit a file in `{clean_dir}/`, before starting the file "
+            "creation or edit, state to the user which decision you are adding or updating, which "
+            f"`{clean_dir}/<topic>.md` file it targets, and whether it enters `Confirmed` or `Unconfirmed`.\n"
             "{{extra_capture_rules}}"
         ),
         "partitioning": (
@@ -110,12 +115,23 @@ def default_full_sections(decisions_dir: str) -> dict[str, str]:
             'follow [what this file governs]."\n'
             "---\n\n"
             "## Confirmed\n"
-            "- [Decision already in the codebase and confirmed right by the user, or discussed and "
-            "approved by the user for implementation in code]\n\n"
+            "- [Decision, invariant, or ruled-out path that the user confirmed or finalized—stating only "
+            "what the user decided, never the technical solution, helper structures, or conclusions you "
+            "chose or inferred on your own]\n\n"
             "## Unconfirmed\n"
-            "- [System-shaping proposal or direction discussed in the conversation that is not yet "
-            "in `Confirmed`]\n"
-            "```\n"
+            "- [Candidate direction or open hypothesis that the user voiced or agreed to keep under "
+            "consideration, framed as an open candidate rather than a settled rule]\n"
+            "```\n\n"
+            "Write each entry using the user's own terms:\n"
+            "- **When** the user's statement contains a **reference** (a pointer to an item pinned down "
+            "earlier in the conversation), replace the pointer with that item's content and location so "
+            "the entry passes a cold read on its own.\n"
+            "- **When** the user's statement names a **category** (a set whose members future work must "
+            "find or act on), carry the category over in the user's own words with where its members live, "
+            "without listing the members you found yourself (unless the user named those members).\n"
+            "- Check each written entry by deleting the user's verbatim words and expanded references: "
+            "if what remains still names any concept, target, or condition rather than pure connecting "
+            "syntax, delete that added material.\n"
             "{{extra_file_rules}}"
         ),
     }
@@ -129,10 +145,16 @@ def default_reminder_sections(decisions_dir: str) -> dict[str, str]:
             "without mentioning this hook."
         ),
         "reminder": (
-            f"Before ending this turn, check whether any system-shaping decisions were added or "
-            f"changed since the last sync. **When** none were added or changed, do nothing and "
-            f"do not touch `{clean_dir}/`. **When** new or changed decisions exist, update the "
-            f"matching `{clean_dir}/<topic>.md` file in place or create a new one.\n"
+            f"**When** either this hook prompts you in the current turn or the user confirms a decision in "
+            f"the current turn, check whether any system-shaping user decisions were added or changed since "
+            f"the last sync. **When** neither trigger holds, or **when** no new or changed user decisions "
+            f"exist, do nothing and do not touch `{clean_dir}/`. **When** new or changed user decisions "
+            f"exist, before starting the file creation or edit, state to the user which decision you are "
+            f"adding or updating, which `{clean_dir}/<topic>.md` file it targets, and whether it enters "
+            f"`Confirmed` or `Unconfirmed`, then update the matching `{clean_dir}/<topic>.md` file in place "
+            "or create a new one—expanding references for a cold read, keeping categories in the user's own "
+            "words unenumerated, and deleting any concept, target, or condition left over when the user's "
+            "words and expanded references are removed.\n"
             "{{existing_decisions}}\n"
             "{{extra_reminder_rules}}"
         ),
@@ -913,6 +935,11 @@ def evaluate_pre_invocation(
         return {"injectSteps": inject_steps}
 
 
+READ_ONLY_TOOLS: frozenset[str] = frozenset(
+    {"read_file", "view_file", "list_dir", "grep_search", "find_by_name"}
+)
+
+
 def evaluate_post_tool_use(
     payload: dict[str, object],
     workspace_root: Path,
@@ -946,28 +973,48 @@ def evaluate_post_tool_use(
             workspace_root, config.decisions_dir
         )
 
-        should_sync: bool = current_fp != state.decisions_fingerprint
-        if not should_sync:
-            tool_call_obj: object = payload.get("toolCall")
-            if isinstance(tool_call_obj, dict):
-                args_obj: object = tool_call_obj.get("args")
-                if isinstance(args_obj, dict):
-                    path_obj: object = args_obj.get("Path")
+        mutated_via_tool: bool = False
+        tool_call_obj: object = payload.get("toolCall")
+        if isinstance(tool_call_obj, dict):
+            tool_name_obj: object = tool_call_obj.get("name")
+            tool_name: str = (
+                tool_name_obj.strip() if isinstance(tool_name_obj, str) else ""
+            )
+            args_obj: object = tool_call_obj.get("args")
+            if isinstance(args_obj, dict) and tool_name not in READ_ONLY_TOOLS:
+                for key in ("Path", "TargetFile", "FilePath"):
+                    path_obj: object = args_obj.get(key)
                     if isinstance(path_obj, str) and config.decisions_dir in path_obj:
-                        should_sync = True
+                        mutated_via_tool = True
+                        break
+
+        fp_changed: bool = (
+            bool(state.decisions_fingerprint)
+            and current_fp != state.decisions_fingerprint
+        )
+        decision_file_modified: bool = (
+            fp_changed or mutated_via_tool or new_file_added
+        )
+        should_sync: bool = (
+            current_fp != state.decisions_fingerprint or mutated_via_tool
+        )
 
         if should_sync:
             sync_decisions_index(workspace_root, config.decisions_dir)
 
         if (
             should_sync
-            or new_file_added
+            or decision_file_modified
             or current_files != state.known_decision_files
             or state.workspace_root != resolved_ws
         ):
             updated_state = DecisionHarvesterState(
                 conversation_id=state.conversation_id,
-                messages_since_cycle_start=state.messages_since_cycle_start,
+                messages_since_cycle_start=(
+                    0
+                    if decision_file_modified
+                    else state.messages_since_cycle_start
+                ),
                 injected_in_cycle=False if new_file_added else state.injected_in_cycle,
                 last_planner_turn=state.last_planner_turn,
                 decisions_fingerprint=current_fp if should_sync else state.decisions_fingerprint,

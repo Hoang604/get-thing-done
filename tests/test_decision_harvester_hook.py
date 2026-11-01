@@ -17,6 +17,7 @@ from decision_harvester_hook import (
     MANAGED_BLOCK_START,
     build_full_prompt,
     build_reminder_prompt,
+    collect_decision_entries,
     evaluate_post_tool_use,
     evaluate_pre_invocation,
     load_harvester_config,
@@ -233,14 +234,14 @@ class TestDecisionHarvesterHook(unittest.TestCase):
             workspace_root=self.workspace,
             state_dir=self.state_dir,
         )
+        entries = collect_decision_entries(self.workspace)
         injected_9: str = self._extract_injected_msg(res_9)
-        self.assertIn("### 1. Goal: Persist System-Shaping Decisions", injected_9)
-        self.assertIn("Existing decision files in `.gtd/decisions/` (1):", injected_9)
+        self.assertEqual(injected_9, build_full_prompt(cfg, entries))
+        self.assertIn(".gtd/decisions/architecture.md", injected_9)
         self.assertIn(
-            "- `.gtd/decisions/architecture.md`: When changing hook architecture, follow this file.",
+            "When changing hook architecture, follow this file.",
             injected_9,
         )
-        self.assertIn("do nothing—do not create, edit, or touch any file", injected_9)
 
         # Next milestone (message 12) with NO new file added -> back to REMINDER prompt (also with file list)
         for idx in range(2):
@@ -261,12 +262,77 @@ class TestDecisionHarvesterHook(unittest.TestCase):
             state_dir=self.state_dir,
         )
         injected_12: str = self._extract_injected_msg(res_12)
-        self.assertNotIn("### 1. Goal: Persist System-Shaping Decisions", injected_12)
-        self.assertIn("Existing decision files in `.gtd/decisions/` (1):", injected_12)
+        self.assertEqual(injected_12, build_reminder_prompt(cfg, entries))
+        self.assertIn(".gtd/decisions/architecture.md", injected_12)
         self.assertIn(
-            "- `.gtd/decisions/architecture.md`: When changing hook architecture, follow this file.",
+            "When changing hook architecture, follow this file.",
             injected_12,
         )
+
+        # Mid-cycle edit of an existing decision file (after 2 messages: 13 and 14)
+        # must reset the N-message counter so message 15 does NOT inject, and
+        # injection happens 3 messages after the edit (at message 17).
+        for idx in range(2):
+            self._append_user_step(f"user message {idx + 13}")
+            self._append_planner_step(162_000)
+            self.assertEqual(
+                evaluate_pre_invocation(
+                    conv_id=self.conv_id,
+                    transcript_path=str(self.transcript_file),
+                    workspace_root=self.workspace,
+                    state_dir=self.state_dir,
+                ),
+                {"injectSteps": []},
+            )
+
+        # Agent edits existing decision file when user confirms a decision mid-cycle -> resets counter
+        arch_file.write_text(
+            '---\ndescription: "When changing hook architecture, follow this file."\n---\n\n## Confirmed\n- Single tracker.\n- Reset counter on decision edit.\n',
+            encoding="utf-8",
+        )
+        evaluate_post_tool_use(
+            payload={
+                "conversationId": self.conv_id,
+                "toolCall": {"name": "edit_file", "args": {"Path": str(arch_file)}},
+            },
+            workspace_root=self.workspace,
+            state_dir=self.state_dir,
+        )
+
+        # Next 2 messages (15 and 16) do not trigger injection because counter was reset on edit
+        for idx in range(2):
+            self._append_user_step(f"user message {idx + 15}")
+            self._append_planner_step(164_000)
+            self.assertEqual(
+                evaluate_pre_invocation(
+                    conv_id=self.conv_id,
+                    transcript_path=str(self.transcript_file),
+                    workspace_root=self.workspace,
+                    state_dir=self.state_dir,
+                ),
+                {"injectSteps": []},
+            )
+
+        # Read-only tool call on decision file after 2 messages must NOT reset the counter,
+        # so the 3rd message after the edit (message 17) still triggers reminder injection on schedule
+        evaluate_post_tool_use(
+            payload={
+                "conversationId": self.conv_id,
+                "toolCall": {"name": "read_file", "args": {"Path": str(arch_file)}},
+            },
+            workspace_root=self.workspace,
+            state_dir=self.state_dir,
+        )
+
+        self._append_user_step("user message 17")
+        self._append_planner_step(166_000)
+        res_17 = evaluate_pre_invocation(
+            conv_id=self.conv_id,
+            transcript_path=str(self.transcript_file),
+            workspace_root=self.workspace,
+            state_dir=self.state_dir,
+        )
+        self.assertEqual(self._extract_injected_msg(res_17), injected_12)
 
         # Compaction occurs (tokens drop from 160,000 -> 25,000): cycle resets!
         # Simulate compact-threshold-tracker running FIRST in PostInvocation / PreInvocation
