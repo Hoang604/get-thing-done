@@ -190,6 +190,34 @@
       }
     ]
   },
+  "loop-hook": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "python3 ~/.gemini/config/scripts/loop_hook.py pre_invocation",
+        "timeout": 5
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "read_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.gemini/config/scripts/loop_hook.py post_tool_use",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "python3 ~/.gemini/config/scripts/loop_hook.py stop",
+        "timeout": 5
+      }
+    ]
+  },
   "decision-harvester": {
     "PreInvocation": [
       {

@@ -54,6 +54,7 @@ chmod +x "$TARGET_DIR/config/scripts/context_budget_guard.py"
 chmod +x "$TARGET_DIR/config/scripts/read_file_widener.py"
 chmod +x "$TARGET_DIR/config/scripts/rtk_rewrite_hook.py"
 chmod +x "$TARGET_DIR/config/scripts/skill_usage_tracker.py"
+chmod +x "$TARGET_DIR/config/scripts/loop_hook.py"
 chmod +x "$TARGET_DIR/config/scripts/decision_harvester_hook.py"
 chmod +x "$TARGET_DIR/config/scripts/worktree_isolation_guard.py"
 
