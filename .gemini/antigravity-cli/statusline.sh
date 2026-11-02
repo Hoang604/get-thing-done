@@ -213,58 +213,126 @@ format_run_duration() {
 PCT_FMT=$(LC_NUMERIC=C printf "%.1f" "$USED_PCT")
 PCT_INT=${USED_PCT%.*}; PCT_INT=${PCT_INT:-0}
 
-# ─── Continuous Run Timer ────────────────────────────────────────────────────
+# ─── Continuous Run Timer (3-Phase Deterministic Stopwatch) ──────────────────
 NOW=$(date +%s)
-RUN_ACTIVE=0
-RUN_START_TS=0
-RUN_LAST_ELAPSED=0
-RUN_AWAITING_ASK=0
+RUN_PHASE="IDLE"
+RUN_DISPLAY_ELAPSED=0
+RUN_HAS_HISTORY=0
 
 if [ -n "$CONV_ID" ]; then
   RUN_FILE="/tmp/agy_cumulative_${CONV_ID}.run"
-  if [ -f "$RUN_FILE" ]; then
-    {
-      read -r RUN_ACTIVE || true
-      read -r RUN_START_TS || true
-      read -r RUN_LAST_ELAPSED || true
-      read -r RUN_AWAITING_ASK || true
-    } < "$RUN_FILE"
-    RUN_ACTIVE=${RUN_ACTIVE:-0}
-    RUN_START_TS=${RUN_START_TS:-0}
-    RUN_LAST_ELAPSED=${RUN_LAST_ELAPSED:-0}
-    RUN_AWAITING_ASK=${RUN_AWAITING_ASK:-0}
-  fi
+  LOCK_FILE="${RUN_FILE}.lock"
+  ASK_FILE="/tmp/agy_ask_${CONV_ID}"
 
-  IS_QUIESCENT=0
+  AWAITING_ASK=$(cat "$ASK_FILE" 2>/dev/null || echo "0")
+  [[ "$AWAITING_ASK" =~ ^[01]$ ]] || AWAITING_ASK=0
+
   if { [ "$STATE" = "idle" ] || [ "$STATE" = "error" ]; } && [ "${TASK_COUNT:-0}" -le 0 ] 2>/dev/null && [ "${PENDING_INPUTS:-0}" -le 0 ] 2>/dev/null && [ "${RUNNING_SUBAGENTS:-0}" -le 0 ] 2>/dev/null; then
-    IS_QUIESCENT=1
-  fi
-
-  if [ "$IS_QUIESCENT" -eq 1 ]; then
-    if [ "$RUN_ACTIVE" -eq 1 ] && [ "$RUN_START_TS" -gt 0 ] 2>/dev/null; then
-      RUN_LAST_ELAPSED=$((NOW - RUN_START_TS))
-      [ "$RUN_LAST_ELAPSED" -lt 0 ] && RUN_LAST_ELAPSED=0
-    fi
-    RUN_ACTIVE=0
-    RUN_AWAITING_ASK=0
-  elif [ "$RUN_AWAITING_ASK" -eq 1 ] 2>/dev/null || [ "$TOOL_CONFIRM_PENDING" = "true" ] || [ "$STATE" = "reviewing" ]; then
-    if [ "$RUN_ACTIVE" -eq 1 ] && [ "$RUN_START_TS" -gt 0 ] 2>/dev/null; then
-      RUN_LAST_ELAPSED=$((NOW - RUN_START_TS))
-      [ "$RUN_LAST_ELAPSED" -lt 0 ] && RUN_LAST_ELAPSED=0
-    fi
-    RUN_ACTIVE=0
+    TARGET_PHASE="IDLE"
+  elif [ "$AWAITING_ASK" -eq 1 ] || [ "$TOOL_CONFIRM_PENDING" = "true" ] || [ "$STATE" = "reviewing" ]; then
+    TARGET_PHASE="PAUSED"
   else
-    if [ "$RUN_ACTIVE" -eq 0 ] || [ "$RUN_START_TS" -le 0 ] 2>/dev/null; then
-      RUN_ACTIVE=1
-      RUN_START_TS="$NOW"
-      RUN_LAST_ELAPSED=0
-    else
-      RUN_LAST_ELAPSED=$((NOW - RUN_START_TS))
-      [ "$RUN_LAST_ELAPSED" -lt 0 ] && RUN_LAST_ELAPSED=0
-    fi
+    TARGET_PHASE="RUNNING"
   fi
 
-  printf "%s\n%s\n%s\n%s\n" "$RUN_ACTIVE" "$RUN_START_TS" "$RUN_LAST_ELAPSED" "$RUN_AWAITING_ASK" > "$RUN_FILE" 2>/dev/null || true
+  if [ "$TARGET_PHASE" = "IDLE" ] && [ "$AWAITING_ASK" -eq 1 ]; then
+    echo "0" > "$ASK_FILE" 2>/dev/null || true
+    AWAITING_ASK=0
+  fi
+
+  {
+    read -r RUN_PHASE || true
+    read -r RUN_DISPLAY_ELAPSED || true
+    read -r RUN_HAS_HISTORY || true
+  } <<< "$(
+    (
+      flock -x 9 2>/dev/null || true
+      PHASE="IDLE"
+      ACCUM_SEC=0
+      SINCE_TS=0
+      HAS_HISTORY=0
+      NEEDS_WRITE=0
+
+      if [ -f "$RUN_FILE" ]; then
+        HAS_HISTORY=1
+        {
+          read -r L1 || true
+          read -r L2 || true
+          read -r L3 || true
+          read -r L4 || true
+        } < "$RUN_FILE"
+        case "${L1:-}" in
+          IDLE|RUNNING|PAUSED)
+            PHASE="$L1"
+            ACCUM_SEC="${L2:-0}"
+            SINCE_TS="${L3:-0}"
+            ;;
+          1)
+            PHASE="RUNNING"
+            ACCUM_SEC=0
+            SINCE_TS="${L2:-0}"
+            NEEDS_WRITE=1
+            ;;
+          0)
+            if [ "${L4:-0}" = "1" ]; then
+              PHASE="PAUSED"
+            else
+              PHASE="IDLE"
+            fi
+            ACCUM_SEC="${L3:-0}"
+            SINCE_TS=0
+            NEEDS_WRITE=1
+            ;;
+        esac
+      fi
+
+      [[ "$ACCUM_SEC" =~ ^[0-9]+$ ]] || ACCUM_SEC=0
+      [[ "$SINCE_TS" =~ ^[0-9]+$ ]] || SINCE_TS=0
+
+      if [ "$PHASE" != "$TARGET_PHASE" ]; then
+        case "${PHASE}:${TARGET_PHASE}" in
+          IDLE:RUNNING)
+            ACCUM_SEC=0
+            SINCE_TS="$NOW"
+            ;;
+          IDLE:PAUSED)
+            ACCUM_SEC=0
+            SINCE_TS=0
+            ;;
+          RUNNING:PAUSED|RUNNING:IDLE)
+            if [ "$SINCE_TS" -gt 0 ] && [ "$NOW" -gt "$SINCE_TS" ]; then
+              ACCUM_SEC=$((ACCUM_SEC + NOW - SINCE_TS))
+            fi
+            SINCE_TS=0
+            ;;
+          PAUSED:RUNNING)
+            SINCE_TS="$NOW"
+            ;;
+          PAUSED:IDLE)
+            SINCE_TS=0
+            ;;
+        esac
+        PHASE="$TARGET_PHASE"
+        HAS_HISTORY=1
+        NEEDS_WRITE=1
+      elif [ "$PHASE" = "RUNNING" ] && [ "$SINCE_TS" -le 0 ]; then
+        SINCE_TS="$NOW"
+        HAS_HISTORY=1
+        NEEDS_WRITE=1
+      fi
+
+      if [ "$NEEDS_WRITE" -eq 1 ]; then
+        printf "%s\n%s\n%s\n" "$PHASE" "$ACCUM_SEC" "$SINCE_TS" > "$RUN_FILE" 2>/dev/null || true
+      fi
+
+      ELAPSED="$ACCUM_SEC"
+      if [ "$PHASE" = "RUNNING" ] && [ "$SINCE_TS" -gt 0 ] && [ "$NOW" -gt "$SINCE_TS" ]; then
+        ELAPSED=$((ACCUM_SEC + NOW - SINCE_TS))
+      fi
+
+      printf "%s\n%s\n%s\n" "$PHASE" "$ELAPSED" "$HAS_HISTORY"
+    ) 9>"$LOCK_FILE" 2>/dev/null || printf "IDLE\n0\n0\n"
+  )"
 fi
 
 # ─── State Indicator ─────────────────────────────────────────────────────────
@@ -278,11 +346,11 @@ case "$STATE" in
   *)         S="${FG_WHITE}${B}⏳ $(echo "$STATE" | tr '[:lower:]' '[:upper:]')${R}" ;;
 esac
 
-if [ "$RUN_ACTIVE" -eq 1 ] 2>/dev/null; then
-  RUN_DUR=$(format_run_duration "$RUN_LAST_ELAPSED")
+if [ "$RUN_PHASE" = "RUNNING" ]; then
+  RUN_DUR=$(format_run_duration "$RUN_DISPLAY_ELAPSED")
   S="${S} ${FG_WHITE}${RUN_DUR}${R}"
-elif [ "$RUN_START_TS" -gt 0 ] 2>/dev/null; then
-  RUN_DUR=$(format_run_duration "$RUN_LAST_ELAPSED")
+elif [ "${RUN_HAS_HISTORY:-0}" -eq 1 ] 2>/dev/null; then
+  RUN_DUR=$(format_run_duration "$RUN_DISPLAY_ELAPSED")
   S="${S} ${FG_GRAY}worked ${FG_WHITE}${RUN_DUR}${R}"
 fi
 
