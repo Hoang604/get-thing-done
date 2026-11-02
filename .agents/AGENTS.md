@@ -64,10 +64,10 @@ Any other change, reversal, or apology whose cause is the tone of a message rath
 
 Applies to every line of typed code: application code, tests, scripts, fixtures, and mocks. A type is a promise about what a value always is, and code is allowed to rely on that promise.
 
-1. **Required data is never optional.** A field the business always needs is typed as always present. A field is optional only when "no value" is a real business situation, never because the code that fills it sometimes fails to. Never silence the type checker to make code pass (`Any`, `# type: ignore`, unchecked casts).
+1. **Required data is never optional.** A field is typed as always present and read directly unless its absence is a real runtime state of what the type represents—never make a field optional so a producer, caller, or test can omit a required value, never read a required field through defensive checks or fallbacks, and never silence the type checker to make code pass (`Any`, `# type: ignore`, unchecked casts).
 2. **Check outside data where it enters.** Data from outside the code (user input, files, network, environment variables, other services) is checked and converted into strict types at the point where it enters. Code past that point works only with the checked types. Never assert a type without a runtime check.
 3. **Every optional field states why it can be empty.**
-   - *New fields:* in plans and code proposals, every optional field names the business situation in which it is empty.
+   - *Declared fields:* every optional field names the runtime condition under which it is empty, placed as a one-line comment immediately above the field in code.
    - *Existing fields:* when you touch or work beside an optional field that is optional only because some code fails to fill it, add a section `### [Optionality Debt & Invariant Proposal]` that names the field, says what goes wrong in code that substitutes a fallback for it, and proposes making it non-optional.
 
 </type_safety_policy>
