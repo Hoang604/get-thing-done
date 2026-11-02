@@ -156,6 +156,24 @@ class TestConditionalToolGuard(unittest.TestCase):
         })
         self.assertEqual(res.get("decision"), "allow")
 
+    def test_manage_task_allowed_when_injected_user_message_follows_explicit_user_input(self):
+        with open(self.transcript_file, "w", encoding="utf-8") as f:
+            f.write(json.dumps({
+                "type": "USER_INPUT",
+                "source": "USER_EXPLICIT",
+                "content": "Chạy toàn bộ test cho dự án"
+            }) + "\n")
+            f.write(json.dumps({
+                "type": "USER_INPUT",
+                "content": "Lệnh `run_command` đã chạy 5 phút mà chưa xong. Hãy dùng `manage_task` kiểm tra tình hình task ngay lập tức."
+            }) + "\n")
+
+        res = self._run_guard({
+            "toolCall": {"name": "manage_task"},
+            "transcriptPath": self.transcript_file
+        })
+        self.assertEqual(res.get("decision"), "allow")
+
 
 if __name__ == "__main__":
     unittest.main()

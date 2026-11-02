@@ -6,6 +6,12 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Set
 
+SCRIPT_DIR: Path = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from run_command_timeout_hook import is_manage_task_authorized_for_conversation
+
 
 def extract_md_paths_from_text(text: str) -> Set[str]:
     paths: Set[str] = set()
@@ -102,10 +108,13 @@ def is_tool_allowed(tool_name: str, transcript_path: str) -> bool:
     if last_user_idx == -1:
         return False
 
-    # 1. Check user input content directly
+    # 1. Check user input content directly (including hook-injected userMessages since last_user_idx)
     latest_user_text = str(steps[last_user_idx].get("content") or "")
-    if pattern.search(latest_user_text):
-        return True
+    for step in steps[last_user_idx:]:
+        if step.get("type") == "USER_INPUT":
+            user_text = str(step.get("content") or "")
+            if pattern.search(user_text):
+                return True
 
     # 2. Collect .md files read or referenced from latest_user_idx to end
     md_files_to_check: Set[str] = extract_md_paths_from_text(latest_user_text)
@@ -130,6 +139,15 @@ def main() -> None:
 
     tool_name = payload.get("toolCall", {}).get("name", "")
     transcript_path = payload.get("transcriptPath", "")
+    conv_id = payload.get("conversationId", "")
+
+    if (
+        tool_name == "manage_task"
+        and isinstance(conv_id, str)
+        and is_manage_task_authorized_for_conversation(conv_id)
+    ):
+        print(json.dumps({"decision": "allow"}))
+        return
 
     if is_tool_allowed(tool_name, transcript_path):
         print(json.dumps({"decision": "allow"}))
