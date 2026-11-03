@@ -24,16 +24,54 @@ from compact_threshold_tracker import (
 
 DEFAULT_STATE_DIR: Path = Path("/tmp/agy_loop_state")
 DEFAULT_ITERATIONS: int = 3
-LOOP_COMMAND_RE: re.Pattern[str] = re.compile(r"(?:^|\s)/loop\b")
+LOOP_COMMAND_RE: re.Pattern[str] = re.compile(r"^/loop\b")
 ITERATION_FLAG_RE: re.Pattern[str] = re.compile(r"(?:^|\s)--([1-9]\d*)\b")
-
-LOOP_CONTINUE_USER_MESSAGE: str = (
-    "Làm lại từ đầu theo @[.gemini/antigravity-cli/skills/loop/SKILL.md] một lượt nữa. "
-    "Cấm dùng lại kết quả đọc từ lượt trước hay bỏ qua bất kỳ node nào vì nghĩ đã sửa xong: "
-    "mở lại loop_dag.md, đi từ root xuống leaf, gọi rg và read_file đọc lại toàn bộ code trên đĩa ở từng node, "
-    "soi từng dòng đối chiếu với yêu cầu của tôi và nguyên lý trong skill, "
-    "sửa sạch mọi chỗ còn lệch hoặc còn residue rồi chạy test kiểm chứng lại."
+SKILL_REL_CANDIDATES: tuple[Path, ...] = (
+    Path(".gemini/antigravity-cli/skills/loop/SKILL.md"),
+    Path(".gemini/config/skills/loop/SKILL.md"),
+    Path(".agents/skills/loop/SKILL.md"),
 )
+
+
+def resolve_loop_skill_path(payload: dict[str, object]) -> str:
+    ws_obj: object = payload.get("workspacePaths")
+    if isinstance(ws_obj, list):
+        for item in ws_obj:
+            if not isinstance(item, str) or not item.strip():
+                continue
+            ws_root: Path = Path(os.path.expanduser(item.strip()))
+            for rel_path in SKILL_REL_CANDIDATES:
+                candidate: Path = ws_root / rel_path
+                if candidate.is_file():
+                    return str(candidate.resolve())
+
+    gemini_root: Path = SCRIPT_DIR.parent.parent
+    for rel_sub in (
+        Path("antigravity-cli/skills/loop/SKILL.md"),
+        Path("config/skills/loop/SKILL.md"),
+    ):
+        script_candidate: Path = gemini_root / rel_sub
+        if script_candidate.is_file():
+            return str(script_candidate.resolve())
+
+    home_dir: Path = Path.home()
+    for rel_path in SKILL_REL_CANDIDATES:
+        home_candidate: Path = home_dir / rel_path
+        if home_candidate.is_file():
+            return str(home_candidate.resolve())
+
+    return str(home_dir / ".gemini/antigravity-cli/skills/loop/SKILL.md")
+
+
+def build_continue_user_message(payload: dict[str, object]) -> str:
+    skill_path: str = resolve_loop_skill_path(payload)
+    return (
+        f"Làm lại từ đầu theo @[{skill_path}] một lượt nữa. "
+        "Cấm dùng lại kết quả đọc từ lượt trước hay bỏ qua bất kỳ node nào vì nghĩ đã sửa xong: "
+        "mở lại loop_dag.md, đi từ root xuống leaf, gọi rg và read_file đọc lại toàn bộ code trên đĩa ở từng node, "
+        "soi từng dòng đối chiếu với yêu cầu của tôi và nguyên lý trong skill, "
+        "sửa sạch mọi chỗ còn lệch hoặc còn residue."
+    )
 
 NON_CONTINUABLE_STOP_REASONS: frozenset[str] = frozenset(
     {
@@ -227,7 +265,7 @@ def evaluate_pre_invocation(
             return {
                 "injectSteps": [
                     {
-                        "userMessage": LOOP_CONTINUE_USER_MESSAGE,
+                        "userMessage": build_continue_user_message(payload),
                     }
                 ]
             }

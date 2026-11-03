@@ -69,8 +69,8 @@ EOF
 
 footer="</critical_instructions>"
 
-# Inject instructions as a persistent systemMessage on first turn, after >=30k token growth, or after compaction
-if (( INITIALIZED == 0 || CUR_TOKENS - LAST_INJECT_TOKENS >= 30000 || COMPACT_DROP == 1 )); then
+# Inject instructions as a persistent systemMessage on first turn, after >=20k token growth, or after compaction
+if (( INITIALIZED == 0 || CUR_TOKENS - LAST_INJECT_TOKENS >= 20000 || COMPACT_DROP == 1 )); then
   INITIALIZED=1
   LAST_INJECT_TOKENS=$CUR_TOKENS
   LAST_INJECT_COMPACT_COUNT=$COMPACT_COUNT
