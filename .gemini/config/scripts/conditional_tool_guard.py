@@ -6,12 +6,6 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Set
 
-SCRIPT_DIR: Path = Path(__file__).resolve().parent
-if str(SCRIPT_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPT_DIR))
-
-from run_command_timeout_hook import is_manage_task_authorized_for_conversation
-
 
 def extract_md_paths_from_text(text: str) -> Set[str]:
     paths: Set[str] = set()
@@ -139,15 +133,6 @@ def main() -> None:
 
     tool_name = payload.get("toolCall", {}).get("name", "")
     transcript_path = payload.get("transcriptPath", "")
-    conv_id = payload.get("conversationId", "")
-
-    if (
-        tool_name == "manage_task"
-        and isinstance(conv_id, str)
-        and is_manage_task_authorized_for_conversation(conv_id)
-    ):
-        print(json.dumps({"decision": "allow"}))
-        return
 
     if is_tool_allowed(tool_name, transcript_path):
         print(json.dumps({"decision": "allow"}))

@@ -57,7 +57,6 @@ chmod +x "$TARGET_DIR/config/scripts/skill_usage_tracker.py"
 chmod +x "$TARGET_DIR/config/scripts/loop_hook.py"
 chmod +x "$TARGET_DIR/config/scripts/decision_harvester_hook.py"
 chmod +x "$TARGET_DIR/config/scripts/worktree_isolation_guard.py"
-chmod +x "$TARGET_DIR/config/scripts/run_command_timeout_hook.py"
 
 rm -f "$TARGET_DIR/config/scripts/init-python-agent.sh" "$HOME/.local/bin/init-python-agent"
 mkdir -p "$HOME/.local/bin"

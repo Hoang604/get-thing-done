@@ -1,7 +1,6 @@
 ---
 name: ui
-description: Design, generate, and review user interfaces (UI) based on visual signal hierarchy, spatial geometry, typography, semantic color systems, accessibility, and state integrity.
-disable-model-invocation: true
+description: Design, generate, and review UI/UX, use when touchinng what user see or interact.
 ---
 
 # UI Architecture and Interface Review

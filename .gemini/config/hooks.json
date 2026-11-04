@@ -226,52 +226,5 @@
         ]
       }
     ]
-  },
-  "run-command-timeout-guard": {
-    "PreToolUse": [
-      {
-        "matcher": "run_command",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 ~/.gemini/config/scripts/run_command_timeout_hook.py pre_tool_use",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "run_command",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 ~/.gemini/config/scripts/run_command_timeout_hook.py post_tool_use",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "PreInvocation": [
-      {
-        "type": "command",
-        "command": "python3 ~/.gemini/config/scripts/run_command_timeout_hook.py pre_invocation",
-        "timeout": 5
-      }
-    ],
-    "PostInvocation": [
-      {
-        "type": "command",
-        "command": "python3 ~/.gemini/config/scripts/run_command_timeout_hook.py post_invocation",
-        "timeout": 5
-      }
-    ],
-    "Stop": [
-      {
-        "type": "command",
-        "command": "python3 ~/.gemini/config/scripts/run_command_timeout_hook.py stop",
-        "timeout": 330
-      }
-    ]
   }
 }
