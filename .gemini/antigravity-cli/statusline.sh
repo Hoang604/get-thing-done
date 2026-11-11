@@ -36,6 +36,7 @@ RAW_INPUT=$(cat)
   read -r COST_IN_TOKENS
   read -r OUT_TOKENS
   read -r CACHE_TOKENS
+  read -r CACHE_CREATE_TOKENS
   read -r CONV_ID
   read -r Q5H_FRAC
   read -r Q5H_RESET
@@ -58,6 +59,7 @@ RAW_INPUT=$(cat)
     (.context_window.current_usage.input_tokens // 0),
     (.context_window.current_usage.output_tokens // 0),
     (.context_window.current_usage.cache_read_input_tokens // 0),
+    (.context_window.current_usage.cache_creation_input_tokens // 0),
     (.conversation_id // ""),
     (.quota["gemini-5h"].remaining_fraction // .quota["3p-5h"].remaining_fraction // .quotas["gemini-5h"].remaining_fraction // ."gemini-5h".remaining_fraction // ""),
     (.quota["gemini-5h"].reset_in_seconds // .quota["3p-5h"].reset_in_seconds // .quotas["gemini-5h"].reset_in_seconds // ."gemini-5h".reset_in_seconds // ""),
@@ -69,7 +71,7 @@ RAW_INPUT=$(cat)
     ([.subagents[]? | select(.status == "running")] | length),
     (.tool_confirmation_pending // false),
     "EOF"
-  ' 2>/dev/null || printf "idle\n0\n\nfalse\n\n80\n0\n0\n0\n\n\n\n\n\n\n0\n0\n0\nfalse\nEOF\n"
+  ' 2>/dev/null || printf "idle\n0\n\nfalse\n\n80\n0\n0\n0\n0\n\n\n\n\n\n0\n0\n0\nfalse\nEOF\n"
 )"
 
 # ─── Write Raw Input to tmp/conversation_id/turn-<x>/statusline_input.json ───
@@ -479,6 +481,11 @@ case "$MODEL" in
       PRICE_CACHE=0.1
       PRICE_OUT=10.0
       ;;
+  *"4 Carbon"*|*"gemini-4-carbon"*)
+      PRICE_IN=2.0
+      PRICE_CACHE=0.1
+      PRICE_OUT=10.0
+      ;;
   *"3.7 Flash"*)
       PRICE_IN=0.75
       PRICE_CACHE=0.075
@@ -518,9 +525,13 @@ if [ -n "$CONV_ID" ]; then
       echo "$CUMULATIVE_COST_OUT" > "${STATE_FILE}.cost_out"
   fi
 
-  STEP_IN_TOKENS=$((COST_IN_TOKENS + CACHE_TOKENS))
+  STEP_IN_TOKENS=$((COST_IN_TOKENS + CACHE_CREATE_TOKENS + CACHE_TOKENS))
   STEP_TOTAL_ACTIVITY=$((STEP_IN_TOKENS + OUT_TOKENS))
-  USAGE_SIG="${COST_IN_TOKENS}:${CACHE_TOKENS}:${OUT_TOKENS}"
+  if [ "$CACHE_CREATE_TOKENS" -gt 0 ]; then
+      USAGE_SIG="${COST_IN_TOKENS}:${CACHE_CREATE_TOKENS}:${CACHE_TOKENS}:${OUT_TOKENS}"
+  else
+      USAGE_SIG="${COST_IN_TOKENS}:${CACHE_TOKENS}:${OUT_TOKENS}"
+  fi
 
   if [ "$STEP_TOTAL_ACTIVITY" -gt 0 ] && [ "$USAGE_SIG" != "$LAST_USAGE_SIG" ]; then
       CUMULATIVE_IN=$((CUMULATIVE_IN + STEP_IN_TOKENS))
@@ -552,6 +563,14 @@ IN_COMPACT=$(format_compact_num "$CUMULATIVE_IN")
 CACHE_COMPACT=$(format_compact_num "$CUMULATIVE_CACHE")
 OUT_COMPACT=$(format_compact_num "$CUMULATIVE_OUT")
 
+if [ "$CUMULATIVE_IN" -gt 0 ]; then
+  CACHE_HIT_PCT=$(LC_NUMERIC=C awk -v c="$CUMULATIVE_CACHE" -v t="$CUMULATIVE_IN" 'BEGIN { printf "%.1f", (c * 100) / t }')
+  CACHE_HIT_PCT_SHORT=$(LC_NUMERIC=C awk -v c="$CUMULATIVE_CACHE" -v t="$CUMULATIVE_IN" 'BEGIN { printf "%.0f", (c * 100) / t }')
+else
+  CACHE_HIT_PCT="0.0"
+  CACHE_HIT_PCT_SHORT="0"
+fi
+
 COST_IN_FMT=$(format_cost "$CUMULATIVE_COST_IN")
 COST_CACHE_FMT=$(format_cost "$CUMULATIVE_COST_CACHE")
 COST_OUT_FMT=$(format_cost "$CUMULATIVE_COST_OUT")
@@ -559,17 +578,17 @@ COST_FMT=$(format_cost "$CUMULATIVE_COST")
 
 if [ "$COLS" -ge 120 ]; then
   IN_FMT="${FG_GRAY}total input ${NUM_COLOR}${IN_COMPACT}${R} ${FG_GRAY}(${FG_BRIGHT_GREEN}\$${COST_IN_FMT}${FG_GRAY})${R}"
-  CACHE_FMT="${FG_GRAY}cache hit ${NUM_COLOR}${CACHE_COMPACT}${R} ${FG_GRAY}(${FG_BRIGHT_GREEN}\$${COST_CACHE_FMT}${FG_GRAY})${R}"
+  CACHE_FMT="${FG_GRAY}cache hit ${NUM_COLOR}${CACHE_COMPACT}${R} ${FG_GRAY}(${FG_BRIGHT_CYAN}${B}${CACHE_HIT_PCT}%${R}${FG_GRAY} · ${FG_BRIGHT_GREEN}\$${COST_CACHE_FMT}${FG_GRAY})${R}"
   OUT_FMT="${FG_GRAY}output ${NUM_COLOR}${OUT_COMPACT}${R} ${FG_GRAY}(${FG_BRIGHT_GREEN}\$${COST_OUT_FMT}${FG_GRAY})${R}"
   COST_STR="${FG_GRAY}Σ ${R}${FG_BRIGHT_GREEN}${B}\$${COST_FMT}${R}"
 elif [ "$COLS" -ge 85 ]; then
   IN_FMT="${NUM_COLOR}${IN_COMPACT}${R} ${FG_GRAY}in (${FG_BRIGHT_GREEN}\$${COST_IN_FMT}${FG_GRAY})${R}"
-  CACHE_FMT="${NUM_COLOR}${CACHE_COMPACT}${R} ${FG_GRAY}cache (${FG_BRIGHT_GREEN}\$${COST_CACHE_FMT}${FG_GRAY})${R}"
+  CACHE_FMT="${NUM_COLOR}${CACHE_COMPACT}${R} ${FG_GRAY}cache (${FG_BRIGHT_CYAN}${B}${CACHE_HIT_PCT}%${R}${FG_GRAY} · ${FG_BRIGHT_GREEN}\$${COST_CACHE_FMT}${FG_GRAY})${R}"
   OUT_FMT="${NUM_COLOR}${OUT_COMPACT}${R} ${FG_GRAY}out (${FG_BRIGHT_GREEN}\$${COST_OUT_FMT}${FG_GRAY})${R}"
   COST_STR="${FG_GRAY}Σ ${R}${FG_BRIGHT_GREEN}${B}\$${COST_FMT}${R}"
 else
   IN_FMT="${NUM_COLOR}${IN_COMPACT}${R} ${FG_GRAY}in${R}"
-  CACHE_FMT="${NUM_COLOR}${CACHE_COMPACT}${R} ${FG_GRAY}cache${R}"
+  CACHE_FMT="${NUM_COLOR}${CACHE_COMPACT}${R} ${FG_GRAY}cache (${FG_BRIGHT_CYAN}${B}${CACHE_HIT_PCT_SHORT}%${R}${FG_GRAY})${R}"
   OUT_FMT="${NUM_COLOR}${OUT_COMPACT}${R} ${FG_GRAY}out${R}"
   COST_ROUND=$(awk -v c="$CUMULATIVE_COST" 'BEGIN { printf "%.2f", c }')
   COST_STR="${FG_GRAY}Σ ${R}${FG_BRIGHT_GREEN}${B}\$${COST_ROUND}${R}"
