@@ -116,17 +116,17 @@ For every milestone in the graph, declare the physical blueprint across two cohe
 - **Provenance & Justification:** The use scenarios this milestone makes runnable, OR the prerequisite required to implement later milestones cleanly and correctly.
 
 ### Tier 2: Technical Decisions & Physical Contracts (How)
-- **Key Decisions (10-Minute Review Standard):** Record the load-bearing engineering choices, argued through Minimal System Entropy and the Maximal Yield Principle, so a senior engineer with only 10 minutes can confidently approve the boundary before implementation begins.
-  - *Minimal Entropy:* How each touched concept keeps exactly one canonical form, what callers no longer need to know, and which pre-change forms this milestone retires.
-  - *Maximal Value:* Choices that remove friction from this milestone's scenarios, each tied to the scenario state it serves.
-- **Literal Contracts & Strict Types:** Declare literal non-nullable domain models and boundary interfaces crossing the seam (`class` / `def` signatures with complete type annotations, docstrings, and `...` ellipses method bodies). Declare an abstract interface only when the seam has more than one implementation under present requirements; otherwise the contract is the concrete function or class itself.
+- **Seam Derivation (Before Contracts):** Before writing `Literal Contracts`, derive the boundary from the inspected code and the scenarios or downstream milestone in `Provenance & Justification`:
+  - *Caller Coupling (`Less to know` & `Friction`):* At each inspected caller (`file:line`) and across the scenarios `S-xx` (or downstream Milestone $N$) this milestone serves, identify every piece of caller code or user action required to use this boundary, and rule on each: **keep** when that caller's own job originates it, or **absorb** into the boundary (naming what owns it instead).
+  - *Declaration Survival (`Deletion Test` & `Canonical Form`):* For each declaration proposed for `Literal Contracts`, name the single concept it represents, the pre-change forms it replaces, and the callers (`file:line` or Milestone $N$) where complexity reappears if that declaration is deleted; drop any declaration whose deletion leaves callers no more complex.
+- **Literal Contracts & Strict Types:** Declare only the survivors of `Declaration Survival`, requiring nothing ruled **absorb** in `Caller Coupling` (`class` / `def` signatures with complete type annotations, docstrings, and `...` ellipses method bodies). Declare an abstract interface only when the seam has more than one implementation under present requirements; otherwise the contract is the concrete function or class itself.
 - **Ingress Caller & Terminal Sink Audit:**
   - *Caller Audit (Ingress):* Audit all existing callers across the workspace that pass the `Caller Audit` test above (requiring only a call-expression update). List every such caller, or certify: *"Caller Audit: 0 pure call-expression callers found via search."*
   - *Terminal Sink Audit (Dataflow):* Trace return values, state mutations, or emitted events downstream to their terminal sink to prove data reaches its final destination.
 - **Retired Forms:** The Retirement Inventory entries this milestone makes obsolete, each at its location with its fate and the count of references that remain.
 - **File Manifest:** List every file this milestone creates, modifies, or deletes as `[NEW]`, `[MODIFY]`, or `[DELETE]` with a clickable link `[basename](file:///path#L<start>-L<end>)` whose `#L<start>-L<end>` range spans the exact lines this milestone mutates.
 
-**Completion Criterion:** Every milestone declares every field of both tiers, every Maximal Value decision names the scenario state it serves, and every Retirement Inventory entry is resolved by the milestone that makes its form obsolete.
+**Completion Criterion:** Every milestone declares every field of both tiers; `Caller Coupling` accounts for every boundary interaction at the inspected caller `file:line` sites and served scenarios `S-xx` (or Milestone $N$); every declaration in `Literal Contracts` has a passing `Declaration Survival` entry and requires nothing ruled **absorb**; and every Retirement Inventory entry is resolved by the milestone that makes its form obsolete.
 
 ---
 
@@ -158,9 +158,9 @@ Compile or finalize the plan in `<Artifact Directory>/implementation_plan.md` (s
 - **Provenance & Justification:** <Scenarios made runnable, or prerequisite enabling Milestone N>
 
 #### Technical Decisions & Physical Contracts
-- **Key Decisions:** <Load-bearing choices argued through Minimal System Entropy and the Maximal Yield Principle, articulated for a 10-minute senior approval>
-  - **Minimal Entropy:** <Canonical form kept, knowledge removed from callers, pre-change forms retired>
-  - **Maximal Value:** <Friction removed from scenario S-xx and how>
+- **Seam Derivation:**
+  - **Caller Coupling:** <caller code at file:line or user action in S-xx>: <originates in caller's job -> **keep** | absorbed by <owner> inside boundary -> **absorb**>
+  - **Declaration Survival:** <Declaration>: <concept & replaced pre-change form>; deleting it <complexity reappearing at callers> -> **keep**
 - **Literal Contracts & Bound Structures:**
   ```python
   @dataclass(frozen=True)
