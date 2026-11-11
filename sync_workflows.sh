@@ -50,16 +50,14 @@ text = src_path.read_text(encoding="utf-8")
 TAGS = [
     "harness_injection",
     "communication_model",
-    "reasoning_from_principles",
     "challenge_response",
     "type_safety_policy",
-    "invariant_policy",
     "engineering_policy",
 ]
 
 blocks: list[str] = []
 for tag in TAGS:
-    m = re.search(rf"<{tag}>.*?</{tag}>", text, flags=re.DOTALL)
+    m = re.search(rf"(?m)^<{tag}>[ \t]*\n.*?\n^</{tag}>[ \t]*$", text, flags=re.DOTALL)
     if m:
         blocks.append(m.group(0))
 

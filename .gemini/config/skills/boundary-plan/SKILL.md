@@ -88,7 +88,9 @@ Partition the users' jobs into an ordered dependency graph of system boundaries:
 ### Caller Boundary Promotion vs. `Caller Audit`
 For any caller $C$ inside the mutable scope that invokes a modified boundary $B$, test whether $C$ already holds values of the exact types $B$'s new signature requires, already receives the dependencies $B$ requires, and already translates every return value and error $B$ can produce into $C$'s own declared output:
 - **When all three hold:** $C$ changes only its call expression and belongs in $B$'s `Caller Audit`.
-- **When any of the three does not hold** ($C$ must construct or parse $B$'s input types, wire $B$'s dependencies, or handle/translate $B$'s return states or errors): $C$ is a distinct system boundary and must be assigned its own milestone with its own Tier 1 outcome, Tier 2 decisions, and `Literal Contracts` declaring $C$'s signature.
+- **When any of the three does not hold** ($C$ must construct or parse $B$'s input types, wire $B$'s dependencies, or handle/translate $B$'s return states or errors): test whether that work originates in $C$'s own responsibility or compensates for a detail $B$ exposed:
+  - **Compensates for $B$:** redraw $B$ to absorb it so $C$ needs no such logic, then re-test $C$ above.
+  - **Originates in $C$'s own responsibility:** $C$ is a distinct system boundary and must be assigned its own milestone with its own Tier 1 outcome, Tier 2 decisions, and `Literal Contracts` declaring $C$'s signature.
 
 ### Topological Enablement Rule
 Execution order follows dependency order. For every milestone $B_m$:
@@ -102,7 +104,7 @@ Formulate every milestone's **Observable Outcome** by the standard stated in the
 - **Lineage & Justification:** Every milestone exists for an explicit reason: either making one or more use scenarios runnable, or providing an unavoidable prerequisite required to implement later milestones cleanly and correctly.
 - **Composability Gate:** Every use scenario is made runnable by exactly one milestone, and no milestone serves anything outside the users' jobs.
 
-**Completion Criterion:** An ordered sequence of boundaries where each milestone has documented lineage justification, satisfies topological enablement, every caller promoted by the Caller Boundary Promotion rule is assigned its own milestone, and every use scenario is assigned to the milestone that makes it runnable.
+**Completion Criterion:** An ordered sequence of boundaries where each milestone has documented lineage justification, satisfies topological enablement, no caller inside the mutable scope compensates for a detail an upstream boundary could absorb, every caller promoted by the Caller Boundary Promotion rule is assigned its own milestone, and every use scenario is assigned to the milestone that makes it runnable.
 
 ---
 
@@ -117,16 +119,16 @@ For every milestone in the graph, declare the physical blueprint across two cohe
 
 ### Tier 2: Technical Decisions & Physical Contracts (How)
 - **Seam Derivation (Before Contracts):** Before writing `Literal Contracts`, derive the boundary from the inspected code and the scenarios or downstream milestone in `Provenance & Justification`:
-  - *Caller Coupling (`Less to know` & `Friction`):* At each inspected caller (`file:line`) and across the scenarios `S-xx` (or downstream Milestone $N$) this milestone serves, identify every piece of caller code or user action required to use this boundary, and rule on each: **keep** when that caller's own job originates it, or **absorb** into the boundary (naming what owns it instead).
-  - *Declaration Survival (`Deletion Test` & `Canonical Form`):* For each declaration proposed for `Literal Contracts`, name the single concept it represents, the pre-change forms it replaces, and the callers (`file:line` or Milestone $N$) where complexity reappears if that declaration is deleted; drop any declaration whose deletion leaves callers no more complex.
-- **Literal Contracts & Strict Types:** Declare only the survivors of `Declaration Survival`, requiring nothing ruled **absorb** in `Caller Coupling` (`class` / `def` signatures with complete type annotations, docstrings, and `...` ellipses method bodies). Declare an abstract interface only when the seam has more than one implementation under present requirements; otherwise the contract is the concrete function or class itself.
+  - *Caller Coupling (`Less to know` & `Friction`):* At each inspected caller (`file:line`) and across the scenarios `S-xx` (or downstream Milestone $N$) this milestone serves, list each distinct piece of caller code or user action required to use this boundary as its own item, and rule on each individually: **keep** when that caller's own job originates it, or **absorb** into the boundary (naming what owns it instead). Grouping multiple couplings into a shared ruling is invalid.
+  - *Declaration Survival (`Deletion Test` & `Canonical Form`):* List each declaration exposed outside the boundary on the seam this milestone introduces or modifies as its own item, and rule on each individually while holding the other declarations fixed: name the single concept it represents, the pre-change forms it replaces, and the production callers outside the boundary (`file:line`, Milestone $N$, or `S-xx`) where complexity reappears if this declaration is removed from the boundary; drop or hide inside the boundary (recording any retired pre-change exposure in `Retired Forms`) every declaration with no production caller outside the boundary or whose removal leaves those callers no more complex. Grouping declarations into a shared ruling, or citing intra-boundary or test-only callers to keep a declaration exposed, is invalid.
+- **Literal Contracts & Strict Types:** Declare strictly the declarations exposed outside the boundary that survived `Declaration Survival`, requiring nothing ruled **absorb** in `Caller Coupling`, written solely as type definitions and callable signatures with complete type annotations, docstrings, and `...` bodies. Declare an abstract interface only when the seam has more than one implementation under present requirements; otherwise the contract is the concrete function or class itself. Never include declarations hidden inside the boundary or implementation code beyond `...` bodies.
 - **Ingress Caller & Terminal Sink Audit:**
   - *Caller Audit (Ingress):* Audit all existing callers across the workspace that pass the `Caller Audit` test above (requiring only a call-expression update). List every such caller, or certify: *"Caller Audit: 0 pure call-expression callers found via search."*
   - *Terminal Sink Audit (Dataflow):* Trace return values, state mutations, or emitted events downstream to their terminal sink to prove data reaches its final destination.
 - **Retired Forms:** The Retirement Inventory entries this milestone makes obsolete, each at its location with its fate and the count of references that remain.
 - **File Manifest:** List every file this milestone creates, modifies, or deletes as `[NEW]`, `[MODIFY]`, or `[DELETE]` with a clickable link `[basename](file:///path#L<start>-L<end>)` whose `#L<start>-L<end>` range spans the exact lines this milestone mutates.
 
-**Completion Criterion:** Every milestone declares every field of both tiers; `Caller Coupling` accounts for every boundary interaction at the inspected caller `file:line` sites and served scenarios `S-xx` (or Milestone $N$); every declaration in `Literal Contracts` has a passing `Declaration Survival` entry and requires nothing ruled **absorb**; and every Retirement Inventory entry is resolved by the milestone that makes its form obsolete.
+**Completion Criterion:** Every milestone declares every field of both tiers; `Caller Coupling` rules individually on every boundary interaction at the inspected caller `file:line` sites and served scenarios `S-xx` (or Milestone $N$); `Declaration Survival` rules individually on every declaration in `Literal Contracts` citing production callers outside the boundary; `Literal Contracts` contains only `Declaration Survival` survivors exposed outside the boundary, requires nothing ruled **absorb**, and uses `...` bodies with zero hidden helpers or implementation code; and every Retirement Inventory entry (including any pre-change exposure hidden inside the boundary) is resolved by the milestone that makes its form obsolete.
 
 ---
 
@@ -159,8 +161,8 @@ Compile or finalize the plan in `<Artifact Directory>/implementation_plan.md` (s
 
 #### Technical Decisions & Physical Contracts
 - **Seam Derivation:**
-  - **Caller Coupling:** <caller code at file:line or user action in S-xx>: <originates in caller's job -> **keep** | absorbed by <owner> inside boundary -> **absorb**>
-  - **Declaration Survival:** <Declaration>: <concept & replaced pre-change form>; deleting it <complexity reappearing at callers> -> **keep**
+  - **Caller Coupling:** <single caller interaction at file:line or user action in S-xx>: <originates in caller's job -> **keep** | absorbed by <owner> inside boundary -> **absorb**>
+  - **Declaration Survival:** <single exposed declaration>: <concept & replaced pre-change form>; removing it from the boundary <complexity reappearing at production callers outside the boundary (file:line / Milestone N / S-xx)> -> **keep**
 - **Literal Contracts & Bound Structures:**
   ```python
   @dataclass(frozen=True)

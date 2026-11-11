@@ -13,7 +13,7 @@ The principles below are not peers. Two are **roots**: skip one and a family of 
 | Principle | Failures when it is skipped | Sections |
 |---|---|---|
 | **Root 1, the decision**: each independent decision is its own question, and each question gets a judge, a closed or open form, and for an open one a cause, which generality measures | enumeration (case templates, checklist, disguised enumeration), overfit, underfit, pseudo-generality, fabricated authority, exemplar anchoring | *Generality*, *Examples* |
-| **Root 2, the goal**: each instruction states the state to reach, and each condition can be decided when it must be | negation, premature completion, a rule never reached | *Goals and conditions*, *Steps and reference*, *Splitting*, *Authoring protocol* |
+| **Root 2, the goal**: each instruction states the state to reach, each condition can be decided when it must be, and each open rule derives the output before the output is written | negation, rationalization, premature completion, a rule never reached | *Goals and conditions*, *Application*, *Steps and reference*, *Splitting*, *Authoring protocol* |
 | **Independent**: attention spent only where it is needed | sprawl, duplication, contradiction, no-op, sediment | *Words*, *Placement*, *Pruning* |
 
 **Root 1 comes first.** It carries the skill's value: a run meets situations no author saw, and only a general instruction decides them. An agent gets the independent principles mostly right on its own and fails root 1 in almost every first draft; a skill that loses root 1 is worthless whatever else it gets right. Root 2 ranks between them.
@@ -88,6 +88,10 @@ Every rule is reached one of two ways: a step applies it, or it opens with **Whe
 **Negation** is steering by prohibition. A prohibition says what is wrong and leaves what is right unsaid, so the agent learns only where not to go. Test a text by deleting its prohibitions: if what remains no longer tells the agent what to produce, the prohibitions were doing the steering. Rewrite each such prohibition as the goal it was guarding, the state in which the forbidden thing does not occur.
 
 A prohibition earns a place only as a **guardrail**: right after the goal it protects, naming a failure that runs carrying that goal still showed, so the agent cannot rationalize its default habit as serving the goal.
+
+## Application
+
+Generated tokens condition only the tokens emitted after them. **When** an open-set rule governs output a run constructs, write the instruction so that before emitting that output, the agent identifies every concrete item in the case that falls under the rule's cause, states the cause's ruling on each item individually while holding the other items fixed (citing where it sits in the work), and constructs the output strictly from those individual rulings, checked for full coverage by the completion criterion (*Steps and reference*). Grouping items into a shared ruling evaluates the group as a unit so unneeded items pass on another item's merit; defining which items to inspect by listing surface shapes relapses into *Enumeration*; stating the rule only as a check on finished output, or asking for prose justifying selected choices, lets the agent generate from habit first and justify it in the rule's words afterward (**rationalization**)—or never run the rule during generation when no justification is emitted.
 
 ## Steps and reference
 

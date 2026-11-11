@@ -548,7 +548,15 @@ class TestContextBudgetHooks(unittest.TestCase):
         )
         self.assertEqual(len(ci_res_1.get("injectSteps", [])), 1)
 
-        # Turn 2 with same tokens & same compaction_count does not re-inject
+        # Turn 2 with +39,999 token growth (below 40k threshold) & same compaction_count does not re-inject
+        self._append_planner_step(70_000, 0, output_tokens=299)
+        sync_conversation_and_thresholds(
+            conv_id=self.conv_id,
+            fallback_model_name="Gemini 4 Argon (High)",
+            transcript_path=str(self.transcript_file),
+            state_dir=self.state_dir,
+            thresholds_file=self.thresholds_file,
+        )
         ci_res_2 = json.loads(
             subprocess.run(
                 ["bash", str(ci_script)],
@@ -560,6 +568,27 @@ class TestContextBudgetHooks(unittest.TestCase):
             ).stdout
         )
         self.assertEqual(ci_res_2.get("injectSteps"), [])
+
+        # Turn 3 reaching exactly +40,000 token growth (30,300 -> 70,300) re-injects
+        self._append_planner_step(70_000, 0, output_tokens=300)
+        sync_conversation_and_thresholds(
+            conv_id=self.conv_id,
+            fallback_model_name="Gemini 4 Argon (High)",
+            transcript_path=str(self.transcript_file),
+            state_dir=self.state_dir,
+            thresholds_file=self.thresholds_file,
+        )
+        ci_res_growth = json.loads(
+            subprocess.run(
+                ["bash", str(ci_script)],
+                input=json.dumps({"conversationId": self.conv_id}),
+                text=True,
+                capture_output=True,
+                env=env,
+                check=True,
+            ).stdout
+        )
+        self.assertEqual(len(ci_res_growth.get("injectSteps", [])), 1)
 
         # When tracker records a new compaction (compaction_count=2), critical_instructions.sh immediately re-injects
         self._append_step({"type": "USER_INPUT", "source": "USER_EXPLICIT", "content": "/compact"})
