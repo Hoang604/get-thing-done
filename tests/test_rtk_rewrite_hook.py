@@ -38,8 +38,21 @@ class TestRtkRewriteHook(unittest.TestCase):
             '      echo "rtk rg -n foo src/"\n'
             "      exit 0\n"
             "      ;;\n"
-            '    "rg -n foo src/ && git status")\n'
-            '      echo "rtk rg -n foo src/ && rtk git status"\n'
+            '    "pnpm exec tsc --noEmit")\n'
+            '      echo "rtk tsc --noEmit"\n'
+            "      exit 3\n"
+            "      ;;\n"
+            '    "pnpm install")\n'
+            '      echo "rtk pnpm install"\n'
+            "      exit 3\n"
+            "      ;;\n"
+            '    *" && git status")\n'
+            '      prefix="${2% && git status}"\n'
+            '      case "$prefix" in\n'
+            '        "rg -n foo src/") prefix="rtk rg -n foo src/" ;;\n'
+            '        "pnpm exec tsc --noEmit") prefix="rtk tsc --noEmit" ;;\n'
+            "      esac\n"
+            '      echo "$prefix && rtk git status"\n'
             "      exit 0\n"
             "      ;;\n"
             '    "echo hello")\n'
@@ -111,6 +124,31 @@ class TestRtkRewriteHook(unittest.TestCase):
             {
                 "decision": "allow",
                 "overwrite": {"CommandLine": "rg -n foo src/ && rtk git status"},
+            },
+        )
+
+    def test_excludes_pnpm_from_rtk_rewriting(self) -> None:
+        for cmd in ("pnpm exec tsc --noEmit", "pnpm install"):
+            res_single = evaluate_rtk_rewrite(
+                {"name": "run_command", "args": {"CommandLine": cmd}},
+                rtk_bin=str(self.fake_rtk),
+            )
+            self.assertEqual(res_single, {"decision": "allow"})
+
+        res_compound = evaluate_rtk_rewrite(
+            {
+                "name": "run_command",
+                "args": {"CommandLine": "pnpm exec tsc --noEmit && git status"},
+            },
+            rtk_bin=str(self.fake_rtk),
+        )
+        self.assertEqual(
+            res_compound,
+            {
+                "decision": "allow",
+                "overwrite": {
+                    "CommandLine": "pnpm exec tsc --noEmit && rtk git status"
+                },
             },
         )
 

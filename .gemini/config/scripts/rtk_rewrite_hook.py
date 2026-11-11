@@ -9,8 +9,12 @@ from pathlib import Path
 
 RTK_TIMEOUT_SECONDS: float = 4.0
 EXCLUDED_RTK_SUBCOMMANDS_RE: re.Pattern[str] = re.compile(
-    r"\brtk\s+(?=(?:rg|grep|fd|find)\b)"
+    r"\brtk\s+(?=(?:rg|grep|fd|find|pnpm)\b)"
 )
+EXCLUDED_COMMAND_PREFIX_RE: re.Pattern[str] = re.compile(
+    r"(?<![\w/-])pnpm(?![\w.-])"
+)
+PNPM_MASK_TOKEN: str = "__rtk_excluded_pnpm__"
 
 
 def strip_excluded_rtk_rewrites(command_line: str) -> str:
@@ -33,9 +37,12 @@ def resolve_rtk_binary() -> str:
 def rewrite_command_with_rtk(command_line: str, rtk_bin: str) -> str:
     if not rtk_bin or not command_line.strip():
         return command_line
+    masked_command: str = EXCLUDED_COMMAND_PREFIX_RE.sub(
+        PNPM_MASK_TOKEN, command_line
+    )
     try:
         completed: subprocess.CompletedProcess[str] = subprocess.run(
-            [rtk_bin, "rewrite", command_line],
+            [rtk_bin, "rewrite", masked_command],
             capture_output=True,
             text=True,
             timeout=RTK_TIMEOUT_SECONDS,
@@ -45,7 +52,10 @@ def rewrite_command_with_rtk(command_line: str, rtk_bin: str) -> str:
         return command_line
 
     if completed.returncode in (0, 3):
-        rewritten: str = strip_excluded_rtk_rewrites(completed.stdout.strip())
+        unmasked: str = completed.stdout.strip().replace(
+            PNPM_MASK_TOKEN, "pnpm"
+        )
+        rewritten: str = strip_excluded_rtk_rewrites(unmasked)
         if rewritten:
             return rewritten
     return command_line
