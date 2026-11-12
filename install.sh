@@ -9,6 +9,8 @@ SRC_DIR="$SCRIPT_DIR/.gemini"
 TARGET_DIR="$HOME/.gemini"
 SRC_AGENTS_DIR="$SCRIPT_DIR/.agents"
 TARGET_AGENTS_DIR="$HOME/.agents"
+SRC_CODEX_HOOKS_DIR="$SCRIPT_DIR/.codex"
+TARGET_CODEX_DIR="${CODEX_HOME:-$HOME/.codex}"
 
 if [ ! -d "$SRC_DIR" ]; then
     echo "Error: Source directory $SRC_DIR not found." >&2
@@ -57,6 +59,55 @@ chmod +x "$TARGET_DIR/config/scripts/skill_usage_tracker.py"
 chmod +x "$TARGET_DIR/config/scripts/loop_hook.py"
 chmod +x "$TARGET_DIR/config/scripts/decision_harvester_hook.py"
 chmod +x "$TARGET_DIR/config/scripts/worktree_isolation_guard.py"
+
+# Install Codex hooks and merge them with existing user hooks.
+if [ -d "$SRC_CODEX_HOOKS_DIR/hooks" ]; then
+    echo "  Source (Codex hooks): $SRC_CODEX_HOOKS_DIR/hooks"
+    echo "  Target (Codex hooks): $TARGET_CODEX_DIR/hooks"
+    mkdir -p "$TARGET_CODEX_DIR/hooks"
+    cp -r "$SRC_CODEX_HOOKS_DIR/hooks/." "$TARGET_CODEX_DIR/hooks/"
+    chmod +x "$TARGET_CODEX_DIR/hooks/critical_instructions.sh"
+
+    CODEX_HOOKS_SRC="$SRC_CODEX_HOOKS_DIR/hooks.json.template"
+    CODEX_HOOKS_DST="$TARGET_CODEX_DIR/hooks.json"
+    python3 - "$CODEX_HOOKS_SRC" "$CODEX_HOOKS_DST" <<'PYEOF'
+import json
+import os
+import shutil
+import sys
+
+src, dst = sys.argv[1], sys.argv[2]
+
+with open(src, encoding="utf-8") as f:
+    incoming = json.load(f)
+
+existing = {}
+if os.path.exists(dst):
+    try:
+        with open(dst, encoding="utf-8") as f:
+            existing = json.load(f)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        backup = dst + ".bak"
+        shutil.copy2(dst, backup)
+        print(f"    Existing Codex hooks not valid JSON, backed up to {backup}")
+
+def merge(base, override):
+    result = dict(base)
+    for key, value in override.items():
+        if isinstance(value, dict) and isinstance(result.get(key), dict):
+            result[key] = merge(result[key], value)
+        elif isinstance(value, list) and isinstance(result.get(key), list):
+            result[key] = result[key] + [item for item in value if item not in result[key]]
+        else:
+            result[key] = value
+    return result
+
+merged = merge(existing, incoming)
+with open(dst, "w", encoding="utf-8") as f:
+    json.dump(merged, f, indent=2, ensure_ascii=False)
+    f.write("\n")
+PYEOF
+fi
 
 rm -f "$TARGET_DIR/config/scripts/init-python-agent.sh" "$HOME/.local/bin/init-python-agent"
 mkdir -p "$HOME/.local/bin"

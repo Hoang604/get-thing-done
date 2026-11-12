@@ -1,0 +1,66 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "^compact$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CODEX_HOME:-$HOME/.codex}/hooks/critical_instructions.sh\"",
+            "timeout": 15,
+            "statusMessage": "Reloading critical instructions after compaction"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CODEX_HOME:-$HOME/.codex}/hooks/critical_instructions.sh\"",
+            "timeout": 15,
+            "statusMessage": "Loading critical instructions"
+          }
+        ]
+      }
+    ],
+    "PostModelRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CODEX_HOME:-$HOME/.codex}/hooks/critical_instructions.sh\"",
+            "timeout": 10,
+            "statusMessage": "Updating context token tracker"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CODEX_HOME:-$HOME/.codex}/hooks/critical_instructions.sh\"",
+            "timeout": 10,
+            "statusMessage": "Checking context checkpoint threshold"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CODEX_HOME:-$HOME/.codex}/hooks/critical_instructions.sh\"",
+            "timeout": 15,
+            "statusMessage": "Checking critical instruction interval"
+          }
+        ]
+      }
+    ]
+  }
+}

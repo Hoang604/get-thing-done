@@ -137,12 +137,12 @@ fi
 if [ "$ALLOW_TESTS" -eq 1 ]; then
     BLOCKS+="# Testing Standard
 
-Every test you write must earn a **REAL** verdict under all four rules:
+A test earns a **REAL** verdict only when it satisfies all 4 criteria below. **When** writing or modifying tests, before writing any test code, derive the test suite directly from the product code under consideration by explicitly outputting the 4 items below for each behavioral commitment (with \`file:line\` coordinates), discard any item that fails any criterion, and write test code strictly from the surviving items:
 
-1. **Contract.** The test guards a rule that the code under test promises to whoever calls it or reads its output, and the rule holds for every valid input. State that promise in one sentence that quotes none of the test's literal values and leaves no room for an output that satisfies the sentence while breaking what a caller of that behavior relies on. If the only sentence you can write repeats the test's expected value, the test pins an outcome, not a contract.
-2. **Kills a mutant.** A plausible edit to one product line (\`file:line\`, old → new) that breaks the rule in 1 must be carried by product logic to an assertion and turn it red, where no other REAL test in scope already kills it just as directly. Every part of the outcome that the rule in 1 determines for this test's input must be checked by an assertion, so that no plausible edit to a product line can violate the rule in 1 on this input and still leave the test green (a **surviving mutant**). If the values being compared travel from the test's setup to its assertion without passing through any product decision, no product mutant can reach that assertion.
-3. **Survives refactors.** Every edit that keeps the contract leaves the test green. Each assertion may observe only what the contract promises. Anything else it observes is something a refactor is allowed to change.
-4. **Reaches the product.** The test enters the product the same way its real callers do, starts from state the real path can produce, and gets the same outcome on every run in the tier where it is filed. Stand-ins are used only at out-of-process boundaries that cannot run locally in the test tier, and each stand-in implements the boundary's stateful contract rather than recording calls.
+1. **Contract**: State in one sentence the rule that the code at \`file:line\` promises to its callers or output readers across every valid input without quoting the test's literal values; discard if it only repeats a fixed expected value or pins static wording (pinning outcome).
+2. **Kills a mutant**: Specify each plausible edit to a product line (\`file:line\`, \`old → new\`) that breaks the rule in 1 and propagates to the output without already being killed directly by another REAL test in scope, covering every part of the outcome determined by the rule in 1 so no **surviving mutant** escapes; skip writing the test if no such mutant exists.
+3. **Survives refactors**: Pinpoint the exact part of the outcome promised by the contract in 1 for assertions so every edit preserving the contract leaves the test green; never assert internal details or static wording that a refactor is allowed to change.
+4. **Reaches the product**: Specify the entrypoint entering product code identically to how real callers invoke it with initial state produced by the real flow, and when crossing an out-of-process boundary specify a stateful stand-in (stateful contract) rather than a call-counting mock.
 
 "
 else
@@ -153,47 +153,80 @@ else
 "
 fi
 
+MANAGED_BLOCK_START="<!-- GTD-INIT:START -->"
+MANAGED_BLOCK_END="<!-- GTD-INIT:END -->"
+
 if [ -n "$BLOCKS" ]; then
-    TMP_FILE=$(mktemp)
-    printf "%s" "$BLOCKS" > "$TMP_FILE"
-    if [ -f "$TARGET_FILE" ]; then
-        cat "$TARGET_FILE" >> "$TMP_FILE"
-        echo "Injecting rules to top of existing $TARGET_FILE..."
-    else
-        echo "Creating new $TARGET_FILE..."
-    fi
-    mv "$TMP_FILE" "$TARGET_FILE"
-    echo "✓ Rules injected into $PWD/$TARGET_FILE"
+    GTD_INIT_BLOCKS="$BLOCKS" python3 - "$TARGET_FILE" "$MANAGED_BLOCK_START" "$MANAGED_BLOCK_END" <<'PYEOF'
+import os
+import re
+import sys
+from pathlib import Path
+
+target_path = Path(sys.argv[1])
+start_marker = sys.argv[2]
+end_marker = sys.argv[3]
+inner = os.environ["GTD_INIT_BLOCKS"].strip()
+managed_block = f"{start_marker}\n{inner}\n{end_marker}"
+
+pattern = re.compile(
+    re.escape(start_marker) + r".*?" + re.escape(end_marker),
+    re.DOTALL,
+)
+
+if target_path.is_file():
+    existing = target_path.read_text(encoding="utf-8")
+    if pattern.search(existing):
+        updated = pattern.sub(lambda _: managed_block, existing, count=1)
+        action = "Replaced existing GTD init block in"
+    elif existing.strip():
+        updated = f"{managed_block}\n\n{existing.lstrip()}"
+        action = "Injected GTD init block to top of"
+    else:
+        updated = f"{managed_block}\n"
+        action = "Injected GTD init block into"
+else:
+    updated = f"{managed_block}\n"
+    action = "Created"
+
+tmp_path = target_path.with_suffix(target_path.suffix + ".tmp")
+tmp_path.write_text(updated, encoding="utf-8")
+os.replace(tmp_path, target_path)
+print(f"✓ {action} {target_path.resolve()}")
+PYEOF
 fi
 
-# Step 3: Initialize .gtd/config.yml with two prompts:
-# 1. Enable decision harvester hook?
-# 2. N messages interval (default: 10)
-ENABLE_RAW=""
-read -r -p "Enable GTD decision-harvesting hook in .gtd/config.yml? [Y/n]: " ENABLE_RAW || true
-ENABLE_CLEAN="${ENABLE_RAW,,}"
-ENABLE_CLEAN="${ENABLE_CLEAN// /}"
-
-ENABLED_VAL="true"
-if [[ "$ENABLE_CLEAN" == "n" || "$ENABLE_CLEAN" == "no" || "$ENABLE_CLEAN" == "false" || "$ENABLE_CLEAN" == "0" ]]; then
-    ENABLED_VAL="false"
-fi
-
-N_RAW=""
-read -r -p "Enter message interval N (default: 10): " N_RAW || true
-N_CLEAN="${N_RAW// /}"
-if [[ -z "$N_CLEAN" ]]; then
-    N_VAL=10
-elif [[ "$N_CLEAN" =~ ^[0-9]+$ ]] && [ "$N_CLEAN" -ge 1 ]; then
-    N_VAL="$N_CLEAN"
+ALT_CONFIG_FILE="$GTD_DIR/config.yaml"
+if [ -f "$CONFIG_FILE" ]; then
+    echo "✓ Keeping existing $PWD/$CONFIG_FILE"
+elif [ -f "$ALT_CONFIG_FILE" ]; then
+    echo "✓ Keeping existing $PWD/$ALT_CONFIG_FILE"
 else
-    echo "Invalid interval '$N_RAW', falling back to default N = 10."
-    N_VAL=10
-fi
+    ENABLE_RAW=""
+    read -r -p "Enable GTD decision-harvesting hook in .gtd/config.yml? [Y/n]: " ENABLE_RAW || true
+    ENABLE_CLEAN="${ENABLE_RAW,,}"
+    ENABLE_CLEAN="${ENABLE_CLEAN// /}"
 
-mkdir -p "$GTD_DIR/decisions"
+    ENABLED_VAL="true"
+    if [[ "$ENABLE_CLEAN" == "n" || "$ENABLE_CLEAN" == "no" || "$ENABLE_CLEAN" == "false" || "$ENABLE_CLEAN" == "0" ]]; then
+        ENABLED_VAL="false"
+    fi
 
-cat << EOF > "$CONFIG_FILE"
+    N_RAW=""
+    read -r -p "Enter message interval N (default: 10): " N_RAW || true
+    N_CLEAN="${N_RAW// /}"
+    if [[ -z "$N_CLEAN" ]]; then
+        N_VAL=10
+    elif [[ "$N_CLEAN" =~ ^[0-9]+$ ]] && [ "$N_CLEAN" -ge 1 ]; then
+        N_VAL="$N_CLEAN"
+    else
+        echo "Invalid interval '$N_RAW', falling back to default N = 10."
+        N_VAL=10
+    fi
+
+    mkdir -p "$GTD_DIR/decisions"
+
+    cat << EOF > "$CONFIG_FILE"
 enabled: $ENABLED_VAL
 every_n_messages: $N_VAL
 decisions_dir: ".gtd/decisions"
@@ -216,4 +249,5 @@ decisions_dir: ".gtd/decisions"
 #     extra_reminder_rules: ""
 EOF
 
-echo "✓ Initialized $PWD/$CONFIG_FILE (enabled: $ENABLED_VAL, every_n_messages: $N_VAL)"
+    echo "✓ Initialized $PWD/$CONFIG_FILE (enabled: $ENABLED_VAL, every_n_messages: $N_VAL)"
+fi
