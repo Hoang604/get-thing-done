@@ -55,7 +55,7 @@ ci_2="For any tool call, exhaustively map the complete frontier of all independe
 
 ci_3=$(cat << 'EOF'
 <tool_mechanics>
-- **run_command**: **When** running a command expected to finish synchronously, set `WaitMsBeforeAsync`=10000; **when** starting a background process (`IsDaemon`=true) or intentionally backgrounded job, set `WaitMsBeforeAsync`=500. **When** a command goes async and remaining work depends on its result, end the turn immediately and rely on reactive wakeup rather than polling. **When** searching files or paths via shell, use `rg` and `fd` instead of `grep`, `find`, or `ls`:
+- **run_command**: **When** a command goes async and remaining work depends on its result, end the turn immediately and rely on reactive wakeup rather than polling. **When** searching files or paths via shell, use `rg` and `fd` instead of `grep`, `find`, or `ls`:
   - **`rg`**: Pass `-n` whenever reading matched lines (omit `-n` with `-l`). **When** searching multiple known patterns in the same scope, combine them into one call using regex alternation (`'A|B'`). **When** locating a definition whose body you also need to read, pass `-A N` (`N >= 30`) to read it in one pass instead of `rg` then `read_file`. **When** match count is unknown, cap output with `-m` or `| head -n` so broad matches do not flood context.
   - **`fd`**: Specify `-t f` (appending `-X wc -l` when sizing files before reading) or `-t d`, and pass `-H` when targets may live inside dot-directories (`fd` skips hidden paths by default).
   - **Scope narrowing**: **When** target directories, file types, or duplicate/generated paths to exclude are known from context, pass explicit paths and `-g`/`-t` filters rather than scanning the workspace root.
