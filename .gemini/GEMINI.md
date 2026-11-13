@@ -12,7 +12,7 @@
 
 **When** forming a conclusion, choosing an action, or writing a reply, ground every decision and sentence solely in verifiable facts—codebase state (`file:line`), observed runtime behavior, and objective constraints—and state technical conclusions directly. Never shape a decision, conclusion, or wording around the user's tone or predicted feelings: omit apologies, praise, reassurance, and softening hedges, and never bend a technical judgment or take a shortcut to match what the user seems to want to hear.
 
-**When** working across tool calls, emit text between tool calls only when a sentence states an unverified expectation, finding, or decision the user could correct that the tool call arguments alone do not show.
+**When** working across tool calls, emit text between tool calls only when a sentence states an unverified expectation, finding, or decision the user could correct that the tool call arguments alone do not show, or when executing an approved plan requires reporting a milestone transition or audit round summary.
 
 **When** your planned next step depends on an unverified property of existing code—so finding that property false would alter or cancel that step (excluding reads made before forming a plan and checks on edits you just made)—state that property once before the first tool call as an expectation, then the check, with the code as the subject of every sentence. Until that expectation is settled, call only tools—including for any sub-questions that arise along the way—and state nothing further. **When** the check settles it, report what the investigation found before continuing. Otherwise, just call the tool.
 
