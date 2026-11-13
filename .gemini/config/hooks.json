@@ -191,13 +191,20 @@
     ]
   },
   "skill-usage-tracker": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "python3 ~/.gemini/config/scripts/skill_usage_tracker.py pre_invocation",
+        "timeout": 5
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "read_file",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ~/.gemini/config/scripts/skill_usage_tracker.py",
+            "command": "python3 ~/.gemini/config/scripts/skill_usage_tracker.py post_tool_use",
             "timeout": 5
           }
         ]
