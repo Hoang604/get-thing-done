@@ -182,9 +182,6 @@ def parse_git_worktree_add_target(
             )
             continue
 
-        if tokens[0] == "rtk" and len(tokens) >= 2 and tokens[1] == "git":
-            tokens = tokens[1:]
-
         if tokens[0] != "git":
             continue
 
@@ -258,9 +255,6 @@ def is_git_worktree_remove_for_target(
                 else (current_dir / cd_path).resolve()
             )
             continue
-
-        if tokens[0] == "rtk" and len(tokens) >= 2 and tokens[1] == "git":
-            tokens = tokens[1:]
 
         if tokens[0] != "git":
             continue
@@ -357,9 +351,6 @@ def _command_enters_worktree(
                 else (main_root / cand).resolve()
             )
             return _is_subpath(resolved, worktree_path)
-
-        if tokens[0] == "rtk" and len(tokens) >= 2 and tokens[1] == "git":
-            tokens = tokens[1:]
 
         if tokens[0] == "git" and len(tokens) >= 3 and tokens[1] == "-C":
             raw_c: str = _resolve_shell_vars(tokens[2], env_vars)

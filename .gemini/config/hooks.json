@@ -104,20 +104,6 @@
       }
     ]
   },
-  "rtk-rewrite": {
-    "PreToolUse": [
-      {
-        "matcher": "run_command",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 ~/.gemini/config/scripts/rtk_rewrite_hook.py",
-            "timeout": 5
-          }
-        ]
-      }
-    ]
-  },
   "run-command-wait": {
     "PreToolUse": [
       {
