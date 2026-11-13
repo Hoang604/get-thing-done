@@ -471,10 +471,10 @@ case "$MODEL" in
       PRICE_CACHE=0.15
       PRICE_OUT=9.00
       ;;
-  *"3.8 Flash"*)
+  *"4 Hydrogen"*)
       PRICE_IN=1.50
-      PRICE_CACHE=0.15
-      PRICE_OUT=7.00
+      PRICE_CACHE=0.075
+      PRICE_OUT=7.50
       ;;
   *"4 Argon"*)
       PRICE_IN=2.0
@@ -491,6 +491,7 @@ case "$MODEL" in
       PRICE_CACHE=0.075
       PRICE_OUT=3.5
       ;;
+
   *"Claude Sonnet 4.6"*)
       PRICE_IN=3.00
       PRICE_CACHE=0.30
