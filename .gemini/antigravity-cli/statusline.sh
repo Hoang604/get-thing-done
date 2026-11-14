@@ -464,6 +464,7 @@ CTX="${FG_GRAY}ctx ${BAR_COLOR}${BAR} ${NUM_COLOR}${PCT_FMT}%${R}"
 
 CUMULATIVE_IN=0
 CUMULATIVE_CACHE=0
+CUMULATIVE_MAX_CACHE=0
 CUMULATIVE_OUT=0
 CUMULATIVE_COST_IN="0.0000"
 CUMULATIVE_COST_CACHE="0.0000"
@@ -525,6 +526,16 @@ if [ -n "$CONV_ID" ]; then
   CUMULATIVE_CACHE=$(cat "${STATE_FILE}.cache" 2>/dev/null || echo "0")
   CUMULATIVE_OUT=$(cat "${STATE_FILE}.out" 2>/dev/null || echo "0")
   CUMULATIVE_COST=$(cat "${STATE_FILE}.cost" 2>/dev/null || echo "0.0000")
+  PREV_STEP_IN=$(cat "${STATE_FILE}.prev_in" 2>/dev/null || echo "0")
+
+  if [ -f "${STATE_FILE}.max_cache" ]; then
+      CUMULATIVE_MAX_CACHE=$(cat "${STATE_FILE}.max_cache" 2>/dev/null || echo "0")
+  else
+      CUMULATIVE_MAX_CACHE="$CUMULATIVE_CACHE"
+      if [ "$CUMULATIVE_MAX_CACHE" -gt 0 ]; then
+          echo "$CUMULATIVE_MAX_CACHE" > "${STATE_FILE}.max_cache"
+      fi
+  fi
 
   if [ -f "${STATE_FILE}.cost_in" ]; then
       CUMULATIVE_COST_IN=$(cat "${STATE_FILE}.cost_in" 2>/dev/null || echo "0.0000")
@@ -549,8 +560,20 @@ if [ -n "$CONV_ID" ]; then
   fi
 
   if [ "$STEP_TOTAL_ACTIVITY" -gt 0 ] && [ "$USAGE_SIG" != "$LAST_USAGE_SIG" ]; then
+      if [ "$PREV_STEP_IN" -le 0 ]; then
+          STEP_MAX_CACHE="$CACHE_TOKENS"
+      elif [ "$STEP_IN_TOKENS" -lt "$PREV_STEP_IN" ]; then
+          STEP_MAX_CACHE="$STEP_IN_TOKENS"
+      else
+          STEP_MAX_CACHE="$PREV_STEP_IN"
+      fi
+      if [ "$CACHE_TOKENS" -gt "$STEP_MAX_CACHE" ]; then
+          STEP_MAX_CACHE="$CACHE_TOKENS"
+      fi
+
       CUMULATIVE_IN=$((CUMULATIVE_IN + STEP_IN_TOKENS))
       CUMULATIVE_CACHE=$((CUMULATIVE_CACHE + CACHE_TOKENS))
+      CUMULATIVE_MAX_CACHE=$((CUMULATIVE_MAX_CACHE + STEP_MAX_CACHE))
       CUMULATIVE_OUT=$((CUMULATIVE_OUT + OUT_TOKENS))
 
       CUMULATIVE_COST_IN=$(awk -v old="$CUMULATIVE_COST_IN" -v i="$COST_IN_TOKENS" -v pi="$PRICE_IN" \
@@ -566,6 +589,8 @@ if [ -n "$CONV_ID" ]; then
       echo "$USAGE_SIG" > "${STATE_FILE}.turn"
       echo "$CUMULATIVE_IN" > "${STATE_FILE}.sum"
       echo "$CUMULATIVE_CACHE" > "${STATE_FILE}.cache"
+      echo "$CUMULATIVE_MAX_CACHE" > "${STATE_FILE}.max_cache"
+      echo "$STEP_IN_TOKENS" > "${STATE_FILE}.prev_in"
       echo "$CUMULATIVE_OUT" > "${STATE_FILE}.out"
       echo "$CUMULATIVE_COST_IN" > "${STATE_FILE}.cost_in"
       echo "$CUMULATIVE_COST_CACHE" > "${STATE_FILE}.cost_cache"
@@ -578,9 +603,9 @@ IN_COMPACT=$(format_compact_num "$CUMULATIVE_IN")
 CACHE_COMPACT=$(format_compact_num "$CUMULATIVE_CACHE")
 OUT_COMPACT=$(format_compact_num "$CUMULATIVE_OUT")
 
-if [ "$CUMULATIVE_IN" -gt 0 ]; then
-  CACHE_HIT_PCT=$(LC_NUMERIC=C awk -v c="$CUMULATIVE_CACHE" -v t="$CUMULATIVE_IN" 'BEGIN { printf "%.1f", (c * 100) / t }')
-  CACHE_HIT_PCT_SHORT=$(LC_NUMERIC=C awk -v c="$CUMULATIVE_CACHE" -v t="$CUMULATIVE_IN" 'BEGIN { printf "%.0f", (c * 100) / t }')
+if [ "$CUMULATIVE_MAX_CACHE" -gt 0 ]; then
+  CACHE_HIT_PCT=$(LC_NUMERIC=C awk -v c="$CUMULATIVE_CACHE" -v m="$CUMULATIVE_MAX_CACHE" 'BEGIN { printf "%.1f", (c * 100) / m }')
+  CACHE_HIT_PCT_SHORT=$(LC_NUMERIC=C awk -v c="$CUMULATIVE_CACHE" -v m="$CUMULATIVE_MAX_CACHE" 'BEGIN { printf "%.0f", (c * 100) / m }')
 else
   CACHE_HIT_PCT="0.0"
   CACHE_HIT_PCT_SHORT="0"
