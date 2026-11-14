@@ -3,7 +3,7 @@ set -e
 
 # GTD Framework Clean Install Script
 # 1. Syncs source skills & agents inside the repo (wiping stale repo target copies)
-# 2. Removes all existing skills & agents in ~/.gemini and ~/.agents
+# 2. Removes all existing skills, agents & scripts in ~/.gemini and ~/.agents
 # 3. Runs install.sh to sync the current repo to global targets
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,12 +14,14 @@ echo "=== Step 1: Syncing workspace skills & agents from SSoT ==="
 "$SCRIPT_DIR/sync_workflows.sh"
 
 echo ""
-echo "=== Step 2: Cleaning existing skills & agents in target directories ==="
+echo "=== Step 2: Cleaning existing skills, agents & scripts in target directories ==="
 CLEAN_PATHS=(
+    "$SCRIPT_DIR/.gemini/config/scripts/__pycache__"
     "$TARGET_GEMINI/antigravity-cli/skills"
     "$TARGET_GEMINI/antigravity-cli/agents"
     "$TARGET_GEMINI/config/skills"
     "$TARGET_GEMINI/config/agents"
+    "$TARGET_GEMINI/config/scripts"
     "$TARGET_AGENTS/skills"
     "$TARGET_AGENTS/agents"
 )
