@@ -1,25 +1,30 @@
 #!/bin/bash
 set -euo pipefail
 
-# ─── ANSI Helpers (Standard 16-color palette only) ───────────────────────────
+# ─── ANSI Helpers (TrueColor 24-bit palette) ──────────────────────────────────
 R="\033[0m"         # Reset
 B="\033[1m"         # Bold
 I="\033[3m"         # Italic
 
-FG_RED="\033[31m"
-FG_YELLOW="\033[33m"
-FG_BLUE="\033[34m"
-FG_MAGENTA="\033[35m"
-FG_CYAN="\033[36m"
-FG_WHITE="\033[37m"
-FG_GRAY="\033[90m"
-FG_BRIGHT_RED="\033[91m"
-FG_BRIGHT_GREEN="\033[92m"
-FG_BRIGHT_YELLOW="\033[93m"
-FG_BRIGHT_BLUE="\033[94m"
-FG_BRIGHT_MAGENTA="\033[95m"
-FG_BRIGHT_CYAN="\033[96m"
-FG_BRIGHT_WHITE="\033[97m"
+FG_RED="\033[38;2;205;49;49m"
+FG_YELLOW="\033[38;2;229;229;16m"
+FG_BLUE="\033[38;2;36;114;200m"
+FG_MAGENTA="\033[38;2;188;63;188m"
+FG_CYAN="\033[38;2;65;145;210m"
+FG_WHITE="\033[38;2;229;229;229m"
+FG_GRAY="\033[38;2;128;134;148m"
+FG_BRIGHT_RED="\033[38;2;241;76;76m"
+FG_BRIGHT_GREEN="\033[38;2;51;218;122m"
+FG_BRIGHT_YELLOW="\033[38;2;245;245;67m"
+FG_BRIGHT_BLUE="\033[38;2;59;142;234m"
+FG_BRIGHT_MAGENTA="\033[38;2;192;97;203m"
+FG_BRIGHT_CYAN="\033[38;2;51;199;222m"
+FG_BRIGHT_WHITE="\033[38;2;255;255;255m"
+
+EFFORT_LOW_COLOR="\033[38;2;129;201;149m"
+EFFORT_MED_COLOR="\033[38;2;162;115;76m"
+EFFORT_HIGH_COLOR="\033[38;2;192;28;40m"
+EFFORT_XHIGH_COLOR="\033[38;2;163;71;186m"
 
 NUM_COLOR="${FG_BRIGHT_WHITE}${B}"
 
@@ -47,6 +52,7 @@ RAW_INPUT=$(cat)
   read -r PENDING_INPUTS
   read -r RUNNING_SUBAGENTS
   read -r TOOL_CONFIRM_PENDING
+  read -r EFFORT
   read -r DUMMY
 } <<< "$(
   echo "$RAW_INPUT" | jq -r '
@@ -70,8 +76,9 @@ RAW_INPUT=$(cat)
     (.pending_input_count // 0),
     ([.subagents[]? | select(.status == "running")] | length),
     (.tool_confirmation_pending // false),
+    (.model.effort // ""),
     "EOF"
-  ' 2>/dev/null || printf "idle\n0\n\nfalse\n\n80\n0\n0\n0\n0\n\n\n\n\n\n0\n0\n0\nfalse\nEOF\n"
+  ' 2>/dev/null || printf "idle\n0\n\nfalse\n\n80\n0\n0\n0\n0\n\n\n\n\n\n\n0\n0\n0\nfalse\n\nEOF\n"
 )"
 
 # ─── Write Raw Input to tmp/conversation_id/turn-<x>/statusline_input.json ───
@@ -369,11 +376,18 @@ fi
 # ─── Model ───────────────────────────────────────────────────────────────────
 M=""
 if [ -n "$MODEL" ]; then
+  case "${EFFORT,,}" in
+    low)    MODEL_COLOR="$EFFORT_LOW_COLOR" ;;
+    medium) MODEL_COLOR="$EFFORT_MED_COLOR" ;;
+    high)   MODEL_COLOR="$EFFORT_HIGH_COLOR" ;;
+    xhigh)  MODEL_COLOR="$EFFORT_XHIGH_COLOR" ;;
+    *)      MODEL_COLOR="$FG_BRIGHT_MAGENTA" ;;
+  esac
   if [ "$COLS" -lt 85 ]; then
     SHORT_MODEL=$(echo "$MODEL" | sed 's/^Gemini //;s/ (High)//;s/ (Low)//;s/ (Medium)//')
-    M="${FG_GRAY} ╱ ${FG_BRIGHT_MAGENTA}${I}${SHORT_MODEL}${R}"
+    M="${FG_GRAY} ╱ ${MODEL_COLOR}${I}${SHORT_MODEL}${R}"
   else
-    M="${FG_GRAY} ╱ ${FG_BRIGHT_MAGENTA}${I}${MODEL}${R}"
+    M="${FG_GRAY} ╱ ${MODEL_COLOR}${I}${MODEL}${R}"
   fi
 fi
 
