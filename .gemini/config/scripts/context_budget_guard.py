@@ -39,13 +39,10 @@ def build_warning_message(current_tokens: int, threshold_tokens: int) -> str:
     )
     return (
         "<critical_instructions>\n"
-        f"Context usage is at {pct:.1f}% ({current_tokens} / {threshold_tokens} tokens). THIS IS A BUDGET WARNING, NOT A COMPACTION PROMPT.\n"
-        "Auto-compaction triggers ONLY when your subsequent tool calls push tokens past 100% capacity mid-loop. Stopping tool calls or writing `<summary>` now freezes token growth below 100% and halts execution without compacting:\n"
-        f"1. **One-Time Notification Only**: Notify the user at most ONCE in this entire pre-compaction cycle (in one sentence, in their language, right now) that context is at {pct:.1f}%. NEVER repeat, re-announce, or mention context percentage or save status again on any subsequent tool step or turn.\n"
-        "2. **When context holds settled file edits or ledger/artifact updates not yet written to disk**: In your single one-sentence notice, state that you are saving `<file>` first before continuing `<next action>`; dispatch only those write/edit tool calls in this step, and on the very next step after they return, immediately and silently dispatch the tool calls for `<next action>` without repeating the context notice and without outputting `<summary>` or stopping.\n"
-        "3. **When all settled changes are already on disk and further task steps remain**: After your single one-sentence notice (if not already sent), immediately dispatch the next tool calls for the current task step now and silently keep dispatching tool calls on every following step until the harness wipes the turn for compaction.\n"
-        "4. **When all settled changes are already on disk and 100% of the task is finished**: Do not send a context warning or dispatch extra tool calls; deliver your normal final completion report and end your turn.\n"
-        "5. **Strict Prohibition (applies to this step and all subsequent steps before compaction)**: Never repeat the context-usage notice a second time, never output `<summary>`, `Context for governing # User Requests`, `Read-next working set`, or `Settled state and open work` in chat, and never end your turn after a save or read batch to wait for compaction—`<summary>` is written only when the harness explicitly prompts for it after wiping the conversation.\n"
+        f"Context usage is at {pct:.1f}% ({current_tokens} / {threshold_tokens} tokens). If this message denied a read/search tool call, that call is paused for this single step only and is already unlocked for your next response. Execute in order:\n"
+        f"1. **Context-Usage Notice**: **When** 100% of the user's request is already completed on disk, omit any context notice and deliver your normal final response; otherwise, in this response only, state a one-sentence notice in the user's language reporting that context is at {pct:.1f}% ({current_tokens} / {threshold_tokens} tokens) and naming any files being saved in this step—never mentioning context usage or save status again and never estimating or inventing a percentage on any step that did not just receive a new hook budget message.\n"
+        "2. **Persist Every Settled Change First**: **When** unwritten changes or uncompleted task steps remain, before dispatching any non-persistence tool call, inspect in your thoughts every change already determinable from context to any file whose creation or update is part of the current task under `<user_rules>`, and rule on each candidate change individually (holding other changes fixed and citing verified `file:line` facts in context) whether every codebase fact and `<user_rules>` check required to determine that change is already verified; when any change passes, dispatch only the `write_file`/`edit_file` calls for all passing changes in this step (emitting `<communication_model>`'s pre-edit rulings first if this is the task's first code edit)—never deferring a verified change until remaining files are read, never writing speculative edits that depend on unread facts, and never inventing scratch or summary files outside `<user_rules>`. *Completion criterion*: every already-verified change to an authorized task file is written to disk before any non-persistence tool call runs.\n"
+        "3. **Continue Normal Task Execution**: **When** all changes passing Step 2 are on disk (immediately in this response if none passed, or on the very next step as soon as Step 2's `write_file`/`edit_file` calls return), advance or finish the request by the exact same task-completion and user-interaction conditions as an unwarned turn—silently dispatching the next required tool calls (including re-dispatching any read/search call paused for 1 step by this guard) whenever unblocked task work remains, ending the turn only when the task reaches a genuine completion or user-input boundary, and writing `<summary>` (or `Compaction Summary Protocol` headings) only when the harness explicitly prompts for a compaction summary while the conversation is still in context. *Completion criterion*: execution continues without stopping after a save or emitting a premature `<summary>` until either the user's request reaches a real completion/input boundary or subsequent tool calls trigger the harness's compaction prompt.\n"
         "</critical_instructions>"
     )
 
@@ -55,9 +52,8 @@ def build_subsequent_block_message(current_tokens: int, threshold_tokens: int) -
         current_tokens, threshold_tokens, fallback=95.0
     )
     return (
-        f"DEFERRED FOR 1 STEP (context at {pct:.1f}%: {current_tokens}/{threshold_tokens} tokens): "
-        "This read/search call is paused for this single step so you can persist in-hand work to disk first. "
-        "The budget guard unlocks on the very next step—immediately re-dispatch this call as soon as your persist tool call returns, without outputting `<summary>` or ending your turn."
+        f"DEFERRED FOR 1 STEP (context at {pct:.1f}%: {current_tokens} / {threshold_tokens} tokens): "
+        "Paused for this single step alongside the context-budget instruction in this turn, and already unlocked for your next response—apply **Persist Every Settled Change First** and **Continue Normal Task Execution** there to re-dispatch this call right after any Step 2 writes return (or immediately in this response if none pass)."
     )
 
 
@@ -69,11 +65,8 @@ def build_premature_summary_continue_message(
     )
     return (
         "<critical_instructions>\n"
-        f"PREMATURE COMPACTION SUMMARY DETECTED (context is at {pct:.1f}%: {current_tokens} / {threshold_tokens} tokens — auto-compaction has NOT occurred yet).\n"
-        "The harness has NOT compacted the conversation and did NOT prompt you for a `<summary>`. Outputting `<summary>` (or `Context for governing # User Requests` / `Read-next working set` / `Settled state and open work`) in chat and stopping halts execution and prevents auto-compaction from triggering.\n"
-        "Resume the current task immediately in this turn:\n"
-        "1. Do NOT apologize, do NOT explain why you output `<summary>`, and do NOT output another summary or status recap.\n"
-        "2. Immediately dispatch the concrete tool calls (`edit_file`, `write_file`, `read_file`, `run_command`, etc.) for the next uncompleted step of the task, and keep calling tools continuously until the harness triggers auto-compaction on its own (or deliver the final completion report only if 100% of the task is already finished on disk).\n"
+        f"PREMATURE COMPACTION SUMMARY DETECTED (context is at {pct:.1f}%: {current_tokens} / {threshold_tokens} tokens — auto-compaction has NOT occurred and the harness has NOT prompted for `<summary>`).\n"
+        "**When** resuming from this premature summary, apply **Persist Every Settled Change First** and **Continue Normal Task Execution** from the context-budget instruction earlier in this cycle immediately in this turn—never apologizing, explaining why `<summary>` was emitted, or outputting another summary or status recap.\n"
         "</critical_instructions>"
     )
 
