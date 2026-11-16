@@ -20,8 +20,8 @@ from compact_threshold_tracker import (
     sync_conversation_and_thresholds,
 )
 
-WARN_RATIO: float = 0.90
-BLOCK_RATIO: float = 0.95
+WARN_RATIO: float = 0.95
+BLOCK_RATIO: float = 0.975
 NON_CONTINUABLE_STOP_REASONS: frozenset[str] = frozenset(
     {
         "USER_CANCELED",
@@ -41,7 +41,7 @@ def build_warning_message(current_tokens: int, threshold_tokens: int) -> str:
         "<critical_instructions>\n"
         f"Context usage is at {pct:.1f}% ({current_tokens} / {threshold_tokens} tokens). If this message denied a read/search tool call, that call is paused for this single step only and is already unlocked for your next response. Execute in order:\n"
         f"1. **Context-Usage Notice**: **When** 100% of the user's request is already completed on disk, omit any context notice and deliver your normal final response; otherwise, in this response only, state a one-sentence notice in the user's language reporting that context is at {pct:.1f}% ({current_tokens} / {threshold_tokens} tokens) and naming any files being saved in this step—never mentioning context usage or save status again and never estimating or inventing a percentage on any step that did not just receive a new hook budget message.\n"
-        "2. **Persist Every Settled Change First**: **When** unwritten changes or uncompleted task steps remain, before dispatching any non-persistence tool call, inspect in your thoughts every change already determinable from context to any file whose creation or update is part of the current task under `<user_rules>`, and rule on each candidate change individually (holding other changes fixed and citing verified `file:line` facts in context) whether every codebase fact and `<user_rules>` check required to determine that change is already verified; when any change passes, dispatch only the `write_file`/`edit_file` calls for all passing changes in this step (emitting `<communication_model>`'s pre-edit rulings first if this is the task's first code edit)—never deferring a verified change until remaining files are read, never writing speculative edits that depend on unread facts, and never inventing scratch or summary files outside `<user_rules>`. *Completion criterion*: every already-verified change to an authorized task file is written to disk before any non-persistence tool call runs.\n"
+        "2. **Persist Every Settled Change First**: **When** unwritten changes or uncompleted task steps remain, before dispatching any non-persistence tool call, inspect in your thoughts every change already determinable from context to any file whose creation or update is part of the current task under `<user_rules>`, and rule on each candidate change individually (holding other changes fixed and citing verified `file:line` facts in context) whether every codebase fact and `<user_rules>` check required to determine that change is already verified; when any change passes, dispatch only the `write_file`/`edit_file` calls for all passing changes in this step (emitting `<communication_model>`'s pre-edit rulings first if this is the task's first code edit)—never deferring a verified change until remaining files are read, never writing speculative edits that depend on unread facts. *Completion criterion*: every already-verified change to an authorized task file is written to disk before any non-persistence tool call runs.\n"
         "3. **Continue Normal Task Execution**: **When** all changes passing Step 2 are on disk (immediately in this response if none passed, or on the very next step as soon as Step 2's `write_file`/`edit_file` calls return), advance or finish the request by the exact same task-completion and user-interaction conditions as an unwarned turn—silently dispatching the next required tool calls (including re-dispatching any read/search call paused for 1 step by this guard) whenever unblocked task work remains, ending the turn only when the task reaches a genuine completion or user-input boundary, and writing `<summary>` (or `Compaction Summary Protocol` headings) only when the harness explicitly prompts for a compaction summary while the conversation is still in context. *Completion criterion*: execution continues without stopping after a save or emitting a premature `<summary>` until either the user's request reaches a real completion/input boundary or subsequent tool calls trigger the harness's compaction prompt.\n"
         "</critical_instructions>"
     )
@@ -49,7 +49,7 @@ def build_warning_message(current_tokens: int, threshold_tokens: int) -> str:
 
 def build_subsequent_block_message(current_tokens: int, threshold_tokens: int) -> str:
     pct: float = compute_usage_percentage(
-        current_tokens, threshold_tokens, fallback=95.0
+        current_tokens, threshold_tokens, fallback=97.50
     )
     return (
         f"DEFERRED FOR 1 STEP (context at {pct:.1f}%: {current_tokens} / {threshold_tokens} tokens): "
@@ -61,7 +61,7 @@ def build_premature_summary_continue_message(
     current_tokens: int, threshold_tokens: int
 ) -> str:
     pct: float = compute_usage_percentage(
-        current_tokens, threshold_tokens, fallback=95.0
+        current_tokens, threshold_tokens, fallback=97.50
     )
     return (
         "<critical_instructions>\n"

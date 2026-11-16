@@ -54,28 +54,34 @@ This invariant governs through two structural tests:
 - **Canonical Singularity:** The codebase must possess strictly one way to represent and execute each concept. If a change introduces or preserves any secondary representation, path, or intermediate translation—whether to maintain compatibility, spare edits outside the boundary, or minimize diff—it breaches canonical singularity and is residue.
 - **The Deletion Test:** Every structure the change introduces must be structurally essential to the present requirement. If removing it makes complexity collapse rather than reappear across callers, the structure is accidental transitional scaffolding and is residue.
 
-### D. Production Reality & Pattern Fidelity
+### D. Module Architecture Audit (Partitioning, Dependency DAG & Canonical Knowledge)
+Audit code reality and actual imports against the plan's `Canonical Knowledge Rulings`, each milestone's `Module & Edge Derivation`, and the three standards below:
+- **Module Partitioning:** **When** auditing module partitioning, inspect every audit-scope file individually while holding other files fixed (citing `file:line`) and emit one row per file in `Module Architecture Audit` before concluding `Module Architecture Status`: pass only when the file holds units sharing a single design decision (or internals that cannot be understood independently without reading each other), and fail whenever a file combines independent design decisions or splits conjoined internals of one decision across files.
+- **Ownership & Dependency Direction:** **When** auditing responsibility ownership and dependency direction, inspect every responsibility introduced or modified by the change and every touched or introduced cross-module dependency edge individually while holding other items fixed (citing `file:line`) and emit one row per item in `Module Architecture Audit` before concluding `Module Architecture Status`: pass only when each responsibility sits in the module whose abstraction defines that concept, every boundary introduces a distinct abstraction between its callers and callees, and all cross-module dependencies form a directed acyclic graph pointing from volatile specific details toward stable policies or general-purpose abstractions.
+- **Canonical Knowledge Fidelity:** **When** auditing canonical knowledge across the audit scope and `Canonical Knowledge Rulings`, inspect every multi-site or syntactically similar piece of knowledge individually while holding other items fixed (citing `file:line`) and emit one row per item in `Module Architecture Audit` before concluding `Module Architecture Status`: fail whenever occurrences encoding the same system knowledge that must change together remain un-consolidated, or whenever syntactically similar occurrences encoding independent decisions are merged behind shared flags or branching abstractions.
+
+### E. Production Reality & Pattern Fidelity
 - **Deterministic Hazards**: Identify any implementation that satisfies milestone outcomes in isolation but deterministically breaches governing system invariants under operating context. Document only failure modes with deterministic certainty; do NOT speculate on product preferences or critique cosmetic code style.
 - **Pattern & Idiomatic Fidelity**: Audit touched code against established codebase conventions and reusable primitives. Flag ad-hoc implementations or reinvented utilities where conforming to canonical patterns preserves correctness.
 - **Ambiguities & Assumptions**: When code correctness depends on unstated assumptions, document bifurcated real-world outcomes:
   - If the intended real-world outcome is X: code is correct (<technical reason>).
   - If the intended real-world outcome is Y: code is incorrect (<technical reason>).
 
-### E. Type Safety Audit
+### F. Type Safety Audit
 - **Honest Optional Fields**: Flag any field typed optional although the business always needs it, because some code fails to fill it. Every optional field must name the business situation in which it is empty. Apply this to touched fields and the fields beside them, proposing a non-optional type wherever no such situation exists.
 - **Checked Entry**: Flag outside data (user input, files, network, environment, other services) that reaches domain code without a runtime check converting it into strict types. Flag `Any`, `# type: ignore`, and type assertions that skip a runtime check.
 
-### F. Invariant & Boundary Integrity Audit
+### G. Invariant & Boundary Integrity Audit
 - **Pass or Reject**: Wherever data passes between parts of the system, code must pass valid data on unchanged or reject invalid data with an immediate error. The code that creates a value is responsible for its completeness; code that receives it never invents a substitute for a missing part.
 - **Fallback Verdict**: For every fallback (`??`, `or default`, `if x is None`), decide from the codebase and the business rules which case it is:
   - **INVALID (invented value)**: The value is required. The fallback must go so the code fails immediately; trace the value back to the code that created it and require that code to always supply it.
   - **VALID (real absence)**: Absence is a real business situation. A default is applied once, where data enters the system or where configuration is loaded, or both cases are handled with an explicit `if/else`, never with a placeholder object. A fallback inside domain code that hides missing data is **INVALID** without exception.
 
-### G. Root Cause Attribution, Remediation Closure & Plan Veto
+### H. Root Cause Attribution, Remediation Closure & Plan Veto
 **When** a discrepancy is discovered across any plane above, record one finding (`F-01`, `F-02`...) per root cause under `### Findings`, grouping every symptom it produces across the tables above under that single ID, and classify its closure:
 - **`CLOSED` (Execution Flaw — Closed Remediation):** The plan is sound, the specification already determines the exact code state to reach at the cited site—leaving the implementer no choice in how to write the fix—and the rest of the path is already verified under that state. Residue the plan omitted from its Retirement Inventory is an Execution Flaw: the change made the form obsolete, so the change resolves it.
 - **`OPEN` (Execution Flaw — Open Remediation):** The plan is sound, and fixing the finding leaves an implementation choice open, producing or exposing code whose path this audit round has not yet verified.
-- **`PLAN VETO` (Plan Flaw):** The plan itself incorporates transition residue or an architectural contradiction into its design, making a permanent, residue-free boundary unattainable under the approved contract.
+- **`PLAN VETO` (Plan Flaw):** The plan itself incorporates transition residue, an architectural contradiction, or a violation of `Module Partitioning`, `Ownership & Dependency Direction`, or `Canonical Knowledge` (in `Canonical Knowledge Rulings`, `Module & Edge Derivation`, or `File Manifest`) into its design, making a permanent, residue-free boundary unattainable under the approved contract. Only classify a module-architecture finding as `CLOSED` or `OPEN` when the plan itself is sound and the implementation diverged from it.
 
 Set `Final Delivery Gate` to `PASS` when zero findings exist, `PLAN VETO` when any finding is `PLAN VETO`, `FAIL (CLOSED)` when findings exist and every finding is `CLOSED`, and `FAIL (OPEN)` otherwise.
 
@@ -117,6 +123,12 @@ Set `Final Delivery Gate` to `PASS` when zero findings exist, `PLAN VETO` when a
 |---|---|---|---|
 | R-01 | `<obsolete symbol / prop / union / file>` | `0 hits remain` / <[file:line](file:///...): why remaining hits exist under present requirements alone, or `F-xx`> | CLEAN / RESIDUE |
 
+#### Module Architecture Audit
+<!-- One row per audit-scope file (partitioning), touched/introduced responsibility or cross-module dependency edge (ownership & DAG), and multi-site or syntactically similar knowledge item -->
+| # | Scope Item (File / Edge / Knowledge) | Ruling & Reality Check | Status | Citations / Finding |
+|---|---|---|---|---|
+| A-01 | [file:line](file:///...) / `source -> target` | <One-decision cluster / abstraction ownership & DAG / canonical knowledge verdict> | PASS / FAIL | <[file:line](file:///...) citations, or `F-xx`> |
+
 #### Changed Code Coverage
 <!-- One row per file in the plan's File Manifest and per file the ledger records beyond it -->
 | File | Origin | Findings |
@@ -128,7 +140,8 @@ Set `Final Delivery Gate` to `PASS` when zero findings exist, `PLAN VETO` when a
 - Seam & Dataflow Status: ALL PASS / HAS FAILURES
 - Scenario & Invariant Coverage Status: ALL PASS / HAS FAILURES
 - Residue Status: ALL CLEAN / HAS RESIDUE
-- Final Delivery Gate: PASS (100% across all four) / FAIL (CLOSED) / FAIL (OPEN) / PLAN VETO
+- Module Architecture Status: ALL PASS / HAS FAILURES
+- Final Delivery Gate: PASS (100% across all five) / FAIL (CLOSED) / FAIL (OPEN) / PLAN VETO
 
 ### Findings
 <!-- If none found, write: "None" -->
