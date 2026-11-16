@@ -14,15 +14,20 @@ if str(SCRIPT_DIR) not in sys.path:
 from compact_threshold_tracker import (
     DEFAULT_COMPACT_THRESHOLD,
     MAX_COMPACT_THRESHOLD,
+    estimate_read_file_tokens,
     load_conversation_state,
     load_thresholds_db,
     sync_conversation_and_thresholds,
 )
 from context_budget_guard import (
+    build_premature_summary_continue_message,
+    build_subsequent_block_message,
+    build_warning_message,
     evaluate_budget_guard,
     evaluate_post_invocation_guard,
     evaluate_stop_guard,
     evaluate_tool_budget_guard,
+    is_boundary_plan_phase,
 )
 
 
@@ -610,6 +615,184 @@ class TestContextBudgetHooks(unittest.TestCase):
             ).stdout
         )
         self.assertEqual(len(ci_res_3.get("injectSteps", [])), 1)
+
+    def test_boundary_plan_phase_tracks_latest_user_marker_and_ignores_noise(self) -> None:
+        self.assertFalse(is_boundary_plan_phase(str(self.transcript_file)))
+        self.assertTrue(is_boundary_plan_phase("", last_user_input="/boundary-plan refactor"))
+        self.assertFalse(is_boundary_plan_phase("", last_user_input="<CONTEXT_SUMMARY>boundary-plan</CONTEXT_SUMMARY>"))
+
+        # Noise in planner/tool/system/checkpoint steps and word-interior matches do not switch phase
+        self._append_step({"type": "PLANNER_RESPONSE", "source": "MODEL", "content": "Run boundary-plan and execute"})
+        self._append_step({"type": "TOOL_RESPONSE", "source": "SYSTEM", "content": "boundary-plan execute"})
+        self._append_step({"type": "USER_INPUT", "source": "SYSTEM", "content": "boundary-plan"})
+        self._append_step({"type": "CHECKPOINT", "source": "SYSTEM", "content": "<CONTEXT_SUMMARY>boundary-plan</CONTEXT_SUMMARY>"})
+        self.assertFalse(is_boundary_plan_phase(str(self.transcript_file)))
+
+        # Real explicit user prompt with /boundary-plan activates plan phase
+        self._append_step({"type": "USER_INPUT", "source": "USER_EXPLICIT", "content": "Use /boundary-plan on module X"})
+        self.assertTrue(is_boundary_plan_phase(str(self.transcript_file)))
+
+        # Word-interior 'executed' and planner text mentioning 'execute' keep plan phase active
+        self._append_step({"type": "USER_INPUT", "source": "USER_EXPLICIT", "content": "Baseline executed fine, continue"})
+        self._append_step({"type": "PLANNER_RESPONSE", "source": "MODEL", "content": "Waiting to execute later"})
+        self.assertTrue(is_boundary_plan_phase(str(self.transcript_file)))
+
+        # Explicit user 'execute' ends plan phase; subsequent 'boundary-plan' re-enters it
+        self._append_step({"type": "USER_INPUT", "source": "USER_EXPLICIT", "content": "Approved, execute now"})
+        self.assertFalse(is_boundary_plan_phase(str(self.transcript_file)))
+        self._append_step({"type": "USER_INPUT", "source": "USER_EXPLICIT", "content": "Draft next task via @[boundary-plan]"})
+        self.assertTrue(is_boundary_plan_phase(str(self.transcript_file)))
+
+        # Prefers transcript_full.jsonl over truncated transcript.jsonl when present
+        full_file: Path = self.transcript_file.with_name("transcript_full.jsonl")
+        full_file.write_text(
+            json.dumps({"type": "USER_INPUT", "source": "USER_EXPLICIT", "content": "proceed with /execute"}) + "\n",
+            encoding="utf-8",
+        )
+        self.assertFalse(is_boundary_plan_phase(str(self.transcript_file)))
+
+    def test_boundary_plan_mode_routes_warning_and_premature_summary_branches(self) -> None:
+        self.assertNotEqual(
+            build_warning_message(460_000, 480_000, boundary_plan_mode=True),
+            build_warning_message(460_000, 480_000, boundary_plan_mode=False),
+        )
+        self.assertNotEqual(
+            build_subsequent_block_message(470_000, 480_000, boundary_plan_mode=True),
+            build_subsequent_block_message(470_000, 480_000, boundary_plan_mode=False),
+        )
+        self.assertNotEqual(
+            build_premature_summary_continue_message(465_000, 480_000, boundary_plan_mode=True),
+            build_premature_summary_continue_message(465_000, 480_000, boundary_plan_mode=False),
+        )
+
+        # 1. PreInvocation CLI at >=95% with lastUserInput carrying boundary-plan emits plan warning branch
+        self._append_planner_step(460_000, 0, output_tokens=200)
+        guard_script: Path = (
+            Path(__file__).resolve().parent.parent
+            / ".gemini"
+            / "config"
+            / "scripts"
+            / "context_budget_guard.py"
+        )
+        env: dict[str, str] = {
+            **os.environ,
+            "AGY_COMPACT_STATE_DIR": str(self.state_dir),
+            "AGY_THRESHOLDS_FILE": str(self.thresholds_file),
+        }
+        cli_plan = json.loads(
+            subprocess.run(
+                ["python3", str(guard_script)],
+                input=json.dumps(
+                    {
+                        "conversationId": "conv-cli-plan",
+                        "modelName": "Gemini 4 Argon (High)",
+                        "transcriptPath": str(self.transcript_file),
+                        "lastUserInput": "/boundary-plan this module",
+                    }
+                ),
+                text=True,
+                capture_output=True,
+                env=env,
+                check=True,
+            ).stdout
+        )
+        plan_msg: str = cli_plan["injectSteps"][0]["systemMessage"]["systemMessage"]
+        self.assertEqual(
+            plan_msg,
+            build_warning_message(460_200, 480_000, boundary_plan_mode=True),
+        )
+
+        # 2. PreToolUse block at >=97.5% (1st and subsequent in same turn) emits plan branches while in plan phase
+        transcript_plan: Path = self.temp_dir / "plan_transcript.jsonl"
+        with open(transcript_plan, "w", encoding="utf-8") as f:
+            f.write(json.dumps({"type": "USER_INPUT", "source": "USER_EXPLICIT", "content": "/boundary-plan"}) + "\n")
+            f.write(json.dumps({"type": "PLANNER_RESPONSE", "source": "MODEL", "input_tokens": 466_000, "cache_read_tokens": 0, "output_tokens": 200}) + "\n")
+
+        target_file: Path = self.temp_dir / "big.ts"
+        target_file.write_text("\n".join("x" * 54 for _ in range(200)) + "\n", encoding="utf-8")
+        read_tokens: int = estimate_read_file_tokens({"Path": str(target_file)})
+        tool_display_tokens: int = 466_200 + read_tokens
+
+        deny_first = evaluate_tool_budget_guard(
+            conv_id="conv-tool-plan",
+            fallback_model_name="Gemini 4 Argon (High)",
+            transcript_path=str(transcript_plan),
+            tool_call={"name": "read_file", "args": {"Path": str(target_file)}},
+            state_dir=self.state_dir,
+            thresholds_file=self.thresholds_file,
+        )
+        self.assertEqual(
+            deny_first.get("reason"),
+            build_warning_message(tool_display_tokens, 480_000, boundary_plan_mode=True),
+        )
+
+        deny_second = evaluate_tool_budget_guard(
+            conv_id="conv-tool-plan",
+            fallback_model_name="Gemini 4 Argon (High)",
+            transcript_path=str(transcript_plan),
+            tool_call={"name": "read_file", "args": {"Path": str(target_file)}},
+            state_dir=self.state_dir,
+            thresholds_file=self.thresholds_file,
+        )
+        self.assertEqual(
+            deny_second.get("reason"),
+            build_subsequent_block_message(tool_display_tokens, 480_000, boundary_plan_mode=True),
+        )
+
+        # 3. Premature summary during boundary-plan phase emits plan continue variant
+        with open(transcript_plan, "a", encoding="utf-8") as f:
+            f.write(
+                json.dumps(
+                    {
+                        "type": "PLANNER_RESPONSE",
+                        "source": "MODEL",
+                        "input_tokens": 466_000,
+                        "cache_read_tokens": 0,
+                        "output_tokens": 300,
+                        "content": "<summary>\npartial\n</summary>",
+                    }
+                )
+                + "\n"
+            )
+        post_plan = evaluate_post_invocation_guard(
+            conv_id="conv-tool-plan",
+            fallback_model_name="Gemini 4 Argon (High)",
+            transcript_path=str(transcript_plan),
+            state_dir=self.state_dir,
+            thresholds_file=self.thresholds_file,
+        )
+        self.assertEqual(
+            post_plan["injectSteps"][0]["systemMessage"]["systemMessage"],
+            build_premature_summary_continue_message(466_300, 480_000, boundary_plan_mode=True),
+        )
+        stop_plan = evaluate_stop_guard(
+            conv_id="conv-tool-plan",
+            fallback_model_name="Gemini 4 Argon (High)",
+            transcript_path=str(transcript_plan),
+            termination_reason="NO_TOOL_CALL",
+            state_dir=self.state_dir,
+            thresholds_file=self.thresholds_file,
+        )
+        self.assertEqual(
+            stop_plan.get("reason"),
+            build_premature_summary_continue_message(466_300, 480_000, boundary_plan_mode=True),
+        )
+
+        # 4. After user sends execute, PreInvocation reverts to default branch
+        with open(transcript_plan, "a", encoding="utf-8") as f:
+            f.write(json.dumps({"type": "USER_INPUT", "source": "USER_EXPLICIT", "content": "/execute"}) + "\n")
+            f.write(json.dumps({"type": "PLANNER_RESPONSE", "source": "MODEL", "input_tokens": 466_000, "cache_read_tokens": 0, "output_tokens": 200}) + "\n")
+        res_after_execute = evaluate_budget_guard(
+            conv_id="conv-exec-after-plan",
+            fallback_model_name="Gemini 4 Argon (High)",
+            transcript_path=str(transcript_plan),
+            state_dir=self.state_dir,
+            thresholds_file=self.thresholds_file,
+        )
+        self.assertEqual(
+            res_after_execute["injectSteps"][0]["systemMessage"]["systemMessage"],
+            build_warning_message(466_200, 480_000, boundary_plan_mode=False),
+        )
 
 
 if __name__ == "__main__":
