@@ -1,7 +1,6 @@
 ---
 name: bug-classification
-description: Trace codebase problems across the three-tier causal chain to determine whether the true root cause stops at Layer 2 (LOCAL) or originates at Layer 3 (ARCHITECTURAL)
-disable-model-invocation: true
+description: Use whenever a defect, failure, or unexpected behavior appears whose true cause or fix location is not yet established.
 ---
 
 # Root-Cause & Bug Classification
