@@ -38,7 +38,7 @@ DEFAULT_STATUSLINE_DIR: Path = Path("/tmp/agy_statusline")
 DEFAULT_CONFIG_REL_PATH: str = ".gtd/config.yml"
 ALT_CONFIG_REL_PATH: str = ".gtd/config.yaml"
 DEFAULT_DECISIONS_REL_DIR: str = ".gtd/decisions"
-DEFAULT_EVERY_N_MESSAGES: int = 10
+DEFAULT_EVERY_N_MESSAGES: int = 5
 
 MANAGED_BLOCK_START: str = "<!-- GTD-DECISIONS:START -->"
 MANAGED_BLOCK_END: str = "<!-- GTD-DECISIONS:END -->"

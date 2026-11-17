@@ -213,15 +213,15 @@ else
     fi
 
     N_RAW=""
-    read -r -p "Enter message interval N (default: 10): " N_RAW || true
+    read -r -p "Enter message interval N (default: 5): " N_RAW || true
     N_CLEAN="${N_RAW// /}"
     if [[ -z "$N_CLEAN" ]]; then
-        N_VAL=10
+        N_VAL=5
     elif [[ "$N_CLEAN" =~ ^[0-9]+$ ]] && [ "$N_CLEAN" -ge 1 ]; then
         N_VAL="$N_CLEAN"
     else
-        echo "Invalid interval '$N_RAW', falling back to default N = 10."
-        N_VAL=10
+        echo "Invalid interval '$N_RAW', falling back to default N = 5."
+        N_VAL=5
     fi
 
     mkdir -p "$GTD_DIR/decisions"
