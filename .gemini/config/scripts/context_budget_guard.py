@@ -4,6 +4,7 @@ import re
 import sys
 from dataclasses import replace
 from pathlib import Path
+from typing import Literal
 
 SCRIPT_DIR: Path = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
@@ -23,10 +24,20 @@ from compact_threshold_tracker import (
     sync_conversation_and_thresholds,
 )
 
+GuardMode = Literal["default", "boundary-plan", "boundary-auditor"]
+
 WARN_RATIO: float = 0.95
 BLOCK_RATIO: float = 0.975
 PHASE_MARKER_RE: re.Pattern[str] = re.compile(
     r"\b(boundary-plan|execute)\b", re.IGNORECASE
+)
+SUBAGENT_MESSAGE_RE: re.Pattern[str] = re.compile(
+    r"^\[Message\]\s+timestamp=\S+\s+sender=\S+\s+priority=\S+\s+content=(.*)(?:\r?\n</SYSTEM_MESSAGE>\s*\Z|\Z)",
+    re.DOTALL | re.MULTILINE,
+)
+AUDITOR_DIRECTIVE_RE: re.Pattern[str] = re.compile(
+    r"^\s*Audit boundary implementation plan\b.*(?:\bpassive code inspection protocol\b|\baudit_report_round_\d+\.md\b)",
+    re.IGNORECASE | re.DOTALL,
 )
 NON_CONTINUABLE_STOP_REASONS: frozenset[str] = frozenset(
     {
@@ -53,15 +64,28 @@ def is_explicit_user_text(text: str) -> bool:
     return True
 
 
-def apply_phase_markers(current: bool, text: str) -> bool:
-    state: bool = current
+def apply_phase_markers(current: GuardMode, text: str) -> GuardMode:
+    state: GuardMode = current
     for match in PHASE_MARKER_RE.finditer(text):
-        state = match.group(1).lower() == "boundary-plan"
+        state = (
+            "boundary-plan"
+            if match.group(1).lower() == "boundary-plan"
+            else "default"
+        )
     return state
 
 
-def is_boundary_plan_phase(transcript_path: str, last_user_input: str = "") -> bool:
-    in_boundary_plan: bool = False
+def _extract_subagent_directive_text(content: str) -> str | None:
+    match: re.Match[str] | None = SUBAGENT_MESSAGE_RE.search(content)
+    if match is None:
+        return None
+    return match.group(1).strip()
+
+
+def detect_guard_mode(transcript_path: str, last_user_input: str = "") -> GuardMode:
+    mode: GuardMode = "default"
+    saw_user_input: bool = False
+    saw_opening_system_msg: bool = False
     target_file: Path | None = resolve_transcript_file(
         transcript_path, prefer_full=True
     )
@@ -78,55 +102,92 @@ def is_boundary_plan_phase(transcript_path: str, last_user_input: str = "") -> b
                         continue
                     if not isinstance(step, dict):
                         continue
-                    if (
-                        step.get("type") != "USER_INPUT"
-                        or step.get("source") == "SYSTEM"
-                    ):
-                        continue
                     if is_compaction_step(step):
                         continue
+                    step_type: object = step.get("type")
+                    source: object = step.get("source")
                     content_obj: object = step.get("content")
-                    if not isinstance(content_obj, str) or not is_explicit_user_text(
-                        content_obj
-                    ):
+                    if not isinstance(content_obj, str):
                         continue
-                    in_boundary_plan = apply_phase_markers(
-                        in_boundary_plan, content_obj
-                    )
+
+                    if (
+                        not saw_user_input
+                        and not saw_opening_system_msg
+                        and step_type == "SYSTEM_MESSAGE"
+                        and source == "SYSTEM"
+                    ):
+                        directive_text: str | None = _extract_subagent_directive_text(
+                            content_obj
+                        )
+                        if directive_text is not None:
+                            saw_opening_system_msg = True
+                            if AUDITOR_DIRECTIVE_RE.search(directive_text):
+                                mode = "boundary-auditor"
+                        continue
+
+                    if step_type == "USER_INPUT" and source != "SYSTEM":
+                        saw_user_input = True
+                        if is_explicit_user_text(content_obj):
+                            mode = apply_phase_markers(mode, content_obj)
         except Exception:
             pass
 
-    if is_explicit_user_text(last_user_input):
-        in_boundary_plan = apply_phase_markers(in_boundary_plan, last_user_input)
+    if mode != "boundary-auditor" and is_explicit_user_text(last_user_input):
+        if not saw_user_input and AUDITOR_DIRECTIVE_RE.search(last_user_input):
+            mode = "boundary-auditor"
+        else:
+            mode = apply_phase_markers(mode, last_user_input)
 
-    return in_boundary_plan
+    return mode
+
+
+_STEP_2_SPEC: dict[GuardMode, tuple[str, str]] = {
+    "boundary-plan": (
+        "Persist Settled Plan Parts & Open Targets First",
+        (
+            "2. **Persist Settled Plan Parts & Open Targets First**: **When** `implementation_plan.md` is not yet finalized under `boundary-plan`, before dispatching any `read_file`/`rg` or other non-persistence tool call, persist `<Artifact Directory>/implementation_plan.md` (`write_file` on first checkpoint, `edit_file` on subsequent checkpoints, `ArtifactMetadata` with `UserFacing: true`, and `RequestFeedback: false` while any `[OPEN]` marker or `## Open Investigations` item remains):\n"
+            "   - **Each independent plan unit in scope**: Evaluate each unit—a plan-level section, an individual `Canonical Knowledge Rulings` entry, a milestone's Tier 1 block, its `Module & Edge Derivation`, its `Seam Derivation` paired with `Literal Contracts`, or an individual line in `Caller & Sink Audit`, `Retired Forms`, or `File Manifest`—individually while holding the rest fixed (`Seam Derivation` and `Literal Contracts` depend on the boundary's implementation and external production boundary callers, whereas test files and pass-through callers govern only their own lines). Whenever all upstream decisions and `read_file` slices a unit depends on are inspected, write that unit literally into its place in the plan body; whenever any slice a unit depends on remains uninspected, mark that missing part `[OPEN: <what remains>]` inline inside a started milestone (or omit an unstarted unit from settled sections) and list its remaining `read_file`/`rg` targets in `## Open Investigations`.\n"
+            "   - **`## Open Investigations` content**: Record in `## Open Investigations` solely what uninspected `[OPEN]` parts still need: pair each remaining `read_file`/`rg` target with the exact `[OPEN]` plan unit it resolves, and retain an `Inspected (do not re-read)` entry (with `#L<start>-L<end>` and verbatim source facts passing the deleted-file check—verified as if the source file were deleted from disk) only for already-inspected slices whose facts are still needed to finish an `[OPEN]` unit rather than repeating facts already written into the settled plan body. Keep one slice/target per bullet (no grouped files or prose file summaries).\n"
+            "     *Anchor (partial milestone + `## Open Investigations` shape):*\n"
+            "     ```markdown\n"
+            "     - **Caller & Sink Audit:**\n"
+            "       - Ingress: `ApiHandler.create` at [api.py](file:///src/api.py#L40) -> Milestone 2\n"
+            "       - `[OPEN: inspect remaining callers in runner.py]`\n"
+            "     #### File Manifest\n"
+            "     - `[MODIFY]` [parser.py](file:///src/parser.py#L12-L48)\n"
+            "     - `[OPEN: test_parser.py line range]`\n"
+            "\n"
+            "     ## Open Investigations\n"
+            "     - **Inspected (do not re-read):** `[parser.py](file:///src/parser.py#L12-L48)` — `parse(raw: str) -> Token` (`#L12`); raises `ParseError` if `not raw.strip()` (`#L18`) *(kept only if an `[OPEN]` unit still needs these details)*\n"
+            "     - **Remaining:** `[runner.py](file:///src/runner.py)` (`rg \"parse\\(\"` callers) — resolves Milestone 1 `Caller & Sink Audit`; `[test_parser.py](file:///tests/test_parser.py)` — resolves Milestone 1 `File Manifest` test line range\n"
+            "     ```\n"
+            "   *Completion criterion*: every independent plan unit whose own upstream decisions and `read_file` slices are inspected sits literally in `implementation_plan.md` (without waiting on unread sibling items or test files); every still-uninspected part inside a started milestone carries an inline `[OPEN: ...]` marker; `## Open Investigations` lists each remaining target paired with its `[OPEN]` unit plus `Inspected (do not re-read)` entries (one slice per bullet with `#L<start>-L<end>`, passing the deleted-file check) strictly for slices still needed by an `[OPEN]` unit; and non-persistence tool calls run only after this save returns.\n"
+        ),
+    ),
+    "boundary-auditor": (
+        "Persist Settled Audit Judgments First",
+        (
+            "2. **Persist Settled Audit Judgments First**: **When** the round's audit report is not yet finalized across the entire audit scope, before dispatching any `read_file`/`rg` or other non-persistence tool call, persist settled findings immediately to `<appDataDir>/brain/<subagent-id>/audit_report_round_<N>.md` (`write_file`, passing `Overwrite: true` on subsequent checkpoints) by ruling individually on each table item (`M-xx`, `B-xx`, `S-xx`, `I-xx`, `R-xx`, `A-xx`), each `Changed Code Coverage` file, and each discovered discrepancy while holding other items fixed: **when** every code slice and `rg` search that item's verdict depends on (`PASS`/`FAIL`/`CLEAN`/`RESIDUE`, all-planes `None` in `Changed Code Coverage`, or a deterministic `F-xx` root cause) has been inspected, write that settled row or `F-xx` entry directly into the report tables and `### Findings`; **when** required reads or searches for an item remain uninspected, omit that row (and mark a `Changed Code Coverage` file `PENDING` alongside any already-confirmed `F-xx` until all planes covering it settle) rather than guessing or writing `## Open Investigations` into the report. Set every `Audit Verdict` status and `Final Delivery Gate` to `PENDING` until full audit coverage is reached, never emit the `Completed:` reply line on a checkpoint, and run remaining non-persistence tool calls only after this save returns. *Completion criterion*: every audit item whose required files and `rg` searches are inspected sits in `audit_report_round_<N>.md`, `Audit Verdict` stays `PENDING`, and non-persistence tool calls run only after this save returns.\n"
+        ),
+    ),
+    "default": (
+        "Persist Every Settled Change First",
+        (
+            "2. **Persist Every Settled Change First**: **When** unwritten changes or uncompleted task steps remain, before dispatching any non-persistence tool call, inspect in your thoughts every change already determinable from context to any file whose creation or update is part of the current task under `<user_rules>`, and rule on each candidate change individually (holding other changes fixed and citing verified `file:line` facts in context) whether every codebase fact and `<user_rules>` check required to determine that change is already verified; when any change passes, dispatch only the `write_file`/`edit_file` calls for all passing changes in this step (emitting `<communication_model>`'s pre-edit rulings first if this is the task's first code edit)—never deferring a verified change until remaining files are read, never writing speculative edits that depend on unread facts. *Completion criterion*: every already-verified change to an authorized task file is written to disk before any non-persistence tool call runs.\n"
+        ),
+    ),
+}
 
 
 def build_warning_message(
     current_tokens: int,
     threshold_tokens: int,
-    boundary_plan_mode: bool = False,
+    guard_mode: GuardMode = "default",
 ) -> str:
     pct: float = compute_usage_percentage(
         current_tokens, threshold_tokens, fallback=90.0
     )
-    step_2: str = (
-        (
-            "2. **Persist Settled Plan & Verbatim Open Investigations First**: **When** `implementation_plan.md` is not yet finalized under `boundary-plan`, before dispatching any `read_file`/`rg` or other non-persistence tool call, persist `<Artifact Directory>/implementation_plan.md` (`write_file` on first checkpoint, `edit_file` on subsequent checkpoints, `ArtifactMetadata` with `UserFacing: true`, and `RequestFeedback: false` while `## Open Investigations` remains non-empty) by ruling individually while holding other entries fixed:\n"
-            "   - **Each section and milestone in scope**: Rule on it individually while holding other entries fixed: **when** `read_file` has inspected every code slice its `boundary-plan` Sections 1–4 fields depend on, write that entry immediately into the settled plan body with every required Sections 1–4 field populated literally from those reads—rather than summarizing it, guessing unread dependencies from `rg` previews, or deferring it to `## Open Investigations`; otherwise keep it out of the settled plan body.\n"
-            "   - **Each already-inspected file needed by an unsettled entry & each remaining target**: Record each file individually in `## Open Investigations`: for every inspected slice, give its `#L<start>-L<end>` range and extract verbatim the source expressions and `file:line` coordinates required to compile any unsettled `boundary-plan` Sections 1–4 field referencing that slice—verified before saving by testing each entry as if the source file were deleted from disk, failing it wherever writing that unsettled field literally from the note alone would still require guessing or re-opening the file; pair each remaining `read_file`/`rg` target with the specific unsettled decision inspecting it resolves. Never group multiple files together or replace verbatim source facts with a prose description of what a file does.\n"
-            "     *Anchor (`## Open Investigations` shape):*\n"
-            "     ```markdown\n"
-            "     - **Inspected (do not re-read):** `[parser.py](file:///src/parser.py#L12-L48)` — `parse(raw: str) -> Token` (`#L12`); raises `ParseError` if `not raw.strip()` (`#L18`); calls `tokenize(raw)` (`#L24`); retires `legacy_split` (`#L30-L42`)\n"
-            "     - **Remaining:** `[runner.py](file:///src/runner.py)` (`rg \"parse\\(\"` callers) — resolves `Caller Coupling` and `Caller Audit`\n"
-            "     ```\n"
-            "   *Completion criterion*: every section or milestone whose Sections 1–4 slices are all inspected sits in `implementation_plan.md` with literal Sections 1–4 fields; every already-inspected file needed by unsettled entries appears individually in `## Open Investigations` with its `#L<start>-L<end>` range and passes the deleted-file check (zero grouped bullets or prose file summaries); and non-persistence tool calls run only after this save returns.\n"
-        )
-        if boundary_plan_mode
-        else (
-            "2. **Persist Every Settled Change First**: **When** unwritten changes or uncompleted task steps remain, before dispatching any non-persistence tool call, inspect in your thoughts every change already determinable from context to any file whose creation or update is part of the current task under `<user_rules>`, and rule on each candidate change individually (holding other changes fixed and citing verified `file:line` facts in context) whether every codebase fact and `<user_rules>` check required to determine that change is already verified; when any change passes, dispatch only the `write_file`/`edit_file` calls for all passing changes in this step (emitting `<communication_model>`'s pre-edit rulings first if this is the task's first code edit)—never deferring a verified change until remaining files are read, never writing speculative edits that depend on unread facts. *Completion criterion*: every already-verified change to an authorized task file is written to disk before any non-persistence tool call runs.\n"
-        )
-    )
+    _, step_2 = _STEP_2_SPEC[guard_mode]
     return (
         "<critical_instructions>\n"
         f"Context usage is at {pct:.1f}% ({current_tokens} / {threshold_tokens} tokens). If this message denied a read/search tool call, that call is paused for this single step only and is already unlocked for your next response. Execute in order:\n"
@@ -137,23 +198,19 @@ def build_warning_message(
     )
 
 
-def _step_2_heading(boundary_plan_mode: bool) -> str:
-    return (
-        "Persist Settled Plan & Verbatim Open Investigations First"
-        if boundary_plan_mode
-        else "Persist Every Settled Change First"
-    )
+def _step_2_heading(guard_mode: GuardMode) -> str:
+    return _STEP_2_SPEC[guard_mode][0]
 
 
 def build_subsequent_block_message(
     current_tokens: int,
     threshold_tokens: int,
-    boundary_plan_mode: bool = False,
+    guard_mode: GuardMode = "default",
 ) -> str:
     pct: float = compute_usage_percentage(
         current_tokens, threshold_tokens, fallback=97.50
     )
-    step_2_name: str = _step_2_heading(boundary_plan_mode)
+    step_2_name: str = _step_2_heading(guard_mode)
     return (
         f"DEFERRED FOR 1 STEP (context at {pct:.1f}%: {current_tokens} / {threshold_tokens} tokens): "
         f"Paused for this single step alongside the context-budget instruction in this turn, and already unlocked for your next response—apply **{step_2_name}** and **Continue Normal Task Execution** there to re-dispatch this call right after any Step 2 writes return (or immediately in this response if none pass)."
@@ -163,12 +220,12 @@ def build_subsequent_block_message(
 def build_premature_summary_continue_message(
     current_tokens: int,
     threshold_tokens: int,
-    boundary_plan_mode: bool = False,
+    guard_mode: GuardMode = "default",
 ) -> str:
     pct: float = compute_usage_percentage(
         current_tokens, threshold_tokens, fallback=97.50
     )
-    step_2_name: str = _step_2_heading(boundary_plan_mode)
+    step_2_name: str = _step_2_heading(guard_mode)
     return (
         "<critical_instructions>\n"
         f"PREMATURE COMPACTION SUMMARY DETECTED (context is at {pct:.1f}%: {current_tokens} / {threshold_tokens} tokens — auto-compaction has NOT occurred and the harness has NOT prompted for `<summary>`).\n"
@@ -231,18 +288,18 @@ def evaluate_tool_budget_guard(
         )
         save_conversation_state(state_dir, blocked_state)
 
-        boundary_plan_mode: bool = is_boundary_plan_phase(transcript_path)
+        guard_mode: GuardMode = detect_guard_mode(transcript_path)
         if is_first_block_in_turn:
             reason_msg: str = build_warning_message(
                 display_tokens,
                 entry.compact_threshold,
-                boundary_plan_mode=boundary_plan_mode,
+                guard_mode=guard_mode,
             )
         else:
             reason_msg = build_subsequent_block_message(
                 display_tokens,
                 entry.compact_threshold,
-                boundary_plan_mode=boundary_plan_mode,
+                guard_mode=guard_mode,
             )
 
         return {
@@ -295,13 +352,13 @@ def evaluate_budget_guard(
                 warned_at_tokens=effective_tokens,
             )
             save_conversation_state(state_dir, updated_state)
-            boundary_plan_mode: bool = is_boundary_plan_phase(
+            guard_mode: GuardMode = detect_guard_mode(
                 transcript_path, last_user_input
             )
             msg: str = build_warning_message(
                 effective_tokens,
                 entry.compact_threshold,
-                boundary_plan_mode=boundary_plan_mode,
+                guard_mode=guard_mode,
             )
             return {"injectSteps": [{"systemMessage": {"systemMessage": msg}}]}
 
@@ -347,11 +404,11 @@ def _check_premature_summary_continuation(
                 **{resumed_field: state.last_turn},
             ),
         )
-        boundary_plan_mode: bool = is_boundary_plan_phase(transcript_path)
+        guard_mode: GuardMode = detect_guard_mode(transcript_path)
         return build_premature_summary_continue_message(
             state.effective_tokens,
             entry.compact_threshold,
-            boundary_plan_mode=boundary_plan_mode,
+            guard_mode=guard_mode,
         )
 
 

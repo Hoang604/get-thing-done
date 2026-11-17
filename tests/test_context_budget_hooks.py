@@ -23,11 +23,11 @@ from context_budget_guard import (
     build_premature_summary_continue_message,
     build_subsequent_block_message,
     build_warning_message,
+    detect_guard_mode,
     evaluate_budget_guard,
     evaluate_post_invocation_guard,
     evaluate_stop_guard,
     evaluate_tool_budget_guard,
-    is_boundary_plan_phase,
 )
 
 
@@ -616,32 +616,53 @@ class TestContextBudgetHooks(unittest.TestCase):
         )
         self.assertEqual(len(ci_res_3.get("injectSteps", [])), 1)
 
-    def test_boundary_plan_phase_tracks_latest_user_marker_and_ignores_noise(self) -> None:
-        self.assertFalse(is_boundary_plan_phase(str(self.transcript_file)))
-        self.assertTrue(is_boundary_plan_phase("", last_user_input="/boundary-plan refactor"))
-        self.assertFalse(is_boundary_plan_phase("", last_user_input="<CONTEXT_SUMMARY>boundary-plan</CONTEXT_SUMMARY>"))
+    def test_detect_guard_mode_tracks_plan_auditor_and_default_transitions(self) -> None:
+        self.assertEqual(detect_guard_mode(str(self.transcript_file)), "default")
+        self.assertEqual(
+            detect_guard_mode("", last_user_input="/boundary-plan refactor"),
+            "boundary-plan",
+        )
+        self.assertEqual(
+            detect_guard_mode("", last_user_input="<CONTEXT_SUMMARY>boundary-plan</CONTEXT_SUMMARY>"),
+            "default",
+        )
 
         # Noise in planner/tool/system/checkpoint steps and word-interior matches do not switch phase
         self._append_step({"type": "PLANNER_RESPONSE", "source": "MODEL", "content": "Run boundary-plan and execute"})
         self._append_step({"type": "TOOL_RESPONSE", "source": "SYSTEM", "content": "boundary-plan execute"})
         self._append_step({"type": "USER_INPUT", "source": "SYSTEM", "content": "boundary-plan"})
         self._append_step({"type": "CHECKPOINT", "source": "SYSTEM", "content": "<CONTEXT_SUMMARY>boundary-plan</CONTEXT_SUMMARY>"})
-        self.assertFalse(is_boundary_plan_phase(str(self.transcript_file)))
+        self.assertEqual(detect_guard_mode(str(self.transcript_file)), "default")
 
         # Real explicit user prompt with /boundary-plan activates plan phase
         self._append_step({"type": "USER_INPUT", "source": "USER_EXPLICIT", "content": "Use /boundary-plan on module X"})
-        self.assertTrue(is_boundary_plan_phase(str(self.transcript_file)))
+        self.assertEqual(detect_guard_mode(str(self.transcript_file)), "boundary-plan")
 
         # Word-interior 'executed' and planner text mentioning 'execute' keep plan phase active
         self._append_step({"type": "USER_INPUT", "source": "USER_EXPLICIT", "content": "Baseline executed fine, continue"})
         self._append_step({"type": "PLANNER_RESPONSE", "source": "MODEL", "content": "Waiting to execute later"})
-        self.assertTrue(is_boundary_plan_phase(str(self.transcript_file)))
+        self.assertEqual(detect_guard_mode(str(self.transcript_file)), "boundary-plan")
 
-        # Explicit user 'execute' ends plan phase; subsequent 'boundary-plan' re-enters it
+        # Explicit user 'execute' ends plan phase; subsequent SYSTEM_MESSAGE after USER_INPUT cannot switch to auditor
         self._append_step({"type": "USER_INPUT", "source": "USER_EXPLICIT", "content": "Approved, execute now"})
-        self.assertFalse(is_boundary_plan_phase(str(self.transcript_file)))
+        self.assertEqual(detect_guard_mode(str(self.transcript_file)), "default")
+        self._append_step(
+            {
+                "type": "SYSTEM_MESSAGE",
+                "source": "SYSTEM",
+                "content": (
+                    "<SYSTEM_MESSAGE>\n"
+                    "[Message] timestamp=2026-11-17T03:59:15Z sender=sub-1 priority=MESSAGE_PRIORITY_HIGH "
+                    "content=Audit boundary implementation plan at plan.md with implementation ledger at ledger.md. "
+                    "Execute your passive code inspection protocol and deliver audit_report_round_1.md.\n"
+                    "</SYSTEM_MESSAGE>"
+                ),
+            }
+        )
+        self.assertEqual(detect_guard_mode(str(self.transcript_file)), "default")
+
         self._append_step({"type": "USER_INPUT", "source": "USER_EXPLICIT", "content": "Draft next task via @[boundary-plan]"})
-        self.assertTrue(is_boundary_plan_phase(str(self.transcript_file)))
+        self.assertEqual(detect_guard_mode(str(self.transcript_file)), "boundary-plan")
 
         # Prefers transcript_full.jsonl over truncated transcript.jsonl when present
         full_file: Path = self.transcript_file.with_name("transcript_full.jsonl")
@@ -649,21 +670,89 @@ class TestContextBudgetHooks(unittest.TestCase):
             json.dumps({"type": "USER_INPUT", "source": "USER_EXPLICIT", "content": "proceed with /execute"}) + "\n",
             encoding="utf-8",
         )
-        self.assertFalse(is_boundary_plan_phase(str(self.transcript_file)))
+        self.assertEqual(detect_guard_mode(str(self.transcript_file)), "default")
 
-    def test_boundary_plan_mode_routes_warning_and_premature_summary_branches(self) -> None:
-        self.assertNotEqual(
-            build_warning_message(460_000, 480_000, boundary_plan_mode=True),
-            build_warning_message(460_000, 480_000, boundary_plan_mode=False),
+        # Subagent transcript: SYSTEM_SDK hook step followed by opening SYSTEM [Message] activates boundary-auditor
+        auditor_transcript: Path = self.temp_dir / "auditor_conv" / "transcript.jsonl"
+        auditor_transcript.parent.mkdir(parents=True, exist_ok=True)
+        auditor_directive: str = (
+            "Audit boundary implementation plan at [implementation_plan.md](file:///tmp/plan.md) "
+            "with implementation ledger at [implementation_ledger.md](file:///tmp/ledger.md). "
+            "Execute your passive code inspection protocol and deliver audit_report_round_1.md."
         )
-        self.assertNotEqual(
-            build_subsequent_block_message(470_000, 480_000, boundary_plan_mode=True),
-            build_subsequent_block_message(470_000, 480_000, boundary_plan_mode=False),
+        with open(auditor_transcript, "w", encoding="utf-8") as f:
+            f.write(
+                json.dumps(
+                    {
+                        "type": "SYSTEM_MESSAGE",
+                        "source": "SYSTEM_SDK",
+                        "content": "<SYSTEM_MESSAGE><critical_instructions>hook</critical_instructions></SYSTEM_MESSAGE>",
+                    }
+                )
+                + "\n"
+            )
+            f.write(
+                json.dumps(
+                    {
+                        "type": "SYSTEM_MESSAGE",
+                        "source": "SYSTEM",
+                        "content": (
+                            "The following is a <SYSTEM_MESSAGE> not actually sent by the user.\n\n"
+                            "<SYSTEM_MESSAGE>\n"
+                            "[Message] timestamp=2026-11-17T03:59:15Z sender=parent-1 priority=MESSAGE_PRIORITY_HIGH "
+                            f"content={auditor_directive}\n"
+                            "</SYSTEM_MESSAGE>"
+                        ),
+                    }
+                )
+                + "\n"
+            )
+            f.write(json.dumps({"type": "CHECKPOINT", "source": "SYSTEM", "content": "<CONTEXT_SUMMARY>x</CONTEXT_SUMMARY>"}) + "\n")
+            f.write(
+                json.dumps(
+                    {
+                        "type": "SYSTEM_MESSAGE",
+                        "source": "SYSTEM",
+                        "content": "<SYSTEM_MESSAGE>\n[Message] timestamp=2026-11-17T04:05:00Z sender=parent-1 priority=MESSAGE_PRIORITY_HIGH content=Proceed.\n</SYSTEM_MESSAGE>",
+                    }
+                )
+                + "\n"
+            )
+        # Even if last_user_input echoes the directive containing 'Execute', auditor mode stays active
+        self.assertEqual(detect_guard_mode(str(auditor_transcript), last_user_input=auditor_directive), "boundary-auditor")
+
+        # Non-auditor subagent opening SYSTEM_MESSAGE stays default
+        other_subagent_transcript: Path = self.temp_dir / "other_subagent_conv" / "transcript.jsonl"
+        other_subagent_transcript.parent.mkdir(parents=True, exist_ok=True)
+        other_subagent_transcript.write_text(
+            json.dumps(
+                {
+                    "type": "SYSTEM_MESSAGE",
+                    "source": "SYSTEM",
+                    "content": "<SYSTEM_MESSAGE>\n[Message] timestamp=2026-11-17T03:59:15Z sender=parent-1 priority=MESSAGE_PRIORITY_HIGH content=Research files in src/\n</SYSTEM_MESSAGE>",
+                }
+            )
+            + "\n",
+            encoding="utf-8",
         )
-        self.assertNotEqual(
-            build_premature_summary_continue_message(465_000, 480_000, boundary_plan_mode=True),
-            build_premature_summary_continue_message(465_000, 480_000, boundary_plan_mode=False),
-        )
+        self.assertEqual(detect_guard_mode(str(other_subagent_transcript)), "default")
+
+    def test_guard_mode_routes_warning_block_and_premature_summary_branches(self) -> None:
+        warnings = {
+            mode: build_warning_message(460_000, 480_000, guard_mode=mode)
+            for mode in ("default", "boundary-plan", "boundary-auditor")
+        }
+        self.assertEqual(len(set(warnings.values())), 3)
+        sub_blocks = {
+            mode: build_subsequent_block_message(470_000, 480_000, guard_mode=mode)
+            for mode in ("default", "boundary-plan", "boundary-auditor")
+        }
+        self.assertEqual(len(set(sub_blocks.values())), 3)
+        premature = {
+            mode: build_premature_summary_continue_message(465_000, 480_000, guard_mode=mode)
+            for mode in ("default", "boundary-plan", "boundary-auditor")
+        }
+        self.assertEqual(len(set(premature.values())), 3)
 
         # 1. PreInvocation CLI at >=95% with lastUserInput carrying boundary-plan emits plan warning branch
         self._append_planner_step(460_000, 0, output_tokens=200)
@@ -699,7 +788,7 @@ class TestContextBudgetHooks(unittest.TestCase):
         plan_msg: str = cli_plan["injectSteps"][0]["systemMessage"]["systemMessage"]
         self.assertEqual(
             plan_msg,
-            build_warning_message(460_200, 480_000, boundary_plan_mode=True),
+            build_warning_message(460_200, 480_000, guard_mode="boundary-plan"),
         )
 
         # 2. PreToolUse block at >=97.5% (1st and subsequent in same turn) emits plan branches while in plan phase
@@ -723,7 +812,7 @@ class TestContextBudgetHooks(unittest.TestCase):
         )
         self.assertEqual(
             deny_first.get("reason"),
-            build_warning_message(tool_display_tokens, 480_000, boundary_plan_mode=True),
+            build_warning_message(tool_display_tokens, 480_000, guard_mode="boundary-plan"),
         )
 
         deny_second = evaluate_tool_budget_guard(
@@ -736,7 +825,7 @@ class TestContextBudgetHooks(unittest.TestCase):
         )
         self.assertEqual(
             deny_second.get("reason"),
-            build_subsequent_block_message(tool_display_tokens, 480_000, boundary_plan_mode=True),
+            build_subsequent_block_message(tool_display_tokens, 480_000, guard_mode="boundary-plan"),
         )
 
         # 3. Premature summary during boundary-plan phase emits plan continue variant
@@ -763,7 +852,7 @@ class TestContextBudgetHooks(unittest.TestCase):
         )
         self.assertEqual(
             post_plan["injectSteps"][0]["systemMessage"]["systemMessage"],
-            build_premature_summary_continue_message(466_300, 480_000, boundary_plan_mode=True),
+            build_premature_summary_continue_message(466_300, 480_000, guard_mode="boundary-plan"),
         )
         stop_plan = evaluate_stop_guard(
             conv_id="conv-tool-plan",
@@ -775,7 +864,7 @@ class TestContextBudgetHooks(unittest.TestCase):
         )
         self.assertEqual(
             stop_plan.get("reason"),
-            build_premature_summary_continue_message(466_300, 480_000, boundary_plan_mode=True),
+            build_premature_summary_continue_message(466_300, 480_000, guard_mode="boundary-plan"),
         )
 
         # 4. After user sends execute, PreInvocation reverts to default branch
@@ -791,7 +880,133 @@ class TestContextBudgetHooks(unittest.TestCase):
         )
         self.assertEqual(
             res_after_execute["injectSteps"][0]["systemMessage"]["systemMessage"],
-            build_warning_message(466_200, 480_000, boundary_plan_mode=False),
+            build_warning_message(466_200, 480_000, guard_mode="default"),
+        )
+
+        # 5. Subagent opening SYSTEM_MESSAGE routes PreInvocation CLI, PreToolUse (1st & 2nd), PostInvocation, and Stop to boundary-auditor
+        transcript_auditor: Path = self.temp_dir / "auditor_transcript.jsonl"
+        auditor_prompt: str = (
+            "Audit boundary implementation plan at [implementation_plan.md](file:///tmp/plan.md) "
+            "with implementation ledger at [implementation_ledger.md](file:///tmp/ledger.md). "
+            "Execute your passive code inspection protocol and deliver audit_report_round_1.md."
+        )
+        with open(transcript_auditor, "w", encoding="utf-8") as f:
+            f.write(
+                json.dumps(
+                    {
+                        "type": "SYSTEM_MESSAGE",
+                        "source": "SYSTEM_SDK",
+                        "content": "<SYSTEM_MESSAGE>hook</SYSTEM_MESSAGE>",
+                    }
+                )
+                + "\n"
+            )
+            f.write(
+                json.dumps(
+                    {
+                        "type": "SYSTEM_MESSAGE",
+                        "source": "SYSTEM",
+                        "content": (
+                            "<SYSTEM_MESSAGE>\n"
+                            "[Message] timestamp=2026-11-17T03:59:15Z sender=parent-1 priority=MESSAGE_PRIORITY_HIGH "
+                            f"content={auditor_prompt}\n"
+                            "</SYSTEM_MESSAGE>"
+                        ),
+                    }
+                )
+                + "\n"
+            )
+            f.write(json.dumps({"type": "PLANNER_RESPONSE", "source": "MODEL", "input_tokens": 460_000, "cache_read_tokens": 0, "output_tokens": 200}) + "\n")
+
+        cli_auditor = json.loads(
+            subprocess.run(
+                ["python3", str(guard_script)],
+                input=json.dumps(
+                    {
+                        "conversationId": "conv-cli-auditor",
+                        "modelName": "Gemini 4 Argon (High)",
+                        "transcriptPath": str(transcript_auditor),
+                        "lastUserInput": auditor_prompt,
+                    }
+                ),
+                text=True,
+                capture_output=True,
+                env=env,
+                check=True,
+            ).stdout
+        )
+        self.assertEqual(
+            cli_auditor["injectSteps"][0]["systemMessage"]["systemMessage"],
+            build_warning_message(460_200, 480_000, guard_mode="boundary-auditor"),
+        )
+
+        with open(transcript_auditor, "a", encoding="utf-8") as f:
+            f.write(json.dumps({"type": "PLANNER_RESPONSE", "source": "MODEL", "input_tokens": 466_000, "cache_read_tokens": 0, "output_tokens": 200}) + "\n")
+
+        auditor_deny_first = evaluate_tool_budget_guard(
+            conv_id="conv-tool-auditor",
+            fallback_model_name="Gemini 4 Argon (High)",
+            transcript_path=str(transcript_auditor),
+            tool_call={"name": "read_file", "args": {"Path": str(target_file)}},
+            state_dir=self.state_dir,
+            thresholds_file=self.thresholds_file,
+        )
+        self.assertEqual(
+            auditor_deny_first.get("reason"),
+            build_warning_message(tool_display_tokens, 480_000, guard_mode="boundary-auditor"),
+        )
+
+        auditor_deny_second = evaluate_tool_budget_guard(
+            conv_id="conv-tool-auditor",
+            fallback_model_name="Gemini 4 Argon (High)",
+            transcript_path=str(transcript_auditor),
+            tool_call={"name": "read_file", "args": {"Path": str(target_file)}},
+            state_dir=self.state_dir,
+            thresholds_file=self.thresholds_file,
+        )
+        self.assertEqual(
+            auditor_deny_second.get("reason"),
+            build_subsequent_block_message(tool_display_tokens, 480_000, guard_mode="boundary-auditor"),
+        )
+
+        with open(transcript_auditor, "a", encoding="utf-8") as f:
+            f.write(
+                json.dumps(
+                    {
+                        "type": "PLANNER_RESPONSE",
+                        "source": "MODEL",
+                        "input_tokens": 466_000,
+                        "cache_read_tokens": 0,
+                        "output_tokens": 300,
+                        "content": "<summary>\npartial\n</summary>",
+                    }
+                )
+                + "\n"
+            )
+
+        auditor_post = evaluate_post_invocation_guard(
+            conv_id="conv-tool-auditor",
+            fallback_model_name="Gemini 4 Argon (High)",
+            transcript_path=str(transcript_auditor),
+            state_dir=self.state_dir,
+            thresholds_file=self.thresholds_file,
+        )
+        self.assertEqual(
+            auditor_post["injectSteps"][0]["systemMessage"]["systemMessage"],
+            build_premature_summary_continue_message(466_300, 480_000, guard_mode="boundary-auditor"),
+        )
+
+        auditor_stop = evaluate_stop_guard(
+            conv_id="conv-tool-auditor",
+            fallback_model_name="Gemini 4 Argon (High)",
+            transcript_path=str(transcript_auditor),
+            termination_reason="NO_TOOL_CALL",
+            state_dir=self.state_dir,
+            thresholds_file=self.thresholds_file,
+        )
+        self.assertEqual(
+            auditor_stop.get("reason"),
+            build_premature_summary_continue_message(466_300, 480_000, guard_mode="boundary-auditor"),
         )
 
 
