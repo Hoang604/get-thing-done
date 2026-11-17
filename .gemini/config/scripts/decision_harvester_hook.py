@@ -598,7 +598,7 @@ def save_harvester_state(state_dir: Path, state: DecisionHarvesterState) -> None
 def is_explicit_user_message_step(step: dict[str, object]) -> bool:
     if step.get("type") != "USER_INPUT":
         return False
-    if step.get("source") == "SYSTEM":
+    if step.get("source") != "USER_EXPLICIT":
         return False
     content_obj: object = step.get("content")
     if not isinstance(content_obj, str):
@@ -610,7 +610,7 @@ def is_explicit_user_message_step(step: dict[str, object]) -> bool:
         stripped == "/compact"
         or stripped.startswith("/compact ")
         or "<CONTEXT_SUMMARY>" in stripped
-        or stripped.startswith("<SYSTEM_MESSAGE>")
+        or "<SYSTEM_MESSAGE>" in stripped
     ):
         return False
     return True
@@ -619,23 +619,24 @@ def is_explicit_user_message_step(step: dict[str, object]) -> bool:
 def count_user_messages_since(
     transcript_path: str,
     after_line: int,
-) -> tuple[int, int, bool]:
-    """Return (new_user_msgs, new_last_scanned_line, saw_any_user_input_in_file)."""
+) -> tuple[int, int]:
+    """Return (new_user_msgs, new_last_scanned_line)."""
     target_file: Path | None = resolve_transcript_file(transcript_path)
     if target_file is None:
-        return 0, after_line, False
+        return 0, after_line
 
     try:
         with open(target_file, "r", encoding="utf-8", errors="ignore") as f:
             lines: list[str] = f.readlines()
     except Exception:
-        return 0, after_line, False
+        return 0, after_line
 
     new_user_msgs: int = 0
     cur_line: int = after_line
-    saw_any_user_input: bool = False
 
     for line_idx, raw_line in enumerate(lines, 1):
+        if line_idx <= after_line:
+            continue
         line_str: str = raw_line.strip()
         if not line_str:
             continue
@@ -646,17 +647,11 @@ def count_user_messages_since(
         if not isinstance(step, dict):
             continue
 
-        if step.get("type") == "USER_INPUT":
-            saw_any_user_input = True
-
-        if line_idx <= after_line:
-            continue
-
         cur_line = max(cur_line, line_idx)
         if is_explicit_user_message_step(step):
             new_user_msgs += 1
 
-    return new_user_msgs, cur_line, saw_any_user_input
+    return new_user_msgs, cur_line
 
 
 TOOL_PATH_KEYS: tuple[str, ...] = (
@@ -887,7 +882,7 @@ def evaluate_pre_invocation(
         scan_after: int = max(
             state.last_planner_turn, compact_state.last_compaction_turn
         )
-        new_user_msgs, new_turn, saw_any_user_input = count_user_messages_since(
+        new_user_msgs, new_turn = count_user_messages_since(
             transcript_path=transcript_path,
             after_line=scan_after,
         )
@@ -897,14 +892,11 @@ def evaluate_pre_invocation(
             False if (compacted or new_file_added) else state.injected_in_cycle
         )
 
-        effective_new_user_msgs: int = (
-            new_user_msgs if saw_any_user_input else 1
-        )
-        msgs += effective_new_user_msgs
+        msgs += new_user_msgs
         inject_steps: list[dict[str, dict[str, str]]] = []
 
         if (
-            effective_new_user_msgs > 0
+            new_user_msgs > 0
             and msgs >= config.every_n_messages
             and (msgs % config.every_n_messages == 0)
         ):
@@ -919,7 +911,7 @@ def evaluate_pre_invocation(
             conversation_id=clean_conv_id,
             messages_since_cycle_start=msgs,
             injected_in_cycle=injected_in_cycle,
-            last_planner_turn=max(new_turn, compact_state.last_scanned_line),
+            last_planner_turn=new_turn,
             decisions_fingerprint=current_fp,
             workspace_root=resolved_ws,
             known_decision_files=current_files,

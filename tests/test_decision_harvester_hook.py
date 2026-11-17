@@ -396,6 +396,7 @@ prompt:
 """
         )
 
+        self._append_user_step("trigger custom prompt")
         res = evaluate_pre_invocation(
             conv_id=self.conv_id,
             transcript_path=str(self.transcript_file),
@@ -588,6 +589,163 @@ prompt:
             statusline_dir=statusline_dir,
         )
         self.assertEqual(resolved_3, self.workspace.resolve())
+
+    def test_no_user_input_or_missing_transcript_never_increments_or_injects(
+        self,
+    ) -> None:
+        self._write_config("enabled: true\nevery_n_messages: 2\n")
+
+        # Even if transcript does not exist yet, repeated PreInvocation must not fabricate +1
+        for _ in range(3):
+            res_missing = evaluate_pre_invocation(
+                conv_id=self.conv_id,
+                transcript_path=str(self.transcript_file),
+                workspace_root=self.workspace,
+                state_dir=self.state_dir,
+            )
+            self.assertEqual(res_missing, {"injectSteps": []})
+            self.assertEqual(
+                load_harvester_state(self.state_dir, self.conv_id).messages_since_cycle_start,
+                0,
+            )
+
+        # Subagent transcript with SYSTEM_MESSAGE / PLANNER_RESPONSE / CHECKPOINT and zero USER_INPUT
+        self._append_step(
+            {
+                "type": "SYSTEM_MESSAGE",
+                "source": "SYSTEM_SDK",
+                "content": "subagent startup prompt",
+            }
+        )
+        for idx in range(4):
+            self._append_planner_step(20_000 + idx * 5_000)
+            res_sub = evaluate_pre_invocation(
+                conv_id=self.conv_id,
+                transcript_path=str(self.transcript_file),
+                workspace_root=self.workspace,
+                state_dir=self.state_dir,
+            )
+            self.assertEqual(res_sub, {"injectSteps": []})
+            self.assertEqual(
+                load_harvester_state(self.state_dir, self.conv_id).messages_since_cycle_start,
+                0,
+            )
+
+        self._append_step(
+            {"type": "CHECKPOINT", "source": "SYSTEM", "content": "checkpoint step"}
+        )
+        self._append_planner_step(5_000)
+        res_post_ckpt = evaluate_pre_invocation(
+            conv_id=self.conv_id,
+            transcript_path=str(self.transcript_file),
+            workspace_root=self.workspace,
+            state_dir=self.state_dir,
+        )
+        self.assertEqual(res_post_ckpt, {"injectSteps": []})
+        self.assertEqual(
+            load_harvester_state(self.state_dir, self.conv_id).messages_since_cycle_start,
+            0,
+        )
+
+    def test_ignores_non_explicit_and_prefixed_system_message_user_inputs(
+        self,
+    ) -> None:
+        self._write_config("enabled: true\nevery_n_messages: 2\n")
+        cfg = load_harvester_config(self.workspace)
+
+        # 1st genuine user message -> count = 1, no injection yet
+        self._append_user_step("first explicit message")
+        self._append_planner_step(20_000)
+        res_1 = evaluate_pre_invocation(
+            conv_id=self.conv_id,
+            transcript_path=str(self.transcript_file),
+            workspace_root=self.workspace,
+            state_dir=self.state_dir,
+        )
+        self.assertEqual(res_1, {"injectSteps": []})
+        self.assertEqual(
+            load_harvester_state(self.state_dir, self.conv_id).messages_since_cycle_start,
+            1,
+        )
+
+        # Non-explicit USER_INPUTs (SYSTEM_SDK hook/wakeup, missing source, prefixed <SYSTEM_MESSAGE>)
+        # must all be ignored and never push count from 1 -> 2
+        self._append_user_step("hook continuation message", source="SYSTEM_SDK")
+        self._append_step({"type": "USER_INPUT", "content": "untagged user input"})
+        self._append_user_step(
+            "prefixed wrapper: <SYSTEM_MESSAGE> internal body",
+            source="USER_EXPLICIT",
+        )
+        self._append_planner_step(35_000)
+        res_ignored = evaluate_pre_invocation(
+            conv_id=self.conv_id,
+            transcript_path=str(self.transcript_file),
+            workspace_root=self.workspace,
+            state_dir=self.state_dir,
+        )
+        self.assertEqual(res_ignored, {"injectSteps": []})
+        self.assertEqual(
+            load_harvester_state(self.state_dir, self.conv_id).messages_since_cycle_start,
+            1,
+        )
+
+        # 2nd genuine explicit user message -> count reaches 2 -> injects full prompt
+        self._append_user_step("second explicit message")
+        self._append_planner_step(45_000)
+        res_2 = evaluate_pre_invocation(
+            conv_id=self.conv_id,
+            transcript_path=str(self.transcript_file),
+            workspace_root=self.workspace,
+            state_dir=self.state_dir,
+        )
+        self.assertEqual(self._extract_injected_msg(res_2), build_full_prompt(cfg))
+
+    def test_last_planner_turn_does_not_skip_unflushed_transcript_lines(
+        self,
+    ) -> None:
+        self._write_config("enabled: true\nevery_n_messages: 2\n")
+        cfg = load_harvester_config(self.workspace)
+        full_file: Path = self.temp_dir / "transcript_full.jsonl"
+
+        user_1 = {
+            "type": "USER_INPUT",
+            "source": "USER_EXPLICIT",
+            "content": "first message",
+        }
+        planner_1 = {
+            "type": "PLANNER_RESPONSE",
+            "source": "MODEL",
+            "input_tokens": 25_000,
+            "cache_read_tokens": 0,
+            "output_tokens": 100,
+        }
+        # transcript.jsonl only has line 1 while transcript_full.jsonl already has 2 lines
+        self.transcript_file.write_text(json.dumps(user_1) + "\n", encoding="utf-8")
+        full_file.write_text(
+            json.dumps(user_1) + "\n" + json.dumps(planner_1) + "\n",
+            encoding="utf-8",
+        )
+
+        res_1 = evaluate_pre_invocation(
+            conv_id=self.conv_id,
+            transcript_path=str(self.transcript_file),
+            workspace_root=self.workspace,
+            state_dir=self.state_dir,
+        )
+        self.assertEqual(res_1, {"injectSteps": []})
+        state_1 = load_harvester_state(self.state_dir, self.conv_id)
+        self.assertEqual(state_1.messages_since_cycle_start, 1)
+        self.assertEqual(state_1.last_planner_turn, 1)
+
+        # Now line 2 (2nd user message) flushes to transcript.jsonl -> must NOT be skipped
+        self._append_user_step("second message")
+        res_2 = evaluate_pre_invocation(
+            conv_id=self.conv_id,
+            transcript_path=str(self.transcript_file),
+            workspace_root=self.workspace,
+            state_dir=self.state_dir,
+        )
+        self.assertEqual(self._extract_injected_msg(res_2), build_full_prompt(cfg))
 
 
 if __name__ == "__main__":
