@@ -31,8 +31,11 @@ BLOCK_RATIO: float = 0.975
 PHASE_MARKER_RE: re.Pattern[str] = re.compile(
     r"\b(boundary-plan|execute)\b", re.IGNORECASE
 )
+PLAN_ARTIFACT_NAME_RE: re.Pattern[str] = re.compile(
+    r"^implementation_plan(?:_round_\d+)?\.md$"
+)
 SUBAGENT_MESSAGE_RE: re.Pattern[str] = re.compile(
-    r"^\[Message\]\s+timestamp=\S+\s+sender=\S+\s+priority=\S+\s+content=(.*)(?:\r?\n</SYSTEM_MESSAGE>\s*\Z|\Z)",
+    r"^\[Message\]\s+timestamp=\S+\s+sender=\S+\s+priority=\S+\s+content=(.*?)(?:\r?\n</SYSTEM_MESSAGE>\s*\Z|\Z)",
     re.DOTALL | re.MULTILINE,
 )
 AUDITOR_DIRECTIVE_RE: re.Pattern[str] = re.compile(
@@ -82,10 +85,111 @@ def _extract_subagent_directive_text(content: str) -> str | None:
     return match.group(1).strip()
 
 
+def _unwrap_transcript_str(raw: object) -> str | None:
+    """Decode JSON-quoted string arguments produced by compact transcript serialization."""
+    if not isinstance(raw, str):
+        return None
+    if len(raw) >= 2 and raw[0] == '"' and raw[-1] == '"':
+        try:
+            decoded: object = json.loads(raw)
+        except (json.JSONDecodeError, ValueError):
+            return raw
+        return decoded if isinstance(decoded, str) else raw
+    return raw
+
+
+def _is_plan_artifact_path(path: str) -> bool:
+    basename: str = path.replace("\\", "/").rsplit("/", 1)[-1]
+    return bool(PLAN_ARTIFACT_NAME_RE.fullmatch(basename))
+
+
+def _is_ignored_non_plan_path(path: str) -> bool:
+    normalized: str = path.replace("\\", "/")
+    basename: str = normalized.rsplit("/", 1)[-1]
+    return basename == "implementation_ledger.md" or "/scratch/" in normalized
+
+
+def _has_open_plan_markers(text: str) -> bool:
+    return "## Open Investigations" in text or "[OPEN:" in text
+
+
+def _is_plan_write_finalized(tool_name: str, path: str, args: dict[str, object]) -> bool:
+    metadata_obj: object = args.get("ArtifactMetadata")
+    if isinstance(metadata_obj, dict) and metadata_obj.get("RequestFeedback") is True:
+        return True
+    if tool_name == "write_file":
+        content: str | None = _unwrap_transcript_str(args.get("Content"))
+        if content is not None:
+            return not _has_open_plan_markers(content)
+    if tool_name == "edit_file":
+        replacement: str | None = _unwrap_transcript_str(args.get("Replacement"))
+        if replacement is not None and _has_open_plan_markers(replacement):
+            return False
+        plan_file: Path = Path(path)
+        if plan_file.is_file():
+            try:
+                return not _has_open_plan_markers(
+                    plan_file.read_text(encoding="utf-8", errors="ignore")
+                )
+            except Exception:
+                return False
+    return False
+
+
+def _apply_planner_tool_calls(
+    current: GuardMode,
+    tool_calls_obj: object,
+    allow_execute_exit: bool,
+) -> tuple[GuardMode, bool]:
+    if current == "boundary-auditor" or not isinstance(tool_calls_obj, list):
+        return current, allow_execute_exit
+    state: GuardMode = current
+    can_exit_via_execute: bool = allow_execute_exit
+    for tc in tool_calls_obj:
+        if not isinstance(tc, dict):
+            continue
+        name_obj: object = tc.get("name")
+        args_obj: object = tc.get("args")
+        if not isinstance(name_obj, str) or not isinstance(args_obj, dict):
+            continue
+        if name_obj == "read_file":
+            path_str: str | None = _unwrap_transcript_str(args_obj.get("Path"))
+            if path_str is not None:
+                norm: str = path_str.replace("\\", "/")
+                if norm.endswith("/skills/boundary-plan/SKILL.md"):
+                    state = "boundary-plan"
+                    can_exit_via_execute = False
+                elif norm.endswith("/skills/execute/SKILL.md"):
+                    if state == "boundary-plan" and can_exit_via_execute:
+                        state = "default"
+                        can_exit_via_execute = False
+        elif name_obj in ("write_file", "edit_file"):
+            path_str = _unwrap_transcript_str(args_obj.get("Path"))
+            if path_str is None or not path_str.strip():
+                continue
+            if _is_plan_artifact_path(path_str):
+                if _is_plan_write_finalized(name_obj, path_str, args_obj):
+                    state = "default"
+                else:
+                    state = "boundary-plan"
+                can_exit_via_execute = False
+            elif state == "boundary-plan" and not _is_ignored_non_plan_path(path_str):
+                state = "default"
+                can_exit_via_execute = False
+        elif name_obj == "invoke_subagent" and state == "boundary-plan":
+            if _unwrap_transcript_str(args_obj.get("TypeName")) == "boundary-auditor":
+                state = "default"
+                can_exit_via_execute = False
+    return state, can_exit_via_execute
+
+
 def detect_guard_mode(transcript_path: str, last_user_input: str = "") -> GuardMode:
     mode: GuardMode = "default"
+    allow_execute_exit: bool = False
     saw_user_input: bool = False
     saw_opening_system_msg: bool = False
+    last_transcript_user_input: str = ""
+    system_directive_texts: list[str] = []
     target_file: Path | None = resolve_transcript_file(
         transcript_path, prefer_full=True
     )
@@ -106,36 +210,63 @@ def detect_guard_mode(transcript_path: str, last_user_input: str = "") -> GuardM
                         continue
                     step_type: object = step.get("type")
                     source: object = step.get("source")
+                    if step_type == "PLANNER_RESPONSE":
+                        mode, allow_execute_exit = _apply_planner_tool_calls(
+                            mode, step.get("tool_calls"), allow_execute_exit
+                        )
+                        continue
+
                     content_obj: object = step.get("content")
                     if not isinstance(content_obj, str):
                         continue
 
-                    if (
-                        not saw_user_input
-                        and not saw_opening_system_msg
-                        and step_type == "SYSTEM_MESSAGE"
-                        and source == "SYSTEM"
-                    ):
+                    if step_type == "SYSTEM_MESSAGE" and source == "SYSTEM":
                         directive_text: str | None = _extract_subagent_directive_text(
                             content_obj
                         )
                         if directive_text is not None:
-                            saw_opening_system_msg = True
-                            if AUDITOR_DIRECTIVE_RE.search(directive_text):
-                                mode = "boundary-auditor"
+                            system_directive_texts.append(directive_text)
+                            if not saw_user_input and not saw_opening_system_msg:
+                                saw_opening_system_msg = True
+                                if AUDITOR_DIRECTIVE_RE.search(directive_text):
+                                    mode = "boundary-auditor"
                         continue
 
                     if step_type == "USER_INPUT" and source != "SYSTEM":
                         saw_user_input = True
                         if is_explicit_user_text(content_obj):
+                            last_transcript_user_input = content_obj.strip()
                             mode = apply_phase_markers(mode, content_obj)
+                            if mode == "boundary-plan":
+                                allow_execute_exit = not bool(
+                                    PHASE_MARKER_RE.search(content_obj)
+                                )
+                            else:
+                                allow_execute_exit = False
         except Exception:
             pass
 
     if mode != "boundary-auditor" and is_explicit_user_text(last_user_input):
+        stripped_last_input: str = last_user_input.strip()
+        is_echoed_directive: bool = (
+            saw_opening_system_msg
+            and not saw_user_input
+            and any(
+                stripped_last_input == d
+                or (
+                    "<truncated " in d
+                    and len(d) >= 80
+                    and stripped_last_input.startswith(d[:80])
+                )
+                for d in system_directive_texts
+            )
+        )
+        is_already_recorded_user: bool = (
+            saw_user_input and stripped_last_input == last_transcript_user_input
+        )
         if not saw_user_input and AUDITOR_DIRECTIVE_RE.search(last_user_input):
             mode = "boundary-auditor"
-        else:
+        elif not is_echoed_directive and not is_already_recorded_user:
             mode = apply_phase_markers(mode, last_user_input)
 
     return mode
@@ -145,7 +276,7 @@ _STEP_2_SPEC: dict[GuardMode, tuple[str, str]] = {
     "boundary-plan": (
         "Persist Settled Plan Parts & Open Targets First",
         (
-            "2. **Persist Settled Plan Parts & Open Targets First**: **When** `implementation_plan.md` is not yet finalized under `boundary-plan`, before dispatching any `read_file`/`rg` or other non-persistence tool call, persist `<Artifact Directory>/implementation_plan.md` (`write_file` on first checkpoint, `edit_file` on subsequent checkpoints, `ArtifactMetadata` with `UserFacing: true`, and `RequestFeedback: false` while any `[OPEN]` marker or `## Open Investigations` item remains):\n"
+            "2. **Persist Settled Plan Parts & Open Targets First**: **When** the implementation plan is not yet finalized under `boundary-plan`, before dispatching any `read_file`/`rg` or other non-persistence tool call, persist the implementation plan in `<Artifact Directory>` (`write_file` on first checkpoint, `edit_file` on subsequent checkpoints, `ArtifactMetadata` with `UserFacing: true`, and `RequestFeedback: false` while any `[OPEN]` marker or `## Open Investigations` item remains):\n"
             "   - **Each independent plan unit in scope**: Evaluate each unit—a plan-level section, an individual `Canonical Knowledge Rulings` entry, a milestone's Tier 1 block, its `Module & Edge Derivation`, its `Seam Derivation` paired with `Literal Contracts`, or an individual line in `Caller & Sink Audit`, `Retired Forms`, or `File Manifest`—individually while holding the rest fixed (`Seam Derivation` and `Literal Contracts` depend on the boundary's implementation and external production boundary callers, whereas test files and pass-through callers govern only their own lines). Whenever all upstream decisions and `read_file` slices a unit depends on are inspected, write that unit literally into its place in the plan body; whenever any slice a unit depends on remains uninspected, mark that missing part `[OPEN: <what remains>]` inline inside a started milestone (or omit an unstarted unit from settled sections) and list its remaining `read_file`/`rg` targets in `## Open Investigations`.\n"
             "   - **`## Open Investigations` content**: Record in `## Open Investigations` solely what uninspected `[OPEN]` parts still need: pair each remaining `read_file`/`rg` target with the exact `[OPEN]` plan unit it resolves, and retain an `Inspected (do not re-read)` entry (with `#L<start>-L<end>` and verbatim source facts passing the deleted-file check—verified as if the source file were deleted from disk) only for already-inspected slices whose facts are still needed to finish an `[OPEN]` unit rather than repeating facts already written into the settled plan body. Keep one slice/target per bullet (no grouped files or prose file summaries).\n"
             "     *Anchor (partial milestone + `## Open Investigations` shape):*\n"
@@ -161,7 +292,7 @@ _STEP_2_SPEC: dict[GuardMode, tuple[str, str]] = {
             "     - **Inspected (do not re-read):** `[parser.py](file:///src/parser.py#L12-L48)` — `parse(raw: str) -> Token` (`#L12`); raises `ParseError` if `not raw.strip()` (`#L18`) *(kept only if an `[OPEN]` unit still needs these details)*\n"
             "     - **Remaining:** `[runner.py](file:///src/runner.py)` (`rg \"parse\\(\"` callers) — resolves Milestone 1 `Caller & Sink Audit`; `[test_parser.py](file:///tests/test_parser.py)` — resolves Milestone 1 `File Manifest` test line range\n"
             "     ```\n"
-            "   *Completion criterion*: every independent plan unit whose own upstream decisions and `read_file` slices are inspected sits literally in `implementation_plan.md` (without waiting on unread sibling items or test files); every still-uninspected part inside a started milestone carries an inline `[OPEN: ...]` marker; `## Open Investigations` lists each remaining target paired with its `[OPEN]` unit plus `Inspected (do not re-read)` entries (one slice per bullet with `#L<start>-L<end>`, passing the deleted-file check) strictly for slices still needed by an `[OPEN]` unit; and non-persistence tool calls run only after this save returns.\n"
+            "   *Completion criterion*: every independent plan unit whose own upstream decisions and `read_file` slices are inspected sits literally in the implementation plan (without waiting on unread sibling items or test files); every still-uninspected part inside a started milestone carries an inline `[OPEN: ...]` marker; `## Open Investigations` lists each remaining target paired with its `[OPEN]` unit plus `Inspected (do not re-read)` entries (one slice per bullet with `#L<start>-L<end>`, passing the deleted-file check) strictly for slices still needed by an `[OPEN]` unit; and non-persistence tool calls run only after this save returns.\n"
         ),
     ),
     "boundary-auditor": (

@@ -173,6 +173,20 @@ if [ -d "$OPENCODE_PLUGINS_SRC" ]; then
     done
 fi
 
+# Install opencode agents to ~/.config/opencode/agents (auto-discovered, no config entry needed)
+OPENCODE_AGENTS_SRC="$TARGET_AGENTS_DIR/opencode/agents"
+OPENCODE_AGENTS_DST="$HOME/.config/opencode/agents"
+
+if [ -d "$OPENCODE_AGENTS_SRC" ]; then
+    echo "  Source (opencode agents): $OPENCODE_AGENTS_SRC"
+    echo "  Target (opencode agents): $OPENCODE_AGENTS_DST"
+    mkdir -p "$OPENCODE_AGENTS_DST"
+    for f in "$OPENCODE_AGENTS_SRC"/*.md; do
+        [ -e "$f" ] || continue
+        cp "$f" "$OPENCODE_AGENTS_DST/"
+    done
+fi
+
 # Configure statusLine in ~/.gemini/antigravity-cli/settings.json if not present
 SETTINGS_FILE="$TARGET_DIR/antigravity-cli/settings.json"
 python3 - <<EOF

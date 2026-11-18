@@ -24,6 +24,7 @@ CLEAN_PATHS=(
     "$TARGET_GEMINI/config/scripts"
     "$TARGET_AGENTS/skills"
     "$TARGET_AGENTS/agents"
+    "$TARGET_AGENTS/opencode"
 )
 
 for dir in "${CLEAN_PATHS[@]}"; do
