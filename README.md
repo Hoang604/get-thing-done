@@ -158,6 +158,6 @@ Dynamic interceptors that plug into execution upon specific events or risk condi
 
 - **[safe](.gemini/antigravity-cli/skills/safe/SKILL.md) (High-Risk Operation Interceptor)**: Intercepts destructive commands, bulk mutations, speculative domain code, semantic git conflicts, and delete collisions. Emits a `### 🛡️ Safe Guard` report and halts execution until explicit user approval.
 - **Circuit Breakers in [execute](.gemini/antigravity-cli/skills/execute/SKILL.md)**:
-  - **`PLAN VETO`**: Triggered by `boundary-auditor` if the plan itself contains structural flaws or transition residue. Halts execution immediately.
+  - **`PLAN VETO`**: Triggered by `boundary-auditor` if the plan itself contains structural flaws or transition residue. Stops execution only for a veto part that neither the global rules nor the project rules resolve; a resolved part continues through the `OPEN` path.
   - **`Audit Budget`**: Hard stop when maximum remediation cycles are exhausted.
   - **`Oscillation Check`**: Detects ping-pong loops ($A \to B \to A$) and halts for human intervention.
