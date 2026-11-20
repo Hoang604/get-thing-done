@@ -3,13 +3,14 @@ import { execFileSync } from "node:child_process"
 import { mkdirSync, writeFileSync } from "node:fs"
 import { homedir } from "node:os"
 
-// GTD hooks port of .gemini/config/scripts/critical_instructions.sh:
-// injects the critical-instructions systemMessage on the first turn, after
-// >=40k token growth, or after compaction, as a persistent session message.
+// GTD hooks port of .gemini/config/scripts/critical_instructions.sh.
+// A trigger found at prompt admission is appended to the user's prompt; a
+// trigger found during a model request is admitted as a steered synthetic
+// message, which stays durable without waiting for the user.
 //
 // Gemini event -> OpenCode mapping:
-//   PreInvocation                  -> session "context" hook
-//   persistent systemMessage       -> ctx.session.synthetic (session history)
+//   UserPromptSubmit               -> session "prompt" hook (event.prompt.text)
+//   PreInvocation                  -> session "context" hook (steered synthetic message)
 //   compact_threshold_tracker.py   -> effective_tokens/compaction_count below
 
 const HOME = homedir()
@@ -90,11 +91,26 @@ export default Plugin.define({
       try {
         const messages = await ctx.session.context({ sessionID: event.sessionID })
         writeTrackerState(event.sessionID, lastAssistantTokens(messages), completedCompactions(messages))
+      } catch (error) {
+        console.error("gtd-hooks: tracker state update failed:", error)
+      }
+
+      try {
         for (const text of runCriticalInstructions(event.sessionID)) {
-          await ctx.session.synthetic({ sessionID: event.sessionID, text })
+          await ctx.session.synthetic({ sessionID: event.sessionID, text, delivery: "steer" })
         }
       } catch (error) {
-        console.error("gtd-hooks: critical instructions injection failed:", error)
+        console.error("gtd-hooks: mid-turn critical instructions injection failed:", error)
+      }
+    })
+
+    await ctx.session.hook("prompt", (event) => {
+      try {
+        for (const text of runCriticalInstructions(event.sessionID)) {
+          event.prompt.text = `${event.prompt.text}\n\n${text}`
+        }
+      } catch (error) {
+        console.error("gtd-hooks: prompt critical instructions injection failed:", error)
       }
     })
   },
