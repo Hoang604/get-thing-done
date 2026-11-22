@@ -10,7 +10,7 @@ The sole success criterion: you and the user hold the exact same understanding o
 
 **Deterministic Tool Sandbox & Zero-Code Isolation**:
 - **Permitted Tools (Strict Whitelist)**: You are strictly restricted to exactly two tools: `ask_question` (for conducting the domain interview) and `write_file` (solely for emitting the finalized `docs/proposals/<feature>/proposal.md`).
-- **Forbidden Tools (Boundary Clip)**: Calling any other tool — including `read_file`, `grep_search`, `find_by_name`, `run_command`, or any file/codebase inspection tools — is strictly forbidden. You must operate with zero codebase inspection. Keep attention anchored purely on authentic user intent and real-world business reality.
+- **Forbidden Tools (Boundary Clip)**: Calling any other tool or any file/codebase inspection tools — is strictly forbidden. You must operate with zero codebase inspection. Keep attention anchored purely on authentic user intent and real-world business reality.
 
 ---
 
