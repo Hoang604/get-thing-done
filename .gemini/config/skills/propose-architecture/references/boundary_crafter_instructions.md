@@ -1,139 +1,114 @@
 # CORE DIRECTIVE
 
-Conduct thorough research and present distinct architectural approaches with trade-offs for this assigned boundary.
-Draft strictly architectural approaches and trade-offs. This request does NOT warrant a plan. You must bypass planning mode entirely. Do NOT create or update any `implementation_plan.md` artifact.
-During exploration and auditing, author your working drafts in artifact storage (`<appDataDir>/brain/<subagent-id>/draft_proposal.md`).
-Upon final single-approach convergence, deliver the final proposal to `.gtd/<task-name>/<node_name>/proposal.md` and the exported contract to `.gtd/<task-name>/<node_name>/contract.md`.
+Design the architecture and exported contract for this assigned boundary under the settled System Spine and upstream contracts.
+Draft strictly architectural designs and contracts. Bypass planning mode entirely and do not create or update any `implementation_plan.md` artifact.
+During exploration and verification, write working drafts to `<appDataDir>/brain/<subagent-id>/draft_proposal.md`.
+Upon verification convergence, deliver the final proposal to `.gtd/<task-name>/<boundary_name>/proposal.md` and the Day-One exported contract to `.gtd/<task-name>/<boundary_name>/contract.md`.
 
 ---
 
-## 1. Context Ingress & Boundary Legwork
+## 1. Context Ingress & Anchor Legwork
 
-1. **Immediate Ingestion**: Read the assigned task file and all referenced files concurrently as your starting point.
-2. **Trace Dependencies**: Discover and read affected files, callers, and invariants recursively within your assigned boundary, stopping at direct external interfaces.
+1. Read the assigned `task.md` and all referenced files concurrently.
+2. **When** grounding this boundary, evaluate each element of the boundary individually while holding the rest fixed and anchor every claim and invariant in whatever already constrains it before this task runs: every constraint residing in the existing codebase is anchored by a verified `file:line` citation (tracing affected callers, imports, and invariants within this boundary to its direct external interfaces), and every constraint residing outside the codebase is anchored by the authoritative external source that establishes it.
 
-- **Completion Criterion**: List every inspected target file, direct import, and calling interface.
-
----
-
-## 2. Frame Reality
-
-- Document current behavior, system constraints, and technical drivers.
-- List exact core files and shared modules impacted.
-- Identify **invariants**: load-bearing boundaries and data structures that must remain unchanged.
-
-- **Completion Criterion**: Output a unified list explicitly stating current behavior, system constraints, exact impacted files, and load-bearing invariants.
+- **Completion Criterion**: Every existing codebase element touched by this boundary is backed by verified `file:line` citations, and every non-code element is backed by its authoritative external or dispatch anchor.
 
 ---
 
-## 3. Circuit-Breaker Protocol (Escalation Gate)
+## 2. Frame Reality & Boundary Consumers
 
-Halt execution if what the task and its referenced files demand cannot be reconciled with the codebase without breaking a foundational invariant (or if the referenced files contradict each other).
+1. **Boundary Consumers & Job**: **When** defining this boundary's purpose and evaluating its interface, identify every actor and downstream boundary outside this boundary and state the job each completes across it; justify every exposed capability strictly by those external jobs.
+2. Document current behavior or baseline constraints, impacted existing modules (if any), and load-bearing invariants grounded strictly in Section 1 anchors.
 
-### Escalation Action
-1. Immediately halt all further drafting and tool calls.
-2. Send an escalation message directly to the Orchestrator with strictly this structure:
-   - **Contradiction**: the assertion that broke against codebase reality.
-   - **Evidence**: `file:line` citations proving the contradiction.
-   - **Decision**: the exact choice required from human.
-3. Pause execution and wait for human resolution via the Orchestrator.
+- **Completion Criterion**: Every external consumer and its job, current constraints, impacted existing files (if any), and load-bearing invariants are explicitly stated and anchored.
 
 ---
 
-## 4. Propose Approaches
+## 3. Upstream Negotiation & Circuit-Breaker Gate
 
-Provide exactly two distinct, viable approaches (`Approach A` vs `Approach B`) satisfying all requirements. Both MUST be functional and engineering-sound; Propose exactly two distinct, viable, and production-ready designs. Construct the strongest possible case for both approaches. Treat both as viable solutions that an experienced engineer would strongly advocate for.
+1. **Bounded Upstream Negotiation (`CONTRACT_CHANGE_REQUEST`)**: **When** this boundary must add work that originates not from its own job but from compensating for the shape of a completed upstream contract, and absorbing that work into the upstream boundary reduces complexity outside the upstream boundary without creating a cycle, halt drafting and emit `CONTRACT_CHANGE_REQUEST` to the Orchestrator citing:
+   - **Upstream Clause**: Exact upstream boundary and contract clause forcing compensation.
+   - **Forced Compensation**: Exact work this boundary would otherwise have to absorb.
+   - **Proposed Upstream Change**: Minimal change to the upstream contract that eliminates the compensation.
+   Pause execution and wait for Orchestrator resolution.
+2. **Circuit-Breaker Escalation**: **When** what the task, System Spine, and upstream contracts demand cannot be reconciled with governing invariants without violating boundary honesty (or after an upstream boundary has exhausted its one allowed revision pass), halt immediately and send `CIRCUIT_BREAKER_TRIGGERED` to the Orchestrator with:
+   - **Contradiction**: The assertion that broke against anchored reality.
+   - **Evidence**: Verified `file:line` or authoritative source citations proving the contradiction.
+   - **Decision**: The exact choice required from the human.
+   Pause execution and wait for resolution via the Orchestrator.
 
-- **Approach A (Pragmatic / Minimalist)**: The simplest, fastest implementation path that completely fulfills the requirements with minimal moving parts or surface-area modification.
-- **Approach B (Architectural / Robust)**: The cleanest, most extensible and scalable architecture, optimized for long-term maintenance, clean seams, and modularity.
+- **Completion Criterion**: Either no unresolvable contradiction or upstream leak blocks this boundary, or a structured `CONTRACT_CHANGE_REQUEST` / `CIRCUIT_BREAKER_TRIGGERED` message has been sent and resolved.
+
+---
+
+## 4. Boundary Design & Conditional Branching
+
+### Conditional Branching Rule
+**When** drafting a boundary proposal under the settled System Spine and upstream contracts, inspect the viable designs that fulfill the boundary's job before writing `draft_proposal.md`: draft competing approaches (capped at two genuinely distinct candidates named by the trade-off axis that separates them, not a fixed minimalist-versus-robust template) only when those viable designs require different exported contracts whose trade-offs cannot be eliminated without choosing between them; otherwise draft the single strongest approach, note each rejected internal alternative with the single decisive reason it lost, and submit every boundary draft—single or competing—to `architecture-adjudicator`.
+
+### Boundary Design Principles
+Evaluate every proposed design individually against these orthogonal principles before emitting `draft_proposal.md`:
+
+- **Seam Necessity**: **When** deciding whether to introduce an abstract seam for a dependency or behavioral variation, evaluate each candidate seam individually while holding the rest fixed: introduce an abstract seam only when the boundary must execute against at least two distinct concrete implementations across its required operating and verification environments; whenever one concrete implementation suffices across all of them, keep the dependency concrete and direct.
+- **Side-Effect Isolation**: Make every state transition explicit in the operation's return contract and inject external I/O adapters strictly as parameters rather than mutating caller or global state invisibly.
+- **Module Depth & Deletion Test**: Hide implementation complexity behind the smallest complete interface (signature, invariants, ordering constraints, error modes, and performance guarantees). Expose a declaration on `contract.md` or retain an internal module only when deleting it pushes complexity into consumers outside the boundary.
+- **Coexistence Isolation (`Target Contract` vs `Transition Seam`)**: **When** the boundary's transition from the current state to the target state requires a coexistence period because dependent actors or systems cannot cut over simultaneously, evaluate every compatibility mechanism individually while holding the rest fixed: keep `contract.md` strictly in its Day-One `Target Contract` form (containing zero elements justified only by the pre-transition state), and isolate every temporary bridging mechanism in a separate `Transition Seam` section of `proposal.md` declaring its compatibility scope and an observable `sunset trigger` that marks when it is deleted. Omit `Transition Seam` whenever no coexistence period is required.
 
 ### Quality Tiers (Universal)
+Classify each candidate against the Quality Tiers (Tier 1–5, plus a `+0.5` Existing Pattern Alignment Modifier when directly extending an existing system pattern or idiom, citing the exact reused pattern), strictly preferring **5.5 > 5 > 4.5 > 4 > 3.5 > 3 > 2.5 > 2 > 1.5 > 1**:
 
-Classify each candidate against the Quality Tiers (Tier 1–5, with a +0.5 bonus for utilizing existing system patterns), strictly preferring **5.5 > 5 > 4.5 > 4 > 3.5 > 3 > 2.5 > 2 > 1.5 > 1**. Default is Tier 5 thinking:
-
-| Tier | Name | Signature (Features & Fixes Alike) |
+| Tier | Name | Signature |
 |---|---|---|
 | **5** | **Structural / Impossible** | Changes design so failure/invalid states *cannot exist* |
-| **4** | **Systemic / Root-Cause** | Solves the generalized invariant; covers the entire class of scenarios and lifecycles |
-| **3** | **Standard / Contract** | Complete implementation covering all specified requirements and edge cases with tests |
+| **4** | **Systemic / Root-Cause** | Solves the generalized invariant across the entire class of scenarios and lifecycles |
+| **3** | **Standard / Contract** | Complete implementation covering all specified requirements and edge cases |
 | **2** | **Narrow / Ad-Hoc** | Special-cases only observed scenarios; brittle at boundaries or unhandled variations |
 | **1** | **Brittle / Workaround** | Superficial workaround; obscures symptom or works by accident |
 
-#### Existing Pattern Alignment Modifier (+0.5 Tier Bonus)
-- **Existing Pattern Bonus (+0.5)**: Award a +0.5 tier boost (e.g., Tier 3 → Tier 3.5, Tier 4 → Tier 4.5) to any approach that directly utilizes, conforms to, or extends existing system patterns, idioms, established abstractions, and conventions instead of introducing foreign mechanisms or fragmented paradigms.
-- **Bonus Justification**: When applying the +0.5 boost, explicitly cite the existing codebase pattern, utility, or architectural convention being reused and how it preserves conceptual integrity.
+### Required Proposal Structure (`draft_proposal.md`)
+For each candidate approach (1 for single-approach drafts, or 2 named by their separating trade-off axis for competing drafts), explicitly include:
+- **Quality Tier**: Tier label (`1`–`5.5`) with structural rationale (and physical blocker if base tier is below `4`).
+- **Consumer Jobs Enabled**: Exact external jobs completed across this boundary's interface.
+- **Suitable If**: Concrete scenario or operational priority where this candidate wins.
+- **Trade-offs**: Concrete evaluation of module depth, seam surface, operational/runtime characteristics, and implementation scope.
+- **Candidate Exported Contract**: Complete Day-One `Target Contract` exposed outside this boundary.
+- **Transition Seam** *(include only when a mandatory coexistence period exists)*: Compatibility scope and observable `sunset trigger`.
+- **Rejected Alternatives** *(for single-approach drafts)*: Each rejected internal alternative with the single decisive reason it lost.
 
-Evaluate both valid trade-off paths against these self-contained design principles:
+When drafting two competing approaches, conclude `draft_proposal.md` with a single-line-per-cell (1–8 words per cell) Comparison Summary Table matching this shape anchor:
 
-- **Module Depth & Deletion Test (`Deep vs Shallow`):**
-  - **Exact Terminology (`Module & Interface`):**
-    - **Module:** Anything with an interface and an implementation (`scale-agnostic: function, class, package, or tier-spanning slice`). Use precise terminology restricted to: module, function, class, package, or tier-spanning slice.
-    - **Interface:** Everything a caller must know to use the module correctly. Define interface as the complete contract: type signature, invariants, ordering constraints, error modes, required configuration, and performance characteristics.
-  - Design **deep modules**: lots of behavior hidden behind a small interface (`fewer methods, simple params`). Reject **shallow modules** (`large interface, thin pass-through implementation`).
-  - **Side-Effect Rejection:** Interfaces must return calculated results (`pure outputs`) rather than mutating caller/global state. Inject all external adapters strictly as parameters.
-  - **The Deletion Test:** Imagine deleting the module. If complexity reappears across N callers, it earned its keep; if complexity vanishes without loss, it was a shallow pass-through and must be rejected.
-- **Seams & Dependency Categorization:**
-  - A **seam** is where the interface lives. **One adapter means a hypothetical seam; two adapters means a real one.** Introduce seams strictly when justified by at least two adapters or distinct dependency types.
-  - **Internal vs External Seams:** A deep module can have private internal seams for its own implementation and tests. Keep all internal seams strictly private within the module.
-  - Classify seam dependencies: `In-process` (`pure compute/memory -> merge modules, no adapter`), `Local-substitutable` (`local stand-in like PGLite -> test with stand-in`), `Remote-owned` (`define port, in-memory test adapter`), or `True-external` (`injected port + mock adapter`).
-- **Decoupled & Open-Closed (`Isolation seams`):**
-  - Seams and interfaces must operate and evolve in isolation. Abstractions must actively decouple the system, else they should not exist.
-  - **Open-Closed:** The system must absorb new features strictly by adding new code. If adding a new variant forces mutating old code, the contract fails this rule.
-- **Concrete Patterns:**
-  - Name exact design patterns. If a pattern exists solely for speculative future-proofing or creates concurrency/I/O bottlenecks, it is an anti-pattern and fails.
-
-For each approach, explicitly list:
-
-- **Quality Tier**: Label as Tier 1–5 (with `+0.5` modifier if utilizing existing system patterns, e.g., `Tier 4.5`) with rationale. If implementing below Tier 4 (base tier), explicitly state the constraint or blocker preventing a higher tier.
-- **Suitable If**: State the exact real-world scenario, future feature requirement, or operational priority where this approach wins. Use concrete scenario anchors rather than abstract adjectives.
-- **Pros**: Evaluate advantages in module depth, seam complexity, and performance.
-- **Cons**: Evaluate disadvantages in module depth, seam complexity, and performance.
-- **User Outcomes**:
-  - After this task, user should be able to `<do something specific>`
-  - After this task, user should see `<specific observable result>`
-- **Senior Engineer Advocacy**: Explicitly state why an experienced engineer would fight for this approach.
-
-### Comparison Summary Table
-
-Conclude the working draft with an executive comparison table contrasting Approach A and Approach B.
-
-**Table Construction Contract:**
-- **Cell Density:** Single line per cell (1–8 words). Use concrete metrics, tags, and deltas.
-- **Content Focus:** Classify architectural differences without restating prose.
-
-| Dimension / Criterion | Approach A (Pragmatic / Minimalist) | Approach B (Architectural / Robust) |
+| Dimension | Option 1 (<Axis Pole A>) | Option 2 (<Axis Pole B>) |
 |---|---|---|
-| **Quality Tier** | Tier 3 (Standard + Existing Pattern) | Tier 5.5 (Structural / Impossible) |
-| **Suitable If** | Fixed to 1 provider, fast internal MVP | Multi-provider expansion, dynamic runtime swapping |
-| **Module Depth** | Shallow (3 helper classes, leaky params) | Deep (1 facade function, private state) |
-| **Seams & Decoupling** | In-process (tightly coupled to DB driver) | Remote-owned (isolated behind port interface) |
-| **Implementation Scope** | 2 files modified (~40 LOC) | 5 files modified / 1 new module (~180 LOC) |
-| **Long-term Maintenance** | Moderate (callers must handle error states) | High (invalid states unrepresentable) |
-| **Core Trade-off** | Fast delivery, but leaks domain logic | Higher upfront effort, but zero downstream churn |
+| **Quality Tier** | Tier 4.5 (Systemic + Existing Pattern) | Tier 5 (Structural / Impossible) |
+| **Suitable If** | Bounded synchronous volume | Unbounded asynchronous throughput |
+| **Interface Shape** | Direct synchronous result | Job token + status polling |
+| **Seam Surface** | Concrete direct module | Injected queue port + stand-in |
+| **Core Trade-off** | Lower latency, hard size cap | Higher latency, scales unbounded |
 
-- **Completion Criterion**: Output exactly two approaches (`Approach A` and `Approach B`) in the preliminary working draft. Each approach must explicitly contain the headings: `Quality Tier`, `Suitable If`, `Pros`, `Cons`, `User Outcomes`, and `Senior Engineer Advocacy`. Conclude with the structured `Comparison Summary Table` contrasting both approaches.
+- **Completion Criterion**: `<appDataDir>/brain/<subagent-id>/draft_proposal.md` is written following the Conditional Branching Rule, every design principle, and the required structure.
 
 ---
 
-## 5. Inner Convergence Loop & Final Delivery
+## 5. Verification Loop & Final Delivery
 
-1. **Initial Draft Delivery (Artifact Storage)**:
-   - Author your preliminary dual-approach architectural proposal (`Approach A` vs `Approach B`, with each approach explicitly defining its candidate exported contract) exclusively to the subagent artifact directory:
-     `<appDataDir>/brain/<subagent-id>/draft_proposal.md`
-
-2. **Adjudication & Convergence**:
+1. **Adjudication & Verification**:
    - Spawn an `architecture-adjudicator` instance via `invoke_subagent`:
      - `TypeName`: `architecture-adjudicator`
      - `Role`: `Architecture Adjudicator`
      - `Prompt`:
        `Adjudicate draft proposal at: <appDataDir>/brain/<subagent-id>/draft_proposal.md with task context: <task-file-path>`
    - Evaluate the adjudicator report:
-     - **If CIRCUIT_BREAKER_TRIGGERED**: Immediately halt execution and escalate contradiction to the Orchestrator with the artifact link the adjudicator give you.
-     - **If Approach Selected**: Adopt the winning approach and any required contract adjustments. Kill the adjudicator subagent via `manage_subagents`.
+     - **If `CIRCUIT_BREAKER_TRIGGERED`**: Kill the adjudicator via `manage_subagents`, halt execution, and escalate the contradiction and artifact link to the Orchestrator.
+     - **If `HUMAN_DECISION_REQUIRED`**: Kill the adjudicator via `manage_subagents`, pause execution, and escalate the unsettled external priority and candidate consequences to the Orchestrator. Wait for the user's ruling via `send_message`, then adopt the chosen candidate and apply any required contract refinements below.
+     - **If `Contract Verdict` is `APPROVED`**: Kill the adjudicator via `manage_subagents` and proceed to Final Delivery.
+     - **If `Contract Verdict` is `REFINED`**: Kill the adjudicator via `manage_subagents`. **When** `architecture-adjudicator` returns `Contract Verdict: REFINED`, classify each required adjustment individually while holding the rest fixed by a single test: an adjustment is a `Design revision` whenever applying it changes any commitment the boundary makes across its interface or any mechanism enforcing that commitment (including any `Transition Seam` or its `sunset trigger`); an adjustment is `Fact alignment` whenever it corrects a statement or reference to a pre-existing fact while leaving every design commitment and enforcing mechanism unchanged. Apply `Fact alignment` adjustments directly and deliver; whenever any adjustment is a `Design revision`, revise `draft_proposal.md` and spawn one fresh `architecture-adjudicator` pass, capping total verification at two passes per boundary (after which kill the adjudicator, apply any remaining fixes, and deliver).
+     - **If Adjudicator identifies a forced upstream leak**: Escalate via `CONTRACT_CHANGE_REQUEST` (Section 3) to the Orchestrator instead of shipping a degraded contract.
 
-3. **Final Single-Approach Convergence & Workspace Delivery**:
-   - Author `.gtd/<task-name>/<node_name>/proposal.md` by reusing your draft proposal: prune the discarded approach, and convert the comparison table into an `Architectural Profile` list for the selected approach.
-   - Author the exported boundary contract to:
-     `.gtd/<task-name>/<node_name>/contract.md` containing strictly the public interface of this boundary: everything an external caller needs to know to integrate with it, and nothing internal.
-   - Reply to the orchestrator with strictly this single confirmation line:
-     `Completed: Final proposal and contract delivered on .gtd/<task-name>/<node_name>/proposal.md and .gtd/<task-name>/<node_name>/contract.md`
+2. **Final Workspace Delivery**:
+   - Write `.gtd/<task-name>/<boundary_name>/proposal.md` containing the single selected approach, its verified **Decision Log** (or **Rejected Alternatives** for single-approach nodes), and any verified **Transition Seam** section (pruning discarded candidate prose).
+   - Write `.gtd/<task-name>/<boundary_name>/contract.md` containing strictly the Day-One **Target Contract**: everything an external consumer needs to integrate with this boundary, with zero internal implementation details and zero temporary coexistence residue.
+   - Reply to the Orchestrator with strictly this single confirmation line:
+     `Completed: Final proposal and contract delivered on .gtd/<task-name>/<boundary_name>/proposal.md and .gtd/<task-name>/<boundary_name>/contract.md`
+
+- **Completion Criterion**: Adjudication converged within the two-pass cap, `.gtd/<task-name>/<boundary_name>/proposal.md` and `contract.md` are delivered, and the single confirmation line is sent to the Orchestrator.
