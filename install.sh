@@ -28,6 +28,25 @@ dir_count=$(find "$SRC_DIR" -mindepth 1 -type d | wc -l)
 # Create target directory
 mkdir -p "$TARGET_DIR"
 
+# Remove stale copies of skills migrated into GTD plugins and refresh only GTD plugin dirs
+if [ -d "$SRC_DIR/config/plugins" ]; then
+    for plugin_dir in "$SRC_DIR/config/plugins"/*; do
+        [ -d "$plugin_dir" ] || continue
+        plugin_name="$(basename "$plugin_dir")"
+        rm -rf "$TARGET_DIR/config/plugins/$plugin_name" "$TARGET_AGENTS_DIR/plugins/$plugin_name"
+        if [ -d "$plugin_dir/skills" ]; then
+            for skill_dir in "$plugin_dir/skills"/*; do
+                [ -d "$skill_dir" ] || continue
+                skill_name="$(basename "$skill_dir")"
+                rm -rf \
+                    "$TARGET_DIR/antigravity-cli/skills/$skill_name" \
+                    "$TARGET_DIR/config/skills/$skill_name" \
+                    "$TARGET_AGENTS_DIR/skills/$skill_name"
+            done
+        fi
+    done
+fi
+
 # Copy all contents including hidden files, maintaining structure
 cp -r "$SRC_DIR/." "$TARGET_DIR/"
 

@@ -163,6 +163,7 @@
     ]
   },
   "task-schedule-guard": {
+    "enabled": false,
     "PreToolUse": [
       {
         "matcher": "manage_task|schedule",

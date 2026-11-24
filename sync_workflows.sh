@@ -192,5 +192,16 @@ dst_path.write_text("\n\n".join(blocks) + "\n", encoding="utf-8")
 PYEOF
 fi
 
+# 5. Sync Plugins: .gemini/config/plugins -> .agents/plugins
+SRC_PLUGINS="$WORKSPACE_DIR/.gemini/config/plugins"
+DEST_PLUGINS_AGENTS="$WORKSPACE_DIR/.agents/plugins"
+
+if [[ -d "$SRC_PLUGINS" ]]; then
+    mkdir -p "$DEST_PLUGINS_AGENTS"
+    echo "Syncing plugins: $SRC_PLUGINS -> $DEST_PLUGINS_AGENTS..."
+    rm -rf "$DEST_PLUGINS_AGENTS"/*
+    cp -rf "$SRC_PLUGINS/." "$DEST_PLUGINS_AGENTS/"
+fi
+
 echo "Done."
 

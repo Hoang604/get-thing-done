@@ -1,0 +1,13 @@
+# REAL Test Standard
+
+A test earns its place by one property: it turns **red** exactly when someone relying on the product would see a break. A test is **REAL** when all four rules hold, and **JUNK** when any rule fails.
+
+1. **Contract and tight assertion.** Derive the rule from what the product promises its callers for one independent behavior—never backward from the test's assertions—and state that promise in one sentence that holds for every valid input without quoting the test's literal values. Every concrete observable outcome that violates any part of that caller promise on the test's input must turn an assertion red. If the only sentence you can write repeats the test's expected value, the test pins an outcome rather than a contract.
+
+2. **Kills every plausible mutant of the rule.** Cite a plausible mutation in the product's decision logic (`file:line` `old → new` for existing code, or `<file>::<symbol>` `planned behavior → broken mutation` for unwritten code) that breaks the Rule 1 promise, propagates through product logic to an assertion, and turns it red—and that no other REAL test in scope kills just as directly. A value that reaches an assertion unchanged from setup without passing through a product decision kills zero mutants. Every plausible mutation of the product logic implementing the Rule 1 promise must be killed by this test or by another REAL test in scope covering the same rule; a test whose assertion or input leaves any such mutation alive across the scope fails.
+
+3. **Survives refactors.** Every product edit that preserves the Rule 1 caller promise must leave every assertion green. Each assertion may observe only properties whose change would break a caller relying on that promise; anything a refactor can alter without breaking callers fails this rule.
+
+4. **Reaches the product.** Enter and observe the product strictly through declarations invoked by production callers outside the boundary (in an active boundary plan, declarations surviving `Declaration Survival`), starting from state the real path can produce and getting the same outcome on every run in its test tier. Replace a dependency only when it crosses an out-of-process boundary that cannot run locally in that tier, using a stand-in that implements the boundary's stateful contract and is verified through its resulting state rather than call history.
+
+**Whole-test verdict.** Evaluate each test as a single unit: a single assertion or setup dependency that fails any of the four rules disqualifies the entire test (in triage, cite the failing part so the reader knows what remains worth keeping).

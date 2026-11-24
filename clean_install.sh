@@ -14,7 +14,7 @@ echo "=== Step 1: Syncing workspace skills & agents from SSoT ==="
 "$SCRIPT_DIR/sync_workflows.sh"
 
 echo ""
-echo "=== Step 2: Cleaning existing skills, agents & scripts in target directories ==="
+echo "=== Step 2: Cleaning existing skills, agents, scripts & GTD plugins in target directories ==="
 CLEAN_PATHS=(
     "$SCRIPT_DIR/.gemini/config/scripts/__pycache__"
     "$TARGET_GEMINI/antigravity-cli/skills"
@@ -28,6 +28,13 @@ CLEAN_PATHS=(
 )
 
 for dir in "${CLEAN_PATHS[@]}"; do
+    if [ -d "$dir" ]; then
+        echo "  Removing: $dir"
+        rm -rf "$dir"
+    fi
+done
+
+for dir in "$TARGET_GEMINI/config/plugins"/gtd-* "$TARGET_AGENTS/plugins"/gtd-*; do
     if [ -d "$dir" ]; then
         echo "  Removing: $dir"
         rm -rf "$dir"
