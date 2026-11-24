@@ -91,6 +91,12 @@ if [ -n "$CONV_ID" ]; then
   printf "%s\n" "$RAW_INPUT" > "${CONV_STATUS_DIR}/latest.json" 2>/dev/null || true
 fi
 
+# ─── Passive Gemini Quota-to-USD Trace Ingestion (Non-Blocking) ──────────────
+QUOTA_TRACER="${HOME}/.gemini/config/scripts/quota_tracer.py"
+if [ -n "$RAW_INPUT" ] && [ -x "$QUOTA_TRACER" ]; then
+  { printf "%s\n" "$RAW_INPUT" | python3 "$QUOTA_TRACER" ingest; } >/dev/null 2>&1 &
+fi
+
 # ─── Helper Formatters ───────────────────────────────────────────────────────
 format_duration() {
   local s="${1:-}"
@@ -500,6 +506,11 @@ case "$MODEL" in
       PRICE_IN=2.0
       PRICE_CACHE=0.1
       PRICE_OUT=10.0
+      ;;
+  *"4 Neon"*|*"gemini-4-neon"*)
+      PRICE_IN=3.00
+      PRICE_CACHE=0.15
+      PRICE_OUT=15.00
       ;;
   *"3.7 Flash"*)
       PRICE_IN=0.75

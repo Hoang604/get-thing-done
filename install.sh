@@ -59,6 +59,7 @@ chmod +x "$TARGET_DIR/config/scripts/skill_usage_tracker.py"
 chmod +x "$TARGET_DIR/config/scripts/loop_hook.py"
 chmod +x "$TARGET_DIR/config/scripts/decision_harvester_hook.py"
 chmod +x "$TARGET_DIR/config/scripts/worktree_isolation_guard.py"
+chmod +x "$TARGET_DIR/config/scripts/quota_tracer.py"
 
 # Install Codex hooks and merge them with existing user hooks.
 if [ -d "$SRC_CODEX_HOOKS_DIR/hooks" ]; then
@@ -112,6 +113,7 @@ fi
 rm -f "$TARGET_DIR/config/scripts/init-python-agent.sh" "$HOME/.local/bin/init-python-agent"
 mkdir -p "$HOME/.local/bin"
 ln -sf "$TARGET_DIR/config/scripts/init-gtd-agent.sh" "$HOME/.local/bin/init-gtd-agent"
+ln -sf "$TARGET_DIR/config/scripts/quota_tracer.py" "$HOME/.local/bin/quota-trace"
 
 # Merge opencode config into ~/.config/opencode/opencode.json
 OPENCODE_CFG_SRC="$TARGET_AGENTS_DIR/opencode.json"
