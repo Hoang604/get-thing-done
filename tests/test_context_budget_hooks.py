@@ -15,6 +15,7 @@ from compact_threshold_tracker import (
     DEFAULT_COMPACT_THRESHOLD,
     MAX_COMPACT_THRESHOLD,
     estimate_read_file_tokens,
+    estimate_tool_call_tokens,
     load_conversation_state,
     load_thresholds_db,
     sync_conversation_and_thresholds,
@@ -893,21 +894,22 @@ class TestContextBudgetHooks(unittest.TestCase):
         self.assertEqual(detect_guard_mode(str(auditor_flow)), "boundary-auditor")
 
     def test_guard_mode_routes_warning_block_and_premature_summary_branches(self) -> None:
+        all_modes = ("default", "boundary-plan", "boundary-auditor", "code-reviewer")
         warnings = {
             mode: build_warning_message(460_000, 480_000, guard_mode=mode)
-            for mode in ("default", "boundary-plan", "boundary-auditor")
+            for mode in all_modes
         }
-        self.assertEqual(len(set(warnings.values())), 3)
+        self.assertEqual(len(set(warnings.values())), len(all_modes))
         sub_blocks = {
             mode: build_subsequent_block_message(470_000, 480_000, guard_mode=mode)
-            for mode in ("default", "boundary-plan", "boundary-auditor")
+            for mode in all_modes
         }
-        self.assertEqual(len(set(sub_blocks.values())), 3)
+        self.assertEqual(len(set(sub_blocks.values())), len(all_modes))
         premature = {
             mode: build_premature_summary_continue_message(465_000, 480_000, guard_mode=mode)
-            for mode in ("default", "boundary-plan", "boundary-auditor")
+            for mode in all_modes
         }
-        self.assertEqual(len(set(premature.values())), 3)
+        self.assertEqual(len(set(premature.values())), len(all_modes))
 
         # 1. PreInvocation CLI at >=95% with lastUserInput carrying boundary-plan emits plan warning branch
         self._append_planner_step(460_000, 0, output_tokens=200)
@@ -1395,6 +1397,136 @@ class TestContextBudgetHooks(unittest.TestCase):
                 + "\n"
             )
         self.assertEqual(detect_guard_mode(str(neutral_turn_transcript)), "default")
+
+    def test_code_reviewer_subagent_detects_locks_and_routes_budget_guards(self) -> None:
+        sec_directive: str = (
+            "Review security scope: src/auth/. Contract: /tmp/review-contract.md. "
+            "Execute your blind security review protocol and deliver security_review_report.md."
+        )
+        arch_directive: str = (
+            "Review architecture-perf scope: src/engine/. Contract: /tmp/review-contract.md. "
+            "Execute your blind architecture-perf review protocol and deliver architecture_perf_review_report.md."
+        )
+
+        # Direct detection from last_user_input before transcript flush works for both lenses
+        self.assertEqual(detect_guard_mode("", last_user_input=sec_directive), "code-reviewer")
+        self.assertEqual(detect_guard_mode("", last_user_input=arch_directive), "code-reviewer")
+
+        # Subagent transcript stays locked in code-reviewer across planner reads/writes and echoed directive
+        reviewer_transcript: Path = self.temp_dir / "code_reviewer_conv" / "transcript.jsonl"
+        reviewer_transcript.parent.mkdir(parents=True, exist_ok=True)
+        with open(reviewer_transcript, "w", encoding="utf-8") as f:
+            f.write(
+                json.dumps(
+                    {
+                        "type": "SYSTEM_MESSAGE",
+                        "source": "SYSTEM",
+                        "content": (
+                            "<SYSTEM_MESSAGE>\n"
+                            "[Message] timestamp=2026-11-25T09:00:00Z sender=parent-1 priority=HIGH "
+                            f"content={arch_directive}\n"
+                            "</SYSTEM_MESSAGE>"
+                        ),
+                    }
+                )
+                + "\n"
+            )
+            f.write(
+                json.dumps(
+                    {
+                        "type": "PLANNER_RESPONSE",
+                        "source": "MODEL",
+                        "input_tokens": 460_000,
+                        "cache_read_tokens": 0,
+                        "output_tokens": 200,
+                        "tool_calls": [
+                            {"name": "read_file", "args": {"Path": "/home/u/.gemini/antigravity-cli/skills/boundary-plan/SKILL.md"}},
+                            {"name": "write_file", "args": {"Path": "/tmp/brain/architecture_perf_review_report.md", "Content": "# Draft"}},
+                        ],
+                    }
+                )
+                + "\n"
+            )
+
+        self.assertEqual(detect_guard_mode(str(reviewer_transcript)), "code-reviewer")
+        self.assertEqual(
+            detect_guard_mode(str(reviewer_transcript), last_user_input=arch_directive),
+            "code-reviewer",
+        )
+        self.assertEqual(
+            detect_guard_mode(str(reviewer_transcript), last_user_input="/boundary-plan override"),
+            "code-reviewer",
+        )
+
+        # PreInvocation guard (>=95%) routes to code-reviewer warning message
+        warn_res = evaluate_budget_guard(
+            conv_id="conv-code-reviewer-warn",
+            fallback_model_name="Gemini 4 Argon (High)",
+            transcript_path=str(reviewer_transcript),
+            state_dir=self.state_dir,
+            thresholds_file=self.thresholds_file,
+            last_user_input=arch_directive,
+        )
+        self.assertEqual(
+            warn_res["injectSteps"][0]["systemMessage"]["systemMessage"],
+            build_warning_message(460_200, 480_000, guard_mode="code-reviewer"),
+        )
+
+        # PreToolUse guard (>=97.5%) denies first read call with code-reviewer warning message
+        sec_transcript: Path = self.temp_dir / "sec_reviewer_block" / "transcript.jsonl"
+        sec_transcript.parent.mkdir(parents=True, exist_ok=True)
+        with open(sec_transcript, "w", encoding="utf-8") as f:
+            f.write(
+                json.dumps(
+                    {
+                        "type": "SYSTEM_MESSAGE",
+                        "source": "SYSTEM",
+                        "content": (
+                            "<SYSTEM_MESSAGE>\n"
+                            "[Message] timestamp=2026-11-25T09:00:00Z sender=parent-1 priority=HIGH "
+                            f"content={sec_directive}\n"
+                            "</SYSTEM_MESSAGE>"
+                        ),
+                    }
+                )
+                + "\n"
+            )
+            f.write(
+                json.dumps(
+                    {
+                        "type": "PLANNER_RESPONSE",
+                        "source": "MODEL",
+                        "input_tokens": 466_000,
+                        "cache_read_tokens": 0,
+                        "output_tokens": 100,
+                        "tool_calls": [],
+                    }
+                )
+                + "\n"
+            )
+
+        big_file: Path = self.temp_dir / "large_target.py"
+        big_file.write_text("\n".join("x" * 54 for _ in range(200)) + "\n", encoding="utf-8")
+        tool_call: dict[str, object] = {"name": "read_file", "args": {"Path": str(big_file)}}
+        incoming_tokens = estimate_tool_call_tokens(tool_call)
+        assert incoming_tokens is not None
+        block_res = evaluate_tool_budget_guard(
+            conv_id="conv-code-reviewer-block",
+            fallback_model_name="Gemini 4 Argon (High)",
+            transcript_path=str(sec_transcript),
+            tool_call=tool_call,
+            state_dir=self.state_dir,
+            thresholds_file=self.thresholds_file,
+        )
+        self.assertEqual(block_res["decision"], "deny")
+        self.assertEqual(
+            block_res["reason"],
+            build_warning_message(
+                max(466_100 + incoming_tokens, int(480_000 * 0.975)),
+                480_000,
+                guard_mode="code-reviewer",
+            ),
+        )
 
 
 if __name__ == "__main__":

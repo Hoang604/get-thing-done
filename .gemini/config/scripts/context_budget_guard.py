@@ -24,7 +24,10 @@ from compact_threshold_tracker import (
     sync_conversation_and_thresholds,
 )
 
-GuardMode = Literal["default", "boundary-plan", "boundary-auditor"]
+GuardMode = Literal["default", "boundary-plan", "boundary-auditor", "code-reviewer"]
+_LOCKED_SUBAGENT_MODES: frozenset[GuardMode] = frozenset(
+    {"boundary-auditor", "code-reviewer"}
+)
 
 WARN_RATIO: float = 0.95
 BLOCK_RATIO: float = 0.975
@@ -40,6 +43,10 @@ SUBAGENT_MESSAGE_RE: re.Pattern[str] = re.compile(
 )
 AUDITOR_DIRECTIVE_RE: re.Pattern[str] = re.compile(
     r"^\s*Audit boundary implementation plan\b.*(?:\bpassive code inspection protocol\b|\baudit_report_round_\d+\.md\b)",
+    re.IGNORECASE | re.DOTALL,
+)
+CODE_REVIEWER_DIRECTIVE_RE: re.Pattern[str] = re.compile(
+    r"^\s*Review (?:security|architecture-perf) scope:\s*.*(?:\bblind (?:security|architecture-perf) review protocol\b|\b(?:security_review_report|architecture_perf_review_report)\.md\b)",
     re.IGNORECASE | re.DOTALL,
 )
 NON_CONTINUABLE_STOP_REASONS: frozenset[str] = frozenset(
@@ -83,6 +90,14 @@ def _extract_subagent_directive_text(content: str) -> str | None:
     if match is None:
         return None
     return match.group(1).strip()
+
+
+def _detect_subagent_guard_mode(directive_text: str) -> GuardMode | None:
+    if AUDITOR_DIRECTIVE_RE.search(directive_text):
+        return "boundary-auditor"
+    if CODE_REVIEWER_DIRECTIVE_RE.search(directive_text):
+        return "code-reviewer"
+    return None
 
 
 def _unwrap_transcript_str(raw: object) -> str | None:
@@ -141,7 +156,7 @@ def _apply_planner_tool_calls(
     tool_calls_obj: object,
     allow_execute_exit: bool,
 ) -> tuple[GuardMode, bool]:
-    if current == "boundary-auditor" or not isinstance(tool_calls_obj, list):
+    if current in _LOCKED_SUBAGENT_MODES or not isinstance(tool_calls_obj, list):
         return current, allow_execute_exit
     state: GuardMode = current
     can_exit_via_execute: bool = allow_execute_exit
@@ -228,8 +243,11 @@ def detect_guard_mode(transcript_path: str, last_user_input: str = "") -> GuardM
                             system_directive_texts.append(directive_text)
                             if not saw_user_input and not saw_opening_system_msg:
                                 saw_opening_system_msg = True
-                                if AUDITOR_DIRECTIVE_RE.search(directive_text):
-                                    mode = "boundary-auditor"
+                                subagent_mode: GuardMode | None = (
+                                    _detect_subagent_guard_mode(directive_text)
+                                )
+                                if subagent_mode is not None:
+                                    mode = subagent_mode
                         continue
 
                     if step_type == "USER_INPUT" and source != "SYSTEM":
@@ -246,7 +264,7 @@ def detect_guard_mode(transcript_path: str, last_user_input: str = "") -> GuardM
         except Exception:
             pass
 
-    if mode != "boundary-auditor" and is_explicit_user_text(last_user_input):
+    if mode not in _LOCKED_SUBAGENT_MODES and is_explicit_user_text(last_user_input):
         stripped_last_input: str = last_user_input.strip()
         is_echoed_directive: bool = (
             saw_opening_system_msg
@@ -264,8 +282,13 @@ def detect_guard_mode(transcript_path: str, last_user_input: str = "") -> GuardM
         is_already_recorded_user: bool = (
             saw_user_input and stripped_last_input == last_transcript_user_input
         )
-        if not saw_user_input and AUDITOR_DIRECTIVE_RE.search(last_user_input):
-            mode = "boundary-auditor"
+        subagent_input_mode: GuardMode | None = (
+            _detect_subagent_guard_mode(last_user_input)
+            if not saw_user_input
+            else None
+        )
+        if subagent_input_mode is not None:
+            mode = subagent_input_mode
         elif not is_echoed_directive and not is_already_recorded_user:
             mode = apply_phase_markers(mode, last_user_input)
 
@@ -299,6 +322,12 @@ _STEP_2_SPEC: dict[GuardMode, tuple[str, str]] = {
         "Persist Settled Audit Judgments First",
         (
             "2. **Persist Settled Audit Judgments First**: **When** the round's audit report is not yet finalized across the entire audit scope, before dispatching any `read_file`/`rg` or other non-persistence tool call, persist settled findings immediately to `<appDataDir>/brain/<subagent-id>/audit_report_round_<N>.md` (`write_file`, passing `Overwrite: true` on subsequent checkpoints) by ruling individually on each table item (`M-xx`, `B-xx`, `S-xx`, `I-xx`, `R-xx`, `A-xx`), each `Changed Code Coverage` file, and each discovered discrepancy while holding other items fixed: **when** every code slice and `rg` search that item's verdict depends on (`PASS`/`FAIL`/`CLEAN`/`RESIDUE`, all-planes `None` in `Changed Code Coverage`, or a deterministic `F-xx` root cause) has been inspected, write that settled row or `F-xx` entry directly into the report tables and `### Findings`; **when** required reads or searches for an item remain uninspected, omit that row (and mark a `Changed Code Coverage` file `PENDING` alongside any already-confirmed `F-xx` until all planes covering it settle) rather than guessing or writing `## Open Investigations` into the report. Set every `Audit Verdict` status and `Final Delivery Gate` to `PENDING` until full audit coverage is reached, never emit the `Completed:` reply line on a checkpoint, and run remaining non-persistence tool calls only after this save returns. *Completion criterion*: every audit item whose required files and `rg` searches are inspected sits in `audit_report_round_<N>.md`, `Audit Verdict` stays `PENDING`, and non-persistence tool calls run only after this save returns.\n"
+        ),
+    ),
+    "code-reviewer": (
+        "Persist Settled Review Findings & Coverage First",
+        (
+            "2. **Persist Settled Review Findings & Coverage First**: **When** any target file in the review scope remains `NOT READ`, before dispatching any `read_file`/`rg` or other non-persistence tool call, persist all confirmed findings (`S-k` / `A-k`), `Open Questions`, and the `Coverage` table (`FULL` for completed target files, `NOT READ` for remaining target files) to `<appDataDir>/brain/<your-conversation-id>/<lens>_review_report.md` (`write_file`, passing `Overwrite: true` on subsequent checkpoints) with `Status: IN_PROGRESS`. Never emit the `Completed:` reply line on a checkpoint, and run remaining non-persistence tool calls only after this save returns. *Completion criterion*: every confirmed finding, `Open Question`, and `FULL`/`NOT READ` coverage row sits in the draft review report on disk, `Status` stays `IN_PROGRESS`, and non-persistence tool calls run only after this save returns.\n"
         ),
     ),
     "default": (
