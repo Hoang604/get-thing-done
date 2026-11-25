@@ -1,73 +1,56 @@
 ---
 name: code-review
-description: take scope, review code, return report
+description: Coordinate parallel security and architecture-perf code-review subagents over a scope with a 10-minute budget, then merge into one unified report
 disable-model-invocation: true
 ---
 
-A **blind** review judges code solely by what the repository proves across the **review scope**: the target named by the user (or uncommitted changes, or the last commit if none are named, or the whole repository when asked for a repo audit) plus the code that directly impacts it or is directly impacted by it. Record a defect proven across this scope as a Finding; when a verdict depends on a rule, caller, or deployment load outside the repository, record it as an Open Question splitting both outcomes.
+When merging findings, checking severity alignment, or formatting the delivered report, read `/home/hoang/.gemini/config/plugins/gtd-audit/skills/code-review/review-contract.md` to apply the canonical rubric and anchor format.
 
-## Principles
+## 1. Resolve scope and dispatch
 
-Every finding violates one of four orthogonal principles:
+Take the review scope from the user's message:
+- the target paths or modules they named;
+- otherwise, uncommitted changes in the workspace;
+- otherwise, the last commit;
+- or `entire codebase` when asked for a repo audit.
 
-- **Runtime**: Step through the target with the inputs, concurrent timings, and expected load inferred from the repository, following each branch to the code impacted by its return value or state changes. Violated whenever a reachable execution under that load produces a result or state contradicting what impacted code relies on, exits without releasing an acquired resource, or exceeds the time or memory the expected load sustains.
-- **Integrity**: Trace every value, type, and state transition entering, crossing, or leaving the target. Violated whenever code conceals or weakens a runtime invariant instead of enforcing it at its owning producer or entry boundary—suppressing a failure or treating an unverified state or value as valid, or performing a state transition its interface does not make explicit to callers.
-- **Entropy**: Apply the **Day-One Test** across the target and the repository: compare what exists in the target against the single canonical form present requirements alone would produce. Violated whenever any part of the target owes its existence to the code's past rather than present requirements, or requires maintaining structure whose deletion (verifying zero remaining references via `rg` before claiming anything is unused), collapse, or replacement with a canonical primitive already available in the repository or platform preserves every reachable behavior with less code or fewer concepts without exposing tests to external I/O.
-- **Clarity**: Read each target unit linearly from the perspective of an engineer modifying one responsibility. Violated whenever a reader cannot determine what the unit does and safely change one responsibility from a direct linear read—because unrelated responsibilities are interleaved inside it or the written code obscures or contradicts its actual behavior—and restructuring it restores direct readability without introducing shallow indirection.
+In the same turn, invoke `invoke_subagent` in parallel for both reviewers:
+1. **TypeName**: `security-reviewer`, **Role**: `Security Reviewer`, **Prompt**: `Scope: <scope>.`
+2. **TypeName**: `architecture-perf-reviewer`, **Role**: `Architecture & Perf Reviewer`, **Prompt**: `Scope: <scope>.`
 
-## Severity
+Each prompt carries only the scope. Each subagent already holds its full review protocol.
 
-For each finding, judge its blast radius across calls, data integrity, and future edits:
+*Completion criterion*: both subagents are running and you hold both conversation IDs.
 
-| Level | Alert | Condition proven by the code |
-|---|---|---|
-| **Critical** | `> [!CAUTION]` | Damage escapes a single call and persists or propagates silently: a `Runtime` failure leaving persisted or process-wide state damaged or exposed for subsequent independent calls, or an `Integrity` violation allowing invalid or missing state to corrupt persisted or access-controlled data without failing |
-| **Major** | `> [!WARNING]` | Contained failure or multi-part change hazard: a `Runtime` failure contained within the triggered call, an `Integrity` violation concealing invalid state within a call flow without corrupting persisted or access-controlled data, or an `Entropy` or `Clarity` defect coupling multiple sites or independent responsibilities so changing one behavior requires coordinated edits or risks breaking an unrelated one |
-| **Minor** | `> [!NOTE]` | Localized `Entropy` or `Clarity` defect confined to one cohesive unit and responsibility: every call executes honestly and safely, and the cost falls only on local readability or cleanup |
+## 2. Schedule the budget
 
-## Dependency Classes
+In the same turn (or immediately after receiving both conversation IDs), call `schedule` once per subagent so each timer cancels automatically if its subagent finishes early:
+- **DurationSeconds**: `600`
+- **TimerCondition**: `<security-reviewer conversation ID>`
+- **Prompt**: `Budget exhausted: send the graceful stop to security-reviewer <security-reviewer conversation ID>.`
+- **DurationSeconds**: `600`
+- **TimerCondition**: `<architecture-perf-reviewer conversation ID>`
+- **Prompt**: `Budget exhausted: send the graceful stop to architecture-perf-reviewer <architecture-perf-reviewer conversation ID>.`
 
-Every proposed change that moves or removes a boundary classifies the dependency behind it by what it touches at runtime:
+Then end your turn and wait for both subagents' completion lines (or any timer wakeup).
 
-1. **In-process**: computation or state in memory with no I/O. Merge into a deep module and test directly through its public interface, with no seam and no tests targeting absorbed internal layers.
-2. **Local-substitutable**: local I/O or a store with a stand-in that runs inside the test suite. Keep the seam internal and run tests against the stand-in.
-3. **External I/O**: a boundary crossing outside the local test environment. Isolate behind a port with a production adapter and an in-memory fake in tests.
+## 3. Graceful stop
 
-## Steps
+When a timer fires for a subagent that has not yet replied, call `send_message` to that subagent with exactly:
 
-1. **Read scope**: Infer the expected load from the repository, then read the target together with the code in the repository that directly impacts it or is directly impacted by it (grepping every caller when a signature, return value, or behavior changes). Only the target modules are judged as reviewed modules; the impacting and impacted code is context used to verify assumptions and consequences. **When** the scope is bounded by a budget that can expire before full coverage, read the paths that accept external input and mutate or expose persisted or process-wide state first, and record any unread paths for `Not checked:`.
-   - *Completion criterion*: the expected load is inferred, and every target module and all files in the repository that directly impact it or are directly impacted by it have been read (or, under a bounded budget, the paths mutating or exposing persisted or process-wide state from external input are read in full and all unread paths are listed).
-2. **Analyze**: Judge every target module individually under all four principles (`Runtime`, `Integrity`, `Entropy`, `Clarity`) without pausing for user confirmation. Evaluate each candidate issue `X` individually while holding other candidates fixed, locating the exact lines and establishing:
-   - How the surrounding flow normally works, and the concrete case in scope that proves the defect and its consequence. No concrete case, no finding.
-   - **Counterfactual Origin Test**: Mentally remove or simplify `X` and trace what impacts `X` and what `X` impacts to identify the problem `P0` that `X` was written to address. Record `X` as a **Finding** only when the code in scope proves what `P0` was and shows either that `P0` is no longer reachable or is already handled elsewhere (making `X` redundant or transition residue), or that `X`'s current form handles `P0` in a way that violates `Runtime`, `Integrity`, `Entropy`, or `Clarity`; when whether `P0` can occur depends on a rule or caller outside the repository, record `X` under **Open Questions** splitting both outcomes; when `P0` reaches `X` and `X` handles it without violating any of the four principles, drop the candidate.
-   - Its severity (`Critical`, `Major`, `Minor`) and the smallest fix and test update according to its dependency class, preferring fixes that delete code, flatten or separate tangled logic directly, and enforce invariants at the owning producer or entry boundary—never adding indirection or machinery the problem does not need.
-   - *Completion criterion*: every target module has been judged under all four principles, and every finding has its normal flow, concrete trigger and consequence, `P0` origin and why `X` fails or is redundant, severity, and smallest fix with line links.
-3. **Deliver report**: Write the report with `write_file` to `<appDataDir>/brain/<conversation-id>/<report-name>.md` in plain, direct language (explaining any technical term the first time it appears) following the anchor below so a reader unfamiliar with the codebase understands what the code does, why each issue exists, and how to fix it in one read. Number findings across all severity groups so the user can say "fix 1 and 3". Every file, symbol, and line range must be a clickable link with an absolute `file://` path and the file's basename as link text, never wrapped in backticks: [notes.py:L10-24](file:///abs/path/src/notes.py#L10-L24). Reply in chat with the clickable link to the report file and the count of findings per severity level.
-   - *Completion criterion*: the report file exists on disk matching the anchor format and the chat reply gives its link and severity counts.
+`STOP: Time budget exhausted. Stop reading now, finalize the report with the findings confirmed so far and the coverage list, deliver it, and reply with your completion line.`
 
-```markdown
-### Code Review Report
+Then end your turn and wait until both subagents have returned their completion lines before proceeding to Step 4.
 
-**What this scope does & assumed load:** <Two or three sentences explaining what the reviewed code does and the load assumed from the repository.>
+## 4. Merge and deliver
 
-#### Critical
+Read both subagent reports in full. Before writing the unified report, emit a **Merge Disposition** covering every finding ID from both reports (`S-1..S-m` from `security-reviewer`, `A-1..A-n` from `architecture-perf-reviewer`) individually while holding all other findings fixed, assigning each exactly one outcome:
 
-> [!CAUTION]
-> **1. Orders close on the wrong calendar day** ([close_day.py:L40-52](file:///abs/path/billing/close_day.py#L40-L52))
-> - **What this is:** At midnight this job closes the day and bills every unbilled order from that date.
-> - **Problem & trigger (`Runtime`):** `close_day()` takes today's date from `datetime.utcnow().date()` while [create_order:L18](file:///abs/path/billing/orders.py#L18) stores timestamps in `Europe/Berlin`. An order placed at 00:30 Berlin time is billed under the previous day.
-> - **Origin (`P0`):** Written to batch orders by calendar day, assuming server UTC matched the shop's local day.
-> - **Fix:** Compute the cutoff date in the shop's timezone: `datetime.now(ZoneInfo("Europe/Berlin")).date()`.
-> - **If we skip it:** Orders between 00:00 and 02:00 local time land on the wrong invoice date and require manual accounting correction.
+- **`MERGE -> #<k>`** (same code location and same causal flaw as another finding): collapse into one finding at the higher severity, preserving concrete triggers, consequences, and violated principles from both lenses under one smallest fix.
+- **`KEEP -> #<k>`** (distinct causal flaw): retain as its own numbered finding so every trigger remains independently verifiable; add `cross-link #<j>` when a single boundary change resolves both this finding and a companion finding from the other lens.
 
-#### Open Questions
-<!-- Omit when none exist. -->
-- **Q-01** ([sync.py:L88-95](file:///abs/path/workers/sync.py#L88-L95)):
-  - If the worker runs as a single process: the in-memory lock holds.
-  - If multiple worker processes run concurrently: two workers can process the same webhook batch twice.
+In the same disposition, union `Open Questions` (deduplicating pairs turning on the same external rule or deployment assumption) and list every unread file or skipped runtime check tagged by which lens missed it (`security`, `architecture-perf`, or `both`).
 
-#### Summary
-- **Verdict:** <Healthy. Ship. | Fix 1 and 2 first.>
-- **Lean:** `-<N> lines, -<M> dependencies possible.` <!-- Omit when no findings delete code or dependencies. -->
-- **Not checked:** <Paths or runtime checks not read or executed, and the risk that leaves. | None (full scope read).>
-```
+Construct the merged report strictly from this disposition and write it to `<appDataDir>/brain/<conversation-id>/<report-name>.md` following the anchor format in `review-contract.md`, numbering findings sequentially (`1, 2, ...`) across severity groups so `/gtd-audit:verify-issue` can consume it directly. Write `Not checked: None (full scope read).` only when both subagents completed full coverage. Reply in chat with the clickable link to the merged report, counts per severity, and coverage status per lens.
+
+*Completion criterion*: every input finding ID from both subagents appears in the Merge Disposition (zero silently dropped findings), every unread path names its missing lens, the merged report exists on disk matching the anchor format, and the chat reply provides its link, severity counts, and coverage status.

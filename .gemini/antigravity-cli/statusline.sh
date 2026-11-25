@@ -4,7 +4,6 @@ set -euo pipefail
 # ─── ANSI Helpers (TrueColor 24-bit palette) ──────────────────────────────────
 R="\033[0m"         # Reset
 B="\033[1m"         # Bold
-I="\033[3m"         # Italic
 
 FG_RED="\033[38;2;205;49;49m"
 FG_YELLOW="\033[38;2;229;229;16m"
@@ -391,9 +390,9 @@ if [ -n "$MODEL" ]; then
   esac
   if [ "$COLS" -lt 85 ]; then
     SHORT_MODEL=$(echo "$MODEL" | sed 's/^Gemini //;s/ (High)//;s/ (Low)//;s/ (Medium)//')
-    M="${FG_GRAY} ╱ ${MODEL_COLOR}${I}${SHORT_MODEL}${R}"
+    M="${FG_GRAY} ╱ ${MODEL_COLOR}${B}${SHORT_MODEL}${R}"
   else
-    M="${FG_GRAY} ╱ ${MODEL_COLOR}${I}${MODEL}${R}"
+    M="${FG_GRAY} ╱ ${MODEL_COLOR}${B}${MODEL}${R}"
   fi
 fi
 
