@@ -211,7 +211,18 @@ Compile or finalize the initial plan in `<Artifact Directory>/implementation_pla
 > *Invocation Contract:* Dispatch with this exact prompt structure. Do NOT append custom conversational steering.
 ````
 
-**Completion Criterion:** The active plan file is finalized (`RequestFeedback` per Section 4), zero `## Open Investigations` remaining, every settled contract, caller/sink audit, retired form, and `#L<start>-L<end>` manifest backed by prior `read_file` inspection, and contains the users-and-jobs list, the scenario table, the invariant table, the `Canonical Knowledge Rulings` section before Milestone 1, every milestone (including its `Module & Edge Derivation`), and the Verification Matrix (`Baseline Checks`, `Audit Budget`, and the verbatim `Subagent Spawn Directive`).
+### Approval Handoff (Chat Reply on `RequestFeedback: true`)
+**When** finalizing the user-facing `implementation_plan.md` (`RequestFeedback: true`, zero `## Open Investigations`), deliver a decision-grade handoff in the chat reply—never inside `implementation_plan.md`, never on draft checkpoints (`RequestFeedback: false`), and never on `implementation_plan_round_<N>.md` (`RequestFeedback: false`)—structured into two sections: why the user may approve the plan, and why the user may dislike or want to revise it.
+
+Before writing the handoff reply, evaluate individually (holding other choices fixed) every commitment the finalized plan makes or withholds whose alternative would visibly change either the running system or the work to adopt it, testing it along two axes:
+1. **Real-world execution delta:** whether this commitment actually changes what the running system guarantees, exposes, or consumes when executed under real-world conditions beyond its nominal scenarios.
+2. **Adoption and design-constraint delta:** whether this commitment—including any governing plan or engineering rule it enforces—actually changes what existing callers or workflows must adapt to, what it costs to land or reverse the change, or what viable alternative it forecloses.
+
+**When** that evaluation exposes a weakness or hazard before finalizing `implementation_plan.md`, test whether it can be eliminated inside the mutable scope without sacrificing any scenario, invariant, or competing goal of the plan: if yes, revise `implementation_plan.md` to eliminate it before setting `RequestFeedback: true`; otherwise keep the design and report what prevents eliminating it in the pushback section.
+
+Include an item in the handoff reply only when it carries an actual delta on at least one axis that could concretely move a reviewer to approve this plan or push back for a different choice, citing its plan location and stating that exact delta; omit unaffected areas and routine rule compliance that create no reviewer choice.
+
+**Completion Criterion:** The active plan file is finalized (`RequestFeedback` per Section 4), zero `## Open Investigations` remaining, every settled contract, caller/sink audit, retired form, and `#L<start>-L<end>` manifest backed by prior `read_file` inspection, and contains the users-and-jobs list, the scenario table, the invariant table, the `Canonical Knowledge Rulings` section before Milestone 1, every milestone (including its `Module & Edge Derivation`), and the Verification Matrix (`Baseline Checks`, `Audit Budget`, and the verbatim `Subagent Spawn Directive`); and, when finalizing with `RequestFeedback: true`, every avoidable defect exposed during pre-handoff evaluation is resolved in `implementation_plan.md` before setting `RequestFeedback: true` and the chat handoff reply delivers both approval and pushback sections constructed strictly from concrete decision-swaying deltas.
 
 ---
 
