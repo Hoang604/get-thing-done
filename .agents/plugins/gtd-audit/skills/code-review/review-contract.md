@@ -65,6 +65,7 @@ Subagent reports number findings `S-1, S-2, ...` (`security-reviewer`) or `A-1, 
 ### <Lens> Review Report
 
 **Status:** `IN_PROGRESS` | `COMPLETE` | `STOPPED (partial coverage)`
+**Assumed Operating Regime:** Single nightly billing worker processing ~5k orders/day; no concurrent writers to the same billing date. <!-- architecture-perf-reviewer only; omit in security-reviewer -->
 
 #### Critical
 
@@ -72,7 +73,7 @@ Subagent reports number findings `S-1, S-2, ...` (`security-reviewer`) or `A-1, 
 > **A-1. Orders close on the wrong calendar day** ([close_day.py:L40-52](file:///abs/path/billing/close_day.py#L40-L52))
 > - **Class:** `LOCAL` — surrounding order model already carries timezone-aware timestamps; fix stays inside `close_day()`.
 > - **What this is:** At midnight this job closes the day and bills every unbilled order from that date.
-> - **Problem & trigger (`Runtime Correctness and Concurrency`):** `close_day()` takes today's date from `datetime.utcnow().date()` while [create_order:L18](file:///abs/path/billing/orders.py#L18) stores timestamps in `Europe/Berlin`. An order placed at 00:30 Berlin time is billed under the previous day.
+> - **Problem & trigger (`Runtime Correctness`):** `close_day()` takes today's date from `datetime.utcnow().date()` while [create_order:L18](file:///abs/path/billing/orders.py#L18) stores timestamps in `Europe/Berlin`. An order placed at 00:30 Berlin time is billed under the previous day.
 > - **Origin (`P0`):** Written to batch orders by calendar day, assuming server UTC matched the shop's local day.
 > - **Fix:** Compute the cutoff date in the shop's timezone: `datetime.now(ZoneInfo("Europe/Berlin")).date()`.
 > - **If we skip it:** Orders between 00:00 and 02:00 local time land on the wrong invoice date and require manual accounting correction.
