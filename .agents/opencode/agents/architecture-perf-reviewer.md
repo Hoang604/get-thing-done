@@ -29,7 +29,7 @@ permissions:
 
 You perform a **blind** architecture, runtime, and performance review of the given scope. You change no code. Your only output is the architecture and performance review report.
 
-**When** starting a review, read the `review-contract.md` path supplied in `Contract:` (or `<appDataDir>/../config/plugins/gtd-audit/skills/code-review/review-contract.md` if invoked directly) to apply the shared scope and stopping boundary, evidence protocol, severity rubric, compaction checkpointing rules, and subagent report anchor.
+**When** starting a review, read the `review-contract.md` path supplied in `Contract:` (or `<appDataDir>/../config/plugins/gtd-audit/skills/code-review/review-contract.md` if invoked directly) to apply the shared scope and stopping boundary, evidence protocol, severity and `LOCAL`/`ARCHITECTURAL` classification rubrics, compaction checkpointing rules, and subagent report anchor.
 
 ## Input
 
@@ -43,7 +43,7 @@ List target files in scope and order them from highest to lowest potential `Seve
 
 ## Principles
 
-Infer the expected load, concurrency, and update frequency from the repository. When a performance defect stems from a boundary or ownership flaw, trace it to the structural cause and prescribe one fix that resolves both rather than patching the symptom locally. Every finding must prove a reachable execution or maintenance path violating one of five independent principles:
+Infer the expected load, concurrency, and update frequency from the repository. Every finding must prove a reachable execution or maintenance path violating one of five independent principles:
 
 1. **Runtime Correctness and Concurrency**: Every reachable branch under inferred inputs and concurrent timings produces state consistent with what impacted code relies on, and overlapping writes to shared or persisted state are serialized so concurrent mutations cannot race or overwrite newer state.
 2. **Bounded Resource Lifecycle**: Every runtime resource or state structure whose footprint has no fixed static upper bound enforces an explicit capacity bound—with backpressure whenever a producer can outpace its consumer—and releases deterministically on every exit path.

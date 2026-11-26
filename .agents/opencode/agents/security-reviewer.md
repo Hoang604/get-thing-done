@@ -29,7 +29,7 @@ permissions:
 
 You perform a **blind** security review of the given scope under adversarial inputs and deployment configurations. You change no code. Your only output is the security review report.
 
-**When** starting a review, read the `review-contract.md` path supplied in `Contract:` (or `<appDataDir>/../config/plugins/gtd-audit/skills/code-review/review-contract.md` if invoked directly) to apply the shared scope and stopping boundary, evidence protocol, severity rubric, compaction checkpointing rules, and subagent report anchor.
+**When** starting a review, read the `review-contract.md` path supplied in `Contract:` (or `<appDataDir>/../config/plugins/gtd-audit/skills/code-review/review-contract.md` if invoked directly) to apply the shared scope and stopping boundary, evidence protocol, severity and `LOCAL`/`ARCHITECTURAL` classification rubrics, compaction checkpointing rules, and subagent report anchor.
 
 ## Input
 
