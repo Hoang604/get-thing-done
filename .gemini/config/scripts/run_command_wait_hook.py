@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
 import json
 import sys
+from typing import TypeGuard
 
 SYNC_WAIT_MS: int = 10000
 DAEMON_WAIT_MS: int = 500
+DEFAULT_NOTIFICATION_TIMEOUT_SECONDS: int = 60
+
+
+def _is_int(value: object) -> TypeGuard[int]:
+    return isinstance(value, int) and not isinstance(value, bool)
 
 
 def evaluate_run_command_wait(tool_call: dict[str, object]) -> dict[str, object]:
-    """Normalize run_command WaitMsBeforeAsync to 500 for daemons and 10000 otherwise."""
+    """Normalize run_command WaitMsBeforeAsync and default NotificationTimeoutSeconds for non-daemons."""
     if tool_call.get("name") != "run_command":
         return {"decision": "allow"}
 
@@ -15,22 +21,27 @@ def evaluate_run_command_wait(tool_call: dict[str, object]) -> dict[str, object]
     if not isinstance(args_obj, dict):
         return {"decision": "allow"}
 
-    target_wait: int = (
-        DAEMON_WAIT_MS if args_obj.get("IsDaemon") is True else SYNC_WAIT_MS
-    )
+    is_daemon: bool = args_obj.get("IsDaemon") is True
+    target_wait: int = DAEMON_WAIT_MS if is_daemon else SYNC_WAIT_MS
+    overwrite: dict[str, int] = {}
+
     current_wait: object = args_obj.get("WaitMsBeforeAsync")
-    if (
-        isinstance(current_wait, int)
-        and not isinstance(current_wait, bool)
-        and current_wait == target_wait
-    ):
+    if not (_is_int(current_wait) and current_wait == target_wait):
+        overwrite["WaitMsBeforeAsync"] = target_wait
+
+    if not is_daemon:
+        current_timeout: object = args_obj.get("NotificationTimeoutSeconds")
+        if not (_is_int(current_timeout) and current_timeout > 0):
+            overwrite["NotificationTimeoutSeconds"] = (
+                DEFAULT_NOTIFICATION_TIMEOUT_SECONDS
+            )
+
+    if not overwrite:
         return {"decision": "allow"}
 
     return {
         "decision": "allow",
-        "overwrite": {
-            "WaitMsBeforeAsync": target_wait,
-        },
+        "overwrite": overwrite,
     }
 
 

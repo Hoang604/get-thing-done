@@ -169,7 +169,7 @@ Autonomous subagents live in `.gemini/antigravity-cli/agents/` and are invoked b
 
 ## 5. Runtime Hooks & Execution Safeguards
 
-- **Lifecycle Hooks ([hooks.json](.gemini/config/hooks.json))**: Automates operational guardrails across tool calls and turns—including `context-budget-guard` and `compact-threshold-tracker` (context budget management), `worktree-isolation-guard` (prevents accidental cross-worktree edits), `decision-harvester` (captures system-shaping decisions), `critical-instructions`, `loop-hook`, `read-file-widener`, `run-command-wait`, `skill-usage-tracker`, and `statusline-tracker`.
+- **Lifecycle Hooks ([hooks.json](.gemini/config/hooks.json))**: Automates operational guardrails across tool calls and turns—including `context-budget-guard` and `compact-threshold-tracker` (context budget management), `worktree-isolation-guard` (prevents accidental cross-worktree edits), `decision-harvester` (captures system-shaping decisions), `critical-instructions`, `loop-hook`, `read-file-guard`, `run-command-wait`, `skill-usage-tracker`, and `statusline-tracker`.
 - **Execution Circuit Breakers ([execute](.gemini/antigravity-cli/skills/execute/SKILL.md))**:
   - **`PLAN VETO`**: Raised by `boundary-auditor` when the plan itself has structural flaws; halts only on parts unresolved by global/project rules.
   - **`Audit Budget`**: Hard stop once the plan's remediation round budget is exhausted.

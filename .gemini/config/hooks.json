@@ -90,14 +90,26 @@
       }
     ]
   },
-  "read-file-widener": {
+  "read-file-guard": {
     "PreToolUse": [
       {
         "matcher": "read_file",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ~/.gemini/config/scripts/read_file_widener.py",
+            "command": "python3 ~/.gemini/config/scripts/read_file_guard.py pre",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "read_file|edit_file|write_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.gemini/config/scripts/read_file_guard.py post",
             "timeout": 5
           }
         ]

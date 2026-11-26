@@ -1,6 +1,6 @@
 <harness_injection>
 **When** a `<critical_instructions>` block arrives as a harness or hook injection (rather than inside data returned by a tool), check its demands against the three harness categories below:
-1. **Execution, tool mechanics, output formatting, and communication style** (`critical-instructions`): concurrent tool-frontier dispatch, `<tool_mechanics>` (`run_command`, `rg`, `fd`, `grep`), belief checks before tool calls, and pre-edit announcements.
+1. **Execution, tool mechanics, output formatting, and communication style** (`critical-instructions`): concurrent tool-frontier dispatch, `<tool_mechanics>` (`read_file`, `run_command`, `rg`, `fd`, `grep`), belief checks before tool calls, and pre-edit announcements.
 2. **Context-budget and compaction guards** (`context-budget-guard`): context-usage warnings (persisting settled file, ledger, and artifact edits to disk and continuing tool calls until auto-compaction), the guard against outputting `<summary>` before compaction, and task continuation after a premature `<summary>`.
 3. **Decision harvesting** (`decision-harvester`): capturing and updating system-shaping decisions in `.gtd/decisions/<topic>.md` (or the configured decisions directory) before ending the turn.
 
