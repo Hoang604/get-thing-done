@@ -153,6 +153,79 @@ class TestRunCommandWaitHook(unittest.TestCase):
                     {"decision": "allow"},
                 )
 
+    def test_e2e_non_daemon_defaults_notification_timeout_to_600(self) -> None:
+        self.assertEqual(
+            evaluate_run_command_wait(
+                {
+                    "name": "run_command",
+                    "args": {
+                        "CommandLine": "npm run test:e2e",
+                        "WaitMsBeforeAsync": 500,
+                    },
+                }
+            ),
+            {
+                "decision": "allow",
+                "overwrite": {
+                    "WaitMsBeforeAsync": 10000,
+                    "NotificationTimeoutSeconds": 600,
+                },
+            },
+        )
+        self.assertEqual(
+            evaluate_run_command_wait(
+                {
+                    "name": "run_command",
+                    "args": {
+                        "CommandLine": "pytest -m E2E",
+                        "WaitMsBeforeAsync": 10000,
+                    },
+                }
+            ),
+            {
+                "decision": "allow",
+                "overwrite": {"NotificationTimeoutSeconds": 600},
+            },
+        )
+        self.assertEqual(
+            evaluate_run_command_wait(
+                {
+                    "name": "run_command",
+                    "args": {
+                        "CommandLine": "npx playwright test e2e",
+                        "WaitMsBeforeAsync": 10000,
+                        "NotificationTimeoutSeconds": 120,
+                    },
+                }
+            ),
+            {"decision": "allow"},
+        )
+        self.assertEqual(
+            evaluate_run_command_wait(
+                {
+                    "name": "run_command",
+                    "args": {
+                        "CommandLine": "npm run dev:e2e-mock",
+                        "IsDaemon": True,
+                        "WaitMsBeforeAsync": 500,
+                    },
+                }
+            ),
+            {"decision": "allow"},
+        )
+        for args in (
+            {"WaitMsBeforeAsync": 10000},
+            {"CommandLine": 123, "WaitMsBeforeAsync": 10000},
+        ):
+            with self.subTest(args=args):
+                self.assertEqual(
+                    evaluate_run_command_wait({"name": "run_command", "args": args}),
+                    {
+                        "decision": "allow",
+                        "overwrite": {"NotificationTimeoutSeconds": 60},
+                    },
+                )
+
     def test_non_run_command_and_invalid_tool_call_shapes_allow_unchanged(self) -> None:
         for tool_call in (
             {"name": "read_file", "args": {"Path": "/tmp/a.py"}},

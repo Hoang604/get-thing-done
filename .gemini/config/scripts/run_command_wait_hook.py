@@ -6,10 +6,15 @@ from typing import TypeGuard
 SYNC_WAIT_MS: int = 10000
 DAEMON_WAIT_MS: int = 500
 DEFAULT_NOTIFICATION_TIMEOUT_SECONDS: int = 60
+E2E_NOTIFICATION_TIMEOUT_SECONDS: int = 600
 
 
 def _is_int(value: object) -> TypeGuard[int]:
     return isinstance(value, int) and not isinstance(value, bool)
+
+
+def _is_e2e_command(command_line: object) -> bool:
+    return isinstance(command_line, str) and "e2e" in command_line.lower()
 
 
 def evaluate_run_command_wait(tool_call: dict[str, object]) -> dict[str, object]:
@@ -33,7 +38,9 @@ def evaluate_run_command_wait(tool_call: dict[str, object]) -> dict[str, object]
         current_timeout: object = args_obj.get("NotificationTimeoutSeconds")
         if not (_is_int(current_timeout) and current_timeout > 0):
             overwrite["NotificationTimeoutSeconds"] = (
-                DEFAULT_NOTIFICATION_TIMEOUT_SECONDS
+                E2E_NOTIFICATION_TIMEOUT_SECONDS
+                if _is_e2e_command(args_obj.get("CommandLine"))
+                else DEFAULT_NOTIFICATION_TIMEOUT_SECONDS
             )
 
     if not overwrite:
