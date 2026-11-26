@@ -22,6 +22,7 @@ from decision_harvester_hook import (
     evaluate_pre_invocation,
     load_harvester_config,
     load_harvester_state,
+    render_managed_decisions_block,
     resolve_workspace_root,
     sync_decisions_index,
 )
@@ -200,8 +201,9 @@ class TestDecisionHarvesterHook(unittest.TestCase):
         decisions_dir: Path = self.workspace / ".gtd" / "decisions"
         decisions_dir.mkdir(parents=True, exist_ok=True)
         arch_file: Path = decisions_dir / "architecture.md"
+        arch_when: str = "changing hook architecture"
         arch_file.write_text(
-            '---\ndescription: "When changing hook architecture, follow this file."\n---\n\n## Confirmed\n- Single tracker.\n',
+            f'---\nwhen: "{arch_when}"\n---\n\n## Confirmed\n- Single tracker.\n',
             encoding="utf-8",
         )
         evaluate_post_tool_use(
@@ -238,10 +240,7 @@ class TestDecisionHarvesterHook(unittest.TestCase):
         injected_9: str = self._extract_injected_msg(res_9)
         self.assertEqual(injected_9, build_full_prompt(cfg, entries))
         self.assertIn(".gtd/decisions/architecture.md", injected_9)
-        self.assertIn(
-            "When changing hook architecture, follow this file.",
-            injected_9,
-        )
+        self.assertIn(arch_when, injected_9)
 
         # Next milestone (message 12) with NO new file added -> back to REMINDER prompt (also with file list)
         for idx in range(2):
@@ -264,10 +263,7 @@ class TestDecisionHarvesterHook(unittest.TestCase):
         injected_12: str = self._extract_injected_msg(res_12)
         self.assertEqual(injected_12, build_reminder_prompt(cfg, entries))
         self.assertIn(".gtd/decisions/architecture.md", injected_12)
-        self.assertIn(
-            "When changing hook architecture, follow this file.",
-            injected_12,
-        )
+        self.assertIn(arch_when, injected_12)
 
         # Mid-cycle edit of an existing decision file (after 2 messages: 13 and 14)
         # must reset the N-message counter so message 15 does NOT inject, and
@@ -287,7 +283,7 @@ class TestDecisionHarvesterHook(unittest.TestCase):
 
         # Agent edits existing decision file when user confirms a decision mid-cycle -> resets counter
         arch_file.write_text(
-            '---\ndescription: "When changing hook architecture, follow this file."\n---\n\n## Confirmed\n- Single tracker.\n- Reset counter on decision edit.\n',
+            f'---\nwhen: "{arch_when}"\n---\n\n## Confirmed\n- Single tracker.\n- Reset counter on decision edit.\n',
             encoding="utf-8",
         )
         evaluate_post_tool_use(
@@ -428,8 +424,9 @@ prompt:
         decisions_dir.mkdir(parents=True, exist_ok=True)
 
         auth_file: Path = decisions_dir / "auth-session.md"
+        auth_when: str = "modifying authentication or session tokens"
         auth_file.write_text(
-            '---\ndescription: "When modifying authentication or session tokens, follow the confirmed decisions in this file."\n---\n\n## Confirmed\n- Use HttpOnly cookies.\n\n## Unconfirmed\n',
+            f'---\nwhen: "{auth_when}"\n---\n\n## Confirmed\n- Use HttpOnly cookies.\n\n## Unconfirmed\n',
             encoding="utf-8",
         )
 
@@ -449,11 +446,13 @@ prompt:
         gemini_md: Path = self.workspace / "GEMINI.md"
         self.assertTrue(gemini_md.is_file())
         content_1: str = gemini_md.read_text(encoding="utf-8")
+        entries_1 = collect_decision_entries(self.workspace)
         self.assertIn(MANAGED_BLOCK_START, content_1)
-        self.assertIn(
-            "- [`.gtd/decisions/auth-session.md`](.gtd/decisions/auth-session.md): When modifying authentication or session tokens, follow the confirmed decisions in this file.",
-            content_1,
-        )
+        self.assertIn(render_managed_decisions_block(entries_1), content_1)
+        auth_link: str = "[`.gtd/decisions/auth-session.md`](.gtd/decisions/auth-session.md)"
+        auth_line: str = next(line for line in content_1.splitlines() if auth_link in line)
+        self.assertIn(auth_when, auth_line)
+        self.assertLess(auth_line.index(auth_when), auth_line.index(auth_link))
         self.assertIn(MANAGED_BLOCK_END, content_1)
 
         # Case 2: If GEMINI.md does not exist but AGENTS.md exists -> updates AGENTS.md
@@ -462,20 +461,24 @@ prompt:
         agents_md.write_text("# Existing Agents Rules\n", encoding="utf-8")
 
         billing_file: Path = decisions_dir / "billing.md"
+        billing_when: str = "touching invoice calculation"
         billing_file.write_text(
-            '---\ndescription: "When touching invoice calculation, follow this file."\n---\n\n## Confirmed\n- Store amounts in integer cents.\n',
+            f'---\nwhen: "{billing_when}"\n---\n\n## Confirmed\n- Store amounts in integer cents.\n',
             encoding="utf-8",
         )
         sync_decisions_index(self.workspace)
         self.assertFalse(gemini_md.is_file())
         agents_content: str = agents_md.read_text(encoding="utf-8")
         self.assertIn("# Existing Agents Rules", agents_content)
-        self.assertIn("`.gtd/decisions/auth-session.md`", agents_content)
-        self.assertIn("`.gtd/decisions/billing.md`", agents_content)
+        self.assertIn(
+            render_managed_decisions_block(collect_decision_entries(self.workspace)),
+            agents_content,
+        )
 
-        # Case 3: Manual edit of description in IDE is detected on next PreInvocation
+        # Case 3: Manual edit of `when` in IDE is detected on next PreInvocation
+        billing_when_updated: str = "touching invoice or tax calculation"
         billing_file.write_text(
-            '---\ndescription: "When touching invoice or tax calculation, follow this updated file."\n---\n\n## Confirmed\n- Store amounts in integer cents.\n',
+            f'---\nwhen: "{billing_when_updated}"\n---\n\n## Confirmed\n- Store amounts in integer cents.\n',
             encoding="utf-8",
         )
         evaluate_pre_invocation(
@@ -485,10 +488,16 @@ prompt:
             state_dir=self.state_dir,
         )
         updated_agents_content: str = agents_md.read_text(encoding="utf-8")
-        self.assertIn(
-            "When touching invoice or tax calculation, follow this updated file.",
-            updated_agents_content,
-        )
+        self.assertIn(billing_when_updated, updated_agents_content)
+        self.assertNotIn(f"{billing_when},", updated_agents_content)
+
+        # Case 4: Removing all valid decision files removes the managed block cleanly
+        auth_file.unlink()
+        billing_file.unlink()
+        sync_decisions_index(self.workspace)
+        final_agents_content: str = agents_md.read_text(encoding="utf-8")
+        self.assertEqual(final_agents_content, "# Existing Agents Rules\n")
+        self.assertNotIn(MANAGED_BLOCK_START, final_agents_content)
 
     def test_pre_invocation_resolves_workspace_when_spawned_outside_project(
         self,
@@ -746,6 +755,46 @@ prompt:
             state_dir=self.state_dir,
         )
         self.assertEqual(self._extract_injected_msg(res_2), build_full_prompt(cfg))
+
+    def test_collect_decision_entries_extracts_when_and_rejects_legacy_or_empty_blocks(
+        self,
+    ) -> None:
+        decisions_dir: Path = self.workspace / ".gtd" / "decisions"
+        decisions_dir.mkdir(parents=True, exist_ok=True)
+
+        (decisions_dir / "a-normalized.md").write_text(
+            '---\nwhen: "When modifying auth cookies."\n---\n\n## Confirmed\n- Cookie rule.\n',
+            encoding="utf-8",
+        )
+        (decisions_dir / "b-colon.md").write_text(
+            "---\nwhen: modifying route: /api/v1/orders\n---\n\n## Confirmed\n- Route rule.\n",
+            encoding="utf-8",
+        )
+        (decisions_dir / "c-multiline.md").write_text(
+            "---\nwhen: |\n  touching export jobs\n  or background queues\n---\n\n## Confirmed\n- Queue rule.\n",
+            encoding="utf-8",
+        )
+        (decisions_dir / "d-legacy-desc.md").write_text(
+            '---\ndescription: "When touching legacy files, follow this file."\n---\n\n## Confirmed\n- Ignored.\n',
+            encoding="utf-8",
+        )
+        (decisions_dir / "e-empty-scalar.md").write_text(
+            "---\nwhen: |\nextra: foo: bar\n---\n\n## Confirmed\n- Empty block.\n",
+            encoding="utf-8",
+        )
+
+        entries = collect_decision_entries(self.workspace)
+        self.assertEqual(
+            [(entry.rel_path, entry.when) for entry in entries],
+            [
+                (".gtd/decisions/a-normalized.md", "modifying auth cookies"),
+                (".gtd/decisions/b-colon.md", "modifying route: /api/v1/orders"),
+                (
+                    ".gtd/decisions/c-multiline.md",
+                    "touching export jobs or background queues",
+                ),
+            ],
+        )
 
 
 if __name__ == "__main__":

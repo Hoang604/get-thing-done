@@ -50,6 +50,12 @@ SLOT_LINE_RE: re.Pattern[str] = re.compile(
     r"^[ \t]*\{\{([a-zA-Z0-9_]+)\}\}[ \t]*\r?\n?", re.MULTILINE
 )
 INLINE_SLOT_RE: re.Pattern[str] = re.compile(r"\{\{([a-zA-Z0-9_]+)\}\}")
+BLOCK_SCALAR_INDICATORS: frozenset[str] = frozenset(
+    {"|", "|-", "|+", ">", ">-", ">+"}
+)
+LEADING_WHEN_RE: re.Pattern[str] = re.compile(
+    r"^(?:\*\*)?when(?:\*\*)?(?:\s*:)?\s+", re.IGNORECASE
+)
 
 FULL_SECTION_ORDER: tuple[str, ...] = (
     "header",
@@ -93,14 +99,13 @@ def default_full_sections(decisions_dir: str) -> dict[str, str]:
         "partitioning": (
             f"### 2. Partitioning (`{clean_dir}/<topic>.md`)\n"
             "{{existing_decisions}}\n"
-            "Route each `Keep` item individually by matching it against the `When` condition "
-            "in each file's frontmatter `description`:\n"
-            "- **When** an existing file's `description` names the exact condition under "
-            "which a future run needs that item, update that file in place and remove any "
-            "prior entry reversed or superseded by the user's latest ruling.\n"
-            "- **When** no existing file matches without widening an unrelated scope, create "
-            f"a new `{clean_dir}/<topic>.md` file whose `description` states the exact "
-            "condition when a future run must read it.\n"
+            "Route each `Keep` item individually by matching its trigger context against each "
+            "existing file's frontmatter `when` condition:\n"
+            "- **When** an existing file covers the same work area, update that file in place, "
+            "remove any prior entry reversed or superseded by the user's latest ruling, and "
+            "adjust its `when` condition if the trigger boundary changed.\n"
+            "- **When** no existing file covers that work area without widening an unrelated "
+            f"topic, create a new `{clean_dir}/<topic>.md` file.\n"
             "{{partition_hints}}"
         ),
         "file_contract": (
@@ -108,14 +113,18 @@ def default_full_sections(decisions_dir: str) -> dict[str, str]:
             f"Write each `{clean_dir}/<topic>.md` file to this structure:\n\n"
             "```markdown\n"
             "---\n"
-            'description: "When <observable condition starting future work>, follow <scope>."\n'
+            'when: "modifying order pricing or discount calculation"\n'
             "---\n\n"
             "## Confirmed\n"
-            "- <Settled constraint or ruled-out path>\n\n"
+            "- Compute discounts on integer minor units; never round intermediate line totals.\n\n"
             "## Unconfirmed\n"
-            "- <Open direction kept under consideration>\n"
+            "- Keep promo stacking open for future checkout campaigns.\n"
             "```\n\n"
             "Construct every entry strictly from the `Keep` items and the user's terms:\n"
+            "- Write `when` solely as the observable task, subsystem, or boundary condition "
+            "that a future run can see **before** opening the file—continuing directly after "
+            "`When ` without repeating `When` and without summarizing any settled decision, "
+            "rule, or implementation detail inside the file.\n"
             "- Place finalized choices under `## Confirmed`, and directions the user left "
             "open under `## Unconfirmed`.\n"
             "- **When** the user's statement points to an earlier conversation item, replace "
@@ -144,10 +153,11 @@ def default_reminder_sections(decisions_dir: str) -> dict[str, str]:
             "future work in a way reading the codebase alone cannot guarantee). "
             f"**When** none pass or all passing items are already in `{clean_dir}/`, do "
             f"nothing. **When** items pass, state each decision, target `{clean_dir}/<topic>.md`, "
-            "and `Confirmed`/`Unconfirmed` before writing; route by frontmatter "
-            "`description` scope (creating a new file rather than widening an unrelated "
-            "one), expand pointers for a cold read, keep open categories unenumerated in "
-            "the user's words, and write only what came from the user.\n"
+            "and `Confirmed`/`Unconfirmed` before writing; route by frontmatter `when` "
+            "topic (updating `when` if shifted, or creating a new file rather than widening "
+            "an unrelated topic), keep `when` strictly an observable pre-read trigger without "
+            "summarizing the decisions inside, expand pointers for a cold read, keep open "
+            "categories unenumerated in the user's words, and write only what came from the user.\n"
             "{{existing_decisions}}\n"
             "{{extra_reminder_rules}}"
         ),
@@ -178,7 +188,7 @@ class DecisionHarvesterState:
 @dataclass(frozen=True)
 class DecisionFileEntry:
     rel_path: str
-    description: str
+    when: str
 
 
 @contextmanager
@@ -209,15 +219,34 @@ def _parse_simple_yaml_mapping(text: str) -> dict[str, object]:
             pass
 
     result: dict[str, object] = {}
-    for raw_line in text.splitlines():
+    lines: list[str] = text.splitlines()
+    idx: int = 0
+    while idx < len(lines):
+        raw_line: str = lines[idx]
         stripped: str = raw_line.strip()
+        idx += 1
         if not stripped or stripped.startswith("#") or ":" not in stripped:
+            continue
+        if raw_line[0].isspace():
             continue
         key, raw_val = stripped.split(":", 1)
         clean_key: str = key.strip()
-        clean_val: str = raw_val.strip().strip("\"'")
+        val_stripped: str = raw_val.strip()
         if not clean_key:
             continue
+        if val_stripped in BLOCK_SCALAR_INDICATORS:
+            block_lines: list[str] = []
+            while idx < len(lines):
+                cont_line: str = lines[idx]
+                if cont_line.strip() and not cont_line[0].isspace():
+                    break
+                if cont_line.strip():
+                    block_lines.append(cont_line.strip())
+                idx += 1
+            if block_lines:
+                result[clean_key] = " ".join(block_lines)
+            continue
+        clean_val: str = val_stripped.strip("\"'")
         if clean_val.lower() == "true":
             result[clean_key] = True
         elif clean_val.lower() == "false":
@@ -321,7 +350,7 @@ def render_existing_decisions_summary(
         return f"Existing decision files in `{clean_dir}/` (0): none."
     lines: list[str] = [f"Existing decision files in `{clean_dir}/` ({len(entries)}):"]
     for entry in entries:
-        lines.append(f"- `{entry.rel_path}`: {entry.description}")
+        lines.append(f"- `{entry.rel_path}` — **When** {entry.when}")
     return "\n".join(lines)
 
 
@@ -394,7 +423,7 @@ def build_reminder_prompt(
     return f"<critical_instructions>\n{body}\n</critical_instructions>"
 
 
-def extract_decision_description(md_file: Path) -> str | None:
+def extract_decision_when(md_file: Path) -> str | None:
     if not md_file.is_file():
         return None
     try:
@@ -407,9 +436,13 @@ def extract_decision_description(md_file: Path) -> str | None:
         return None
 
     fm_dict: dict[str, object] = _parse_simple_yaml_mapping(fm_match.group(1))
-    desc_raw: object = fm_dict.get("description")
-    if isinstance(desc_raw, str) and desc_raw.strip():
-        return " ".join(desc_raw.strip().splitlines()).strip()
+    when_raw: object = fm_dict.get("when")
+    if isinstance(when_raw, str):
+        collapsed: str = " ".join(when_raw.strip().splitlines()).strip()
+        collapsed = LEADING_WHEN_RE.sub("", collapsed).strip()
+        collapsed = collapsed.rstrip("., ").strip()
+        if collapsed:
+            return collapsed
     return None
 
 
@@ -424,11 +457,11 @@ def collect_decision_entries(
     for md_file in sorted(decisions_dir.glob("*.md")):
         if not md_file.is_file():
             continue
-        desc: str | None = extract_decision_description(md_file)
-        if desc is None:
+        when_cond: str | None = extract_decision_when(md_file)
+        if when_cond is None:
             continue
         rel_path: str = md_file.relative_to(workspace_root).as_posix()
-        entries.append(DecisionFileEntry(rel_path=rel_path, description=desc))
+        entries.append(DecisionFileEntry(rel_path=rel_path, when=when_cond))
     return entries
 
 
@@ -443,9 +476,10 @@ def compute_decisions_fingerprint(
                 continue
             try:
                 stat = md_file.stat()
-                desc: str = extract_decision_description(md_file) or ""
+                when_val: str | None = extract_decision_when(md_file)
+                when_salt: str = when_val if when_val is not None else ""
                 hasher.update(
-                    f"{md_file.name}:{stat.st_mtime_ns}:{stat.st_size}:{desc}\n".encode(
+                    f"{md_file.name}:{stat.st_mtime_ns}:{stat.st_size}:{when_salt}\n".encode(
                         "utf-8"
                     )
                 )
@@ -464,14 +498,16 @@ def resolve_target_rules_file(workspace_root: Path) -> Path:
     return gemini_md
 
 
-def render_managed_decisions_block(entries: list[DecisionFileEntry]) -> str:
+def render_managed_decisions_block(entries: Sequence[DecisionFileEntry]) -> str:
     lines: list[str] = [
         MANAGED_BLOCK_START,
         "## System Decisions",
         "",
     ]
     for entry in entries:
-        lines.append(f"- [`{entry.rel_path}`]({entry.rel_path}): {entry.description}")
+        lines.append(
+            f"- **When** {entry.when}, read [`{entry.rel_path}`]({entry.rel_path}) before acting."
+        )
     lines.append(MANAGED_BLOCK_END)
     return "\n".join(lines)
 
