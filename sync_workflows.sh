@@ -179,6 +179,8 @@ TAGS = [
     "challenge_response",
     "type_safety_policy",
     "engineering_policy",
+    "security_policy",
+    "runtime_policy",
 ]
 
 blocks: list[str] = []
