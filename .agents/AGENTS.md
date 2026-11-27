@@ -84,3 +84,10 @@ A static type in any typed file in the workspace is a binding promise about ever
 2. **Bounded Resources & Deterministic Cleanup:** **When** building runtime structures whose footprint has no fixed static upper bound, enforce an explicit capacity bound—with eviction or backpressure whenever a producer can outpace its consumer; **when** acquiring any held runtime resource, release it deterministically on every exit path.
 3. **Proportional Work & Hot-Path Responsiveness:** **When** writing data access, state updates, or event-loop and UI handlers, scale work proportionally with the requested change via batched or indexed access rather than full scans or per-item I/O loops where set operations apply, and offload blocking CPU or synchronous I/O work from shared event loops and interactive render paths.
 </runtime_policy>
+
+<command_execution>
+# Command Execution
+
+- When running an ad-hoc command or scratch script against the workspace, invoke the workspace's existing configured runner or entrypoint whenever it already drives the target; when authoring a command or script directly, read the owning source or configuration for every workspace-defined reference or execution configuration the command relies on that is not already verified in context—in one batch before executing—and construct the command strictly from what was read, rather than guessing unverified references or flags from memory or bypassing a configured runner with an unverified bootstrap.
+- When a command or diagnostic probe fails before reaching the target behavior, read the owning source or configuration for the failure and audit every remaining unexecuted assumption in that command in one batch before re-running—rebuilding the command from those verified facts—rather than patching only the single error just printed and re-running blind.
+</command_execution>

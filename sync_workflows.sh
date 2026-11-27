@@ -181,6 +181,7 @@ TAGS = [
     "engineering_policy",
     "security_policy",
     "runtime_policy",
+    "command_execution",
 ]
 
 blocks: list[str] = []

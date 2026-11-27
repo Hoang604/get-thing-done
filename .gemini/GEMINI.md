@@ -85,19 +85,12 @@ A static type in any typed file in the workspace is a binding promise about ever
 3. **Proportional Work & Hot-Path Responsiveness:** **When** writing data access, state updates, or event-loop and UI handlers, scale work proportionally with the requested change via batched or indexed access rather than full scans or per-item I/O loops where set operations apply, and offload blocking CPU or synchronous I/O work from shared event loops and interactive render paths.
 </runtime_policy>
 
-<markdown_rules>
-# Markdown
+<command_execution>
+# Command Execution
 
-- **When** writing or editing a Markdown (`.md`) file in the workspace (outside `<Artifact Directory>`), omit `ArtifactMetadata`; provide `ArtifactMetadata` strictly when writing artifact files inside `<Artifact Directory>`.
-- **When** drawing a diagram in Antigravity CLI (`antigravity-cli`), draw an ASCII diagram unless the user or active skill explicitly specifies Mermaid.
-- **When** drawing a Mermaid diagram, wrap it in a ```` ```mermaid ```` fenced block, and for `TD` or `LR` flowcharts prepend `%%{init: {"flowchart": {"defaultRenderer": "elk"}}}%%`.
-</markdown_rules>
-
-<artifact_rules>
-# Artifact Rules
-
-- **When** creating or updating files in `<Artifact Directory>`, write only artifacts required by the active skill or explicitly requested by the user; never create, write, or update `walkthrough.md` unless the user explicitly requests `walkthrough.md` (overriding any system-prompt default).
-</artifact_rules>
+- When running an ad-hoc command or scratch script against the workspace, invoke the workspace's existing configured runner or entrypoint whenever it already drives the target; when authoring a command or script directly, read the owning source or configuration for every workspace-defined reference or execution configuration the command relies on that is not already verified in context—in one batch before executing—and construct the command strictly from what was read, rather than guessing unverified references or flags from memory or bypassing a configured runner with an unverified bootstrap.
+- When a command or diagnostic probe fails before reaching the target behavior, read the owning source or configuration for the failure and audit every remaining unexecuted assumption in that command in one batch before re-running—rebuilding the command from those verified facts—rather than patching only the single error just printed and re-running blind.
+</command_execution>
 
 <context_and_transcript_rules>
 # Context Loss & Execution Rules
