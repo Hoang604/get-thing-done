@@ -5,16 +5,16 @@
 Simulate multiple independent users in one test via separate `browser.newContext()` instances (isolated cookies, storage, and sockets). Wrap repeated setups in `test.extend()` fixtures so contexts always close on teardown:
 
 ```ts
-const aliceCtx = await browser.newContext({ storageState: '.auth/alice.json' });
-const bobCtx = await browser.newContext({ storageState: '.auth/bob.json' });
+const aliceCtx = await browser.newContext({ storageState: ".auth/alice.json" });
+const bobCtx = await browser.newContext({ storageState: ".auth/bob.json" });
 try {
   const alicePage = await aliceCtx.newPage();
   const bobPage = await bobCtx.newPage();
-  await Promise.all([alicePage.goto('/rooms/1'), bobPage.goto('/rooms/1')]);
+  await Promise.all([alicePage.goto("/rooms/1"), bobPage.goto("/rooms/1")]);
 
-  await alicePage.getByRole('textbox', { name: 'Message' }).fill('Hello Bob!');
-  await alicePage.getByRole('button', { name: 'Send' }).click();
-  await expect(bobPage.getByText('Hello Bob!')).toBeVisible();
+  await alicePage.getByRole("textbox", { name: "Message" }).fill("Hello Bob!");
+  await alicePage.getByRole("button", { name: "Send" }).click();
+  await expect(bobPage.getByText("Hello Bob!")).toBeVisible();
 } finally {
   await Promise.all([aliceCtx.close(), bobCtx.close()]);
 }
@@ -26,13 +26,14 @@ try {
 - Observe live frames with `page.on('websocket', ws => ws.on('framesent' | 'framereceived', ...))`, or inspect captured WebSocket traffic directly in traces via `npx playwright trace requests` (Playwright 1.61+).
 - Register `await page.routeWebSocket('**/ws', ws => ...)` only when simulating server-pushed edge cases or third-party streams without a real backend.
 
-## Canvas and WebGL
+## Canvas, Coordinate Input, and Responsive Layout
 
+- **When** a test dispatches coordinate-driven input or asserts responsive layout geometry, confirm from the page's document/CSS viewport rules before choosing viewport emulation flags that the active CSS layout width matches the target breakpoint, and derive every dispatched point from live element bounds clamped inside that viewport clear of any active overlay.
 - Interact via DOM overlays whenever the canvas renders accessible overlays/tooltips; otherwise use relative coordinates (`canvas.click({ position: { x, y } })`, `canvas.hover` + `page.mouse.down/move(..., { steps: 10 })/up`, `page.mouse.wheel`).
 - Wait for rendering readiness (e.g., loading indicator hidden or application state predicate) before comparing visual output:
   ```ts
-  await expect(page.locator('canvas#board')).toHaveScreenshot('drawn.png', {
-    mask: [page.locator('.live-timestamp')],
+  await expect(page.locator("canvas#board")).toHaveScreenshot("drawn.png", {
+    mask: [page.locator(".live-timestamp")],
     maxDiffPixelRatio: 0.01,
   });
   ```
