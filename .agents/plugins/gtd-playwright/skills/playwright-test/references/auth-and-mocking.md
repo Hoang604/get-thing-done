@@ -7,13 +7,13 @@ Avoid logging in through the UI before every test—authenticate once (via UI or
 ```ts
 // Generate once in a setup project or helper
 const context = await browser.newContext();
-await context.request.post('/api/auth/login', {
+await context.request.post("/api/auth/login", {
   data: { email: process.env.TEST_EMAIL, password: process.env.TEST_PASSWORD },
 });
 await context.storageState({
-  path: '.auth/user.json',
+  path: ".auth/user.json",
   indexedDB: true, // opt in when auth tokens live in IndexedDB (1.51+)
-  opfs: true,      // opt in when auth state lives in OPFS (1.63+)
+  opfs: true, // opt in when auth state lives in OPFS (1.63+)
 });
 await context.close();
 ```
@@ -28,22 +28,22 @@ Register routes **before** `page.goto()`. Every handler must call exactly one of
 
 ```ts
 // Fulfill external service response
-await page.route('https://api.stripe.com/**', (route) =>
-  route.fulfill({ status: 200, json: { id: 'ch_test_1' } })
+await page.route("https://api.stripe.com/**", (route) =>
+  route.fulfill({ status: 200, json: { id: "ch_test_1" } }),
 );
 
 // Modify a real response in flight
-await page.route('**/api/external-feed', async (route) => {
+await page.route("**/api/external-feed", async (route) => {
   const response = await route.fetch();
   const json = await response.json();
   await route.fulfill({ response, json: { ...json, flag: true } });
 });
 
 // Synchronize action with a real network response (register promise before clicking)
-const responsePromise = page.waitForResponse('**/api/orders');
-await page.getByRole('button', { name: 'Place order' }).click();
+const responsePromise = page.waitForResponse("**/api/orders");
+await page.getByRole("button", { name: "Place order" }).click();
 await responsePromise;
 
 // Replay recorded external fixtures from HAR
-await page.routeFromHAR('tests/data/external.har', { url: 'https://third-party.example/**' });
+await page.routeFromHAR("tests/data/external.har", { url: "https://third-party.example/**" });
 ```
