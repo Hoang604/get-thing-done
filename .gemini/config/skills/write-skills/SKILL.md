@@ -31,13 +31,13 @@ A rule is intended only if something outside the agent can tell when it is wrong
 - **the user**, when the user confirms they can tell a right answer to that question from a wrong one;
 - **a source**, a document, standard, or file in the codebase that the agent can open and quote, whose text states the answer.
 
-A judge's answer reaches the target skill only as the judge's own words, quoted: the source's text with where it sits, or what the user said. An answer credited to a judge without that quote is the agent's own judgment dressed as authority (**fabricated authority**), and so is any rule for a question with no judge: no one in the loop can catch it when it is wrong. A question with no judge gets no rule; the target skill stays silent on it and leaves it to the agent's default.
+A judge's answer reaches the target skill only as the judge's own words, quoted: the source's text with where it sits, or what the user said. **When** the user picks an option the agent drafted in `ask_question`, that selection ratifies the option's action as an observed case (*Fit*) and never turns the agent's option wording into a judge-authored list. An answer credited to a judge without that quote is the agent's own judgment dressed as authority (**fabricated authority**), and so is any rule for a question with no judge: no one in the loop can catch it when it is wrong. A question with no judge gets no rule; the target skill stays silent on it and leaves it to the agent's default.
 
 ### Closed and open sets
 
 What is right for a question depends on situations no text can list in full, unless the question's judge, in words quoted as *Judges* requires, lists those situations.
 
-- **Closed** (the judge lists them): what is right is fixed, or varies only across the situations the judge lists. Write a literal contract that names each of them and leaves the agent no choice; nothing unlisted needs judgment, so any choice left is variance between runs.
+- **Closed** (a source quotes an exhaustive set, or the user explicitly specifies or confirms that the set has no unlisted members): what is right is fixed, or varies only across the situations the judge lists. Write a literal contract that names each of them and leaves the agent no choice; nothing unlisted needs judgment, so any choice left is variance between runs.
 - **Open** (no judge lists them): name the **cause**, whatever decides every situation the text governs, listed or not: the reason an action is right, the trait that makes something a member of a defined term, what makes a condition hold or a step done.
 
 One instruction can be both, a closed form with open content; write each part by its own kind.
@@ -139,7 +139,7 @@ A sentence also stays only while it bears on what the skill does now. Sentences 
 
 1. **Settle the judge**: Find every question the target skill must answer where the agent's default does not suffice. **When** updating an existing target skill, apply *Application* before asking or drafting: inspect each passage individually while holding the others fixed (citing `file:line`) against the principles in the table, including the per-item *Enumeration* ruling wherever open-set text names specific items or situations. **When** any such question or fix lacks a quoted ruling from its judge, call `ask_question` before drafting or editing:
    - Each question states the exact context that raised it (quoting the conflicting or broken passage of the existing skill, or naming the gap where the agent's default fails in a new skill) and places the user in a concrete scenario a run can meet, so the user can judge it from the question alone without guessing what is being asked.
-   - The options are distinct, competing actions the target skill could take in that scenario, each stating the behaviour it produces and its consequence.
+   - The options are distinct, competing actions the target skill could take in that scenario, each stating the behaviour it produces and its consequence; never bundle an enumerated list or a draft rule enumerating cases into an option, so the user judges a concrete decision rather than ratifying an agent-authored enumeration.
    *Completion criterion*: for an existing target skill, every passage has an individual ruling citing `file:line`; every question the target skill answers has a quoted ruling from its judge; if `ask_question` was called, the turn ends to await the user's answer before Step 2 runs.
 
 2. **Fit and write**: Output to the conversation before writing `SKILL.md`:
