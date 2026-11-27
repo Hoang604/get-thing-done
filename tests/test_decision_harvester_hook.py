@@ -22,6 +22,7 @@ from decision_harvester_hook import (
     evaluate_pre_invocation,
     load_harvester_config,
     load_harvester_state,
+    render_existing_decisions_summary,
     render_managed_decisions_block,
     resolve_workspace_root,
     sync_decisions_index,
@@ -196,8 +197,8 @@ class TestDecisionHarvesterHook(unittest.TestCase):
             {"injectSteps": [{"systemMessage": {"systemMessage": expected_reminder}}]},
         )
 
-        # Adding a new decision file resets injected_in_cycle so the next N (message 9)
-        # injects the FULL prompt again (including existing decision count + description)!
+        # Adding a new decision file resets the N-message counter while keeping injected_in_cycle=True,
+        # so the next N (message 9) injects REMINDER prompt carrying the updated decision file list.
         decisions_dir: Path = self.workspace / ".gtd" / "decisions"
         decisions_dir.mkdir(parents=True, exist_ok=True)
         arch_file: Path = decisions_dir / "architecture.md"
@@ -238,11 +239,11 @@ class TestDecisionHarvesterHook(unittest.TestCase):
         )
         entries = collect_decision_entries(self.workspace)
         injected_9: str = self._extract_injected_msg(res_9)
-        self.assertEqual(injected_9, build_full_prompt(cfg, entries))
+        self.assertEqual(injected_9, build_reminder_prompt(cfg, entries))
         self.assertIn(".gtd/decisions/architecture.md", injected_9)
         self.assertIn(arch_when, injected_9)
 
-        # Next milestone (message 12) with NO new file added -> back to REMINDER prompt (also with file list)
+        # Next milestone (message 12) with NO new file added -> continues with REMINDER prompt
         for idx in range(2):
             self._append_user_step(f"user message {idx + 10}")
             self._append_planner_step(155_000)
@@ -372,7 +373,7 @@ class TestDecisionHarvesterHook(unittest.TestCase):
         )
         self.assertEqual(
             self._extract_injected_msg(res_post_3),
-            injected_9,
+            build_full_prompt(cfg, entries),
         )
 
     def test_prompt_section_replace_and_slot_inject(self) -> None:
@@ -756,9 +757,11 @@ prompt:
         )
         self.assertEqual(self._extract_injected_msg(res_2), build_full_prompt(cfg))
 
-    def test_collect_decision_entries_extracts_when_and_rejects_legacy_or_empty_blocks(
+    def test_collect_decision_entries_extracts_when_and_surfaces_invalid_files_in_prompts_only(
         self,
     ) -> None:
+        self._write_config("enabled: true\nevery_n_messages: 1\n")
+        cfg = load_harvester_config(self.workspace)
         decisions_dir: Path = self.workspace / ".gtd" / "decisions"
         decisions_dir.mkdir(parents=True, exist_ok=True)
 
@@ -793,8 +796,63 @@ prompt:
                     ".gtd/decisions/c-multiline.md",
                     "touching export jobs or background queues",
                 ),
+                (".gtd/decisions/d-legacy-desc.md", None),
+                (".gtd/decisions/e-empty-scalar.md", None),
             ],
         )
+
+        # Managed index block only includes files with valid `when`
+        managed_block: str = render_managed_decisions_block(entries)
+        for valid_path in (
+            ".gtd/decisions/a-normalized.md",
+            ".gtd/decisions/b-colon.md",
+            ".gtd/decisions/c-multiline.md",
+        ):
+            self.assertIn(valid_path, managed_block)
+        self.assertNotIn(".gtd/decisions/d-legacy-desc.md", managed_block)
+        self.assertNotIn(".gtd/decisions/e-empty-scalar.md", managed_block)
+
+        sync_decisions_index(self.workspace)
+        gemini_content: str = (self.workspace / "GEMINI.md").read_text(encoding="utf-8")
+        self.assertIn(managed_block, gemini_content)
+        self.assertNotIn(".gtd/decisions/d-legacy-desc.md", gemini_content)
+        self.assertNotIn(".gtd/decisions/e-empty-scalar.md", gemini_content)
+
+        # Prompt summary surfaces every existing .md file (valid and invalid) with clean Markdown separation
+        summary: str = render_existing_decisions_summary(entries, cfg.decisions_dir)
+        for entry in entries:
+            self.assertIn(entry.rel_path, summary)
+        invalid_line: str = next(
+            line
+            for line in summary.splitlines()
+            if ".gtd/decisions/d-legacy-desc.md" in line
+        )
+        self.assertNotIn("None", invalid_line)
+        self.assertNotIn("null", invalid_line)
+
+        full_prompt: str = build_full_prompt(cfg, entries)
+        reminder_prompt: str = build_reminder_prompt(cfg, entries)
+        self.assertIn(f"\n\n{summary}\n\n", full_prompt)
+        self.assertIn(f"\n\n{summary}\n", reminder_prompt)
+
+        # Workspace with only invalid-`when` decision files does not create GEMINI.md index
+        invalid_only_ws: Path = self.temp_dir / "invalid_only_ws"
+        (invalid_only_ws / ".gtd" / "decisions").mkdir(parents=True, exist_ok=True)
+        (invalid_only_ws / ".gtd" / "config.yml").write_text(
+            "enabled: true\nevery_n_messages: 1\n", encoding="utf-8"
+        )
+        (invalid_only_ws / ".gtd" / "decisions" / "broken.md").write_text(
+            "## Confirmed\n- Missing frontmatter.\n", encoding="utf-8"
+        )
+        self._append_user_step("trigger invalid only")
+        res_invalid = evaluate_pre_invocation(
+            conv_id="conv-invalid-only",
+            transcript_path=str(self.transcript_file),
+            workspace_root=invalid_only_ws,
+            state_dir=self.state_dir,
+        )
+        self.assertIn(".gtd/decisions/broken.md", self._extract_injected_msg(res_invalid))
+        self.assertFalse((invalid_only_ws / "GEMINI.md").exists())
 
 
 if __name__ == "__main__":

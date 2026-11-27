@@ -233,13 +233,16 @@ def is_compaction_step(step: dict[str, object]) -> bool:
     if step_type == "CHECKPOINT":
         return True
     content_obj: object = step.get("content")
-    if isinstance(content_obj, str):
-        stripped: str = content_obj.strip()
-        if (
-            "<CONTEXT_SUMMARY>" in stripped
-            or stripped == "/compact"
-            or stripped.startswith("/compact ")
+    if not isinstance(content_obj, str):
+        return False
+    stripped: str = content_obj.strip()
+    if step_type == "USER_INPUT":
+        source: object = step.get("source")
+        if source != "SYSTEM" and (
+            stripped == "/compact" or stripped.startswith("/compact ")
         ):
+            return True
+        if source == "SYSTEM" and stripped.startswith("<CONTEXT_SUMMARY>"):
             return True
     return False
 

@@ -98,14 +98,18 @@ def default_full_sections(decisions_dir: str) -> dict[str, str]:
         ),
         "partitioning": (
             f"### 2. Partitioning (`{clean_dir}/<topic>.md`)\n"
-            "{{existing_decisions}}\n"
+            f"Current `{clean_dir}/` snapshot (complete list on disk — no need to list "
+            "the directory; read a matching file before deduplicating or editing it "
+            "since `when` does not summarize its decisions):\n\n"
+            "{{existing_decisions}}\n\n"
             "Route each `Keep` item individually by matching its trigger context against each "
             "existing file's frontmatter `when` condition:\n"
-            "- **When** an existing file covers the same work area, update that file in place, "
-            "remove any prior entry reversed or superseded by the user's latest ruling, and "
-            "adjust its `when` condition if the trigger boundary changed.\n"
+            "- **When** an existing file covers the same work area, read it first, omit "
+            "items already accurately recorded there, update that file in place, remove any "
+            "prior entry reversed or superseded by the user's latest ruling, and adjust its "
+            "`when` condition if the trigger boundary changed (or repair it if missing).\n"
             "- **When** no existing file covers that work area without widening an unrelated "
-            f"topic, create a new `{clean_dir}/<topic>.md` file.\n"
+            f"topic, create a new `{clean_dir}/<topic>.md` file.\n\n"
             "{{partition_hints}}"
         ),
         "file_contract": (
@@ -151,14 +155,17 @@ def default_reminder_sections(decisions_dir: str) -> dict[str, str]:
             "against both tests: (1) **User origin** (directly stated or confirmed by the "
             "user) and (2) **Beyond-code future constraint** (constrains or keeps open "
             "future work in a way reading the codebase alone cannot guarantee). "
-            f"**When** none pass or all passing items are already in `{clean_dir}/`, do "
-            f"nothing. **When** items pass, state each decision, target `{clean_dir}/<topic>.md`, "
-            "and `Confirmed`/`Unconfirmed` before writing; route by frontmatter `when` "
-            "topic (updating `when` if shifted, or creating a new file rather than widening "
-            "an unrelated topic), keep `when` strictly an observable pre-read trigger without "
-            "summarizing the decisions inside, expand pointers for a cold read, keep open "
-            "categories unenumerated in the user's words, and write only what came from the user.\n"
-            "{{existing_decisions}}\n"
+            f"**When** none pass, do nothing. **When** items pass, route each against the "
+            f"complete `{clean_dir}/` snapshot below (no need to list the directory; read any "
+            "matching file first to skip already-recorded items or remove superseded "
+            "entries), state each decision being added or updated, its target "
+            f"`{clean_dir}/<topic>.md`, and `Confirmed`/`Unconfirmed` before writing "
+            "(updating `when` if shifted or missing, or creating a new file rather than "
+            "widening an unrelated topic), keep `when` strictly an observable pre-read "
+            "trigger without summarizing the decisions inside, expand pointers for a cold "
+            "read, keep open categories unenumerated in the user's words, and write only "
+            "what came from the user.\n\n"
+            "{{existing_decisions}}\n\n"
             "{{extra_reminder_rules}}"
         ),
     }
@@ -182,13 +189,13 @@ class DecisionHarvesterState:
     last_planner_turn: int = -1
     decisions_fingerprint: str = ""
     workspace_root: str = ""
-    known_decision_files: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
 class DecisionFileEntry:
     rel_path: str
-    when: str
+    # None when an existing .md file in decisions_dir lacks valid frontmatter `when`.
+    when: str | None
 
 
 @contextmanager
@@ -350,7 +357,14 @@ def render_existing_decisions_summary(
         return f"Existing decision files in `{clean_dir}/` (0): none."
     lines: list[str] = [f"Existing decision files in `{clean_dir}/` ({len(entries)}):"]
     for entry in entries:
-        lines.append(f"- `{entry.rel_path}` — **When** {entry.when}")
+        if entry.when is not None:
+            lines.append(
+                f"- `{entry.rel_path}` — `when`: {json.dumps(entry.when, ensure_ascii=False)}"
+            )
+        else:
+            lines.append(
+                f"- `{entry.rel_path}` — missing valid `when` frontmatter"
+            )
     return "\n".join(lines)
 
 
@@ -458,8 +472,6 @@ def collect_decision_entries(
         if not md_file.is_file():
             continue
         when_cond: str | None = extract_decision_when(md_file)
-        if when_cond is None:
-            continue
         rel_path: str = md_file.relative_to(workspace_root).as_posix()
         entries.append(DecisionFileEntry(rel_path=rel_path, when=when_cond))
     return entries
@@ -505,6 +517,8 @@ def render_managed_decisions_block(entries: Sequence[DecisionFileEntry]) -> str:
         "",
     ]
     for entry in entries:
+        if entry.when is None:
+            continue
         lines.append(
             f"- **When** {entry.when}, read [`{entry.rel_path}`]({entry.rel_path}) before acting."
         )
@@ -515,9 +529,11 @@ def render_managed_decisions_block(entries: Sequence[DecisionFileEntry]) -> str:
 def sync_decisions_index(
     workspace_root: Path, decisions_rel_dir: str = DEFAULT_DECISIONS_REL_DIR
 ) -> Path | None:
-    entries: list[DecisionFileEntry] = collect_decision_entries(
-        workspace_root, decisions_rel_dir
-    )
+    entries: list[DecisionFileEntry] = [
+        entry
+        for entry in collect_decision_entries(workspace_root, decisions_rel_dir)
+        if entry.when is not None
+    ]
     target_file: Path = resolve_target_rules_file(workspace_root)
     existing_exists: bool = target_file.is_file()
 
@@ -594,16 +610,6 @@ def load_harvester_state(state_dir: Path, conv_id: str) -> DecisionHarvesterStat
     fp: str = fp_raw if isinstance(fp_raw, str) else ""
     ws_raw: object = raw.get("workspace_root")
     ws_root: str = ws_raw.strip() if isinstance(ws_raw, str) else ""
-    known_raw: object = raw.get("known_decision_files")
-    known_files: tuple[str, ...] = (
-        tuple(
-            item.strip()
-            for item in known_raw
-            if isinstance(item, str) and item.strip()
-        )
-        if isinstance(known_raw, list)
-        else ()
-    )
 
     return DecisionHarvesterState(
         conversation_id=clean_id,
@@ -612,7 +618,6 @@ def load_harvester_state(state_dir: Path, conv_id: str) -> DecisionHarvesterStat
         last_planner_turn=last_turn,
         decisions_fingerprint=fp,
         workspace_root=ws_root,
-        known_decision_files=known_files,
     )
 
 
@@ -621,7 +626,6 @@ def save_harvester_state(state_dir: Path, state: DecisionHarvesterState) -> None
         state_dir.mkdir(parents=True, exist_ok=True)
         state_file: Path = state_dir / f"{state.conversation_id}.json"
         payload: dict[str, object] = asdict(state)
-        payload["known_decision_files"] = list(state.known_decision_files)
         tmp_file: Path = state_file.with_suffix(".json.tmp")
         tmp_file.write_text(
             json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
@@ -874,16 +878,13 @@ def evaluate_pre_invocation(
         entries: list[DecisionFileEntry] = collect_decision_entries(
             workspace_root, config.decisions_dir
         )
-        current_files: tuple[str, ...] = tuple(e.rel_path for e in entries)
-        new_file_added: bool = any(
-            f not in state.known_decision_files for f in current_files
-        )
+        has_indexed_entries: bool = any(e.when is not None for e in entries)
 
         current_fp: str = compute_decisions_fingerprint(
             workspace_root, config.decisions_dir
         )
         target_rules_file: Path = resolve_target_rules_file(workspace_root)
-        target_missing_block: bool = bool(entries) and (
+        target_missing_block: bool = has_indexed_entries and (
             not target_rules_file.is_file()
             or MANAGED_BLOCK_START
             not in target_rules_file.read_text(encoding="utf-8", errors="ignore")
@@ -924,9 +925,7 @@ def evaluate_pre_invocation(
         )
 
         msgs: int = 0 if compacted else state.messages_since_cycle_start
-        injected_in_cycle: bool = (
-            False if (compacted or new_file_added) else state.injected_in_cycle
-        )
+        injected_in_cycle: bool = False if compacted else state.injected_in_cycle
 
         msgs += new_user_msgs
         inject_steps: list[dict[str, dict[str, str]]] = []
@@ -950,7 +949,6 @@ def evaluate_pre_invocation(
             last_planner_turn=new_turn,
             decisions_fingerprint=current_fp,
             workspace_root=resolved_ws,
-            known_decision_files=current_files,
         )
         save_harvester_state(state_dir, updated_state)
         return {"injectSteps": inject_steps}
@@ -983,13 +981,6 @@ def evaluate_post_tool_use(
 
     with harvester_state_lock(state_dir, clean_conv_id):
         state: DecisionHarvesterState = load_harvester_state(state_dir, clean_conv_id)
-        entries: list[DecisionFileEntry] = collect_decision_entries(
-            workspace_root, config.decisions_dir
-        )
-        current_files: tuple[str, ...] = tuple(e.rel_path for e in entries)
-        new_file_added: bool = any(
-            f not in state.known_decision_files for f in current_files
-        )
         current_fp: str = compute_decisions_fingerprint(
             workspace_root, config.decisions_dir
         )
@@ -1013,9 +1004,7 @@ def evaluate_post_tool_use(
             bool(state.decisions_fingerprint)
             and current_fp != state.decisions_fingerprint
         )
-        decision_file_modified: bool = (
-            fp_changed or mutated_via_tool or new_file_added
-        )
+        decision_file_modified: bool = fp_changed or mutated_via_tool
         should_sync: bool = (
             current_fp != state.decisions_fingerprint or mutated_via_tool
         )
@@ -1026,7 +1015,6 @@ def evaluate_post_tool_use(
         if (
             should_sync
             or decision_file_modified
-            or current_files != state.known_decision_files
             or state.workspace_root != resolved_ws
         ):
             updated_state = DecisionHarvesterState(
@@ -1036,11 +1024,10 @@ def evaluate_post_tool_use(
                     if decision_file_modified
                     else state.messages_since_cycle_start
                 ),
-                injected_in_cycle=False if new_file_added else state.injected_in_cycle,
+                injected_in_cycle=state.injected_in_cycle,
                 last_planner_turn=state.last_planner_turn,
                 decisions_fingerprint=current_fp if should_sync else state.decisions_fingerprint,
                 workspace_root=resolved_ws,
-                known_decision_files=current_files,
             )
             save_harvester_state(state_dir, updated_state)
 

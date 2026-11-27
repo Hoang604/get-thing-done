@@ -30,7 +30,7 @@ CUR_TOKENS=0
 COMPACT_COUNT=0
 if [ -f "$STATE_FILE" ]; then
   read -r CUR_TOKENS COMPACT_COUNT < <(
-    jq -r '[(.effective_tokens // 0), (.compaction_count // 0)] | @tsv' "$STATE_FILE" 2>/dev/null || echo "0 0"
+    jq -r '[(.last_tokens // 0), (.compaction_count // 0)] | @tsv' "$STATE_FILE" 2>/dev/null || echo "0 0"
   )
   [[ "$CUR_TOKENS" =~ ^[0-9]+$ ]] || CUR_TOKENS=0
   [[ "$COMPACT_COUNT" =~ ^[0-9]+$ ]] || COMPACT_COUNT=0

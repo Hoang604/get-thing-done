@@ -554,15 +554,24 @@ class TestContextBudgetHooks(unittest.TestCase):
         )
         self.assertEqual(len(ci_res_1.get("injectSteps", [])), 1)
 
-        # Turn 2 with +39,999 token growth (below 40k threshold) & same compaction_count does not re-inject
-        self._append_planner_step(70_000, 0, output_tokens=299)
-        sync_conversation_and_thresholds(
+        # Turn 2 with +39,999 real last_tokens growth (30,000 -> 69,999) plus large tool output
+        # inflating effective_tokens past +40k must NOT re-inject prematurely
+        self._append_planner_step(69_999, 0, output_tokens=500)
+        self._append_step(
+            {
+                "type": "GENERIC",
+                "source": "MODEL",
+                "content": "x" * 30_000,
+            }
+        )
+        state_inflated, _ = sync_conversation_and_thresholds(
             conv_id=self.conv_id,
             fallback_model_name="Gemini 4 Argon (High)",
             transcript_path=str(self.transcript_file),
             state_dir=self.state_dir,
             thresholds_file=self.thresholds_file,
         )
+        self.assertGreater(state_inflated.effective_tokens - 30_000, 40_000)
         ci_res_2 = json.loads(
             subprocess.run(
                 ["bash", str(ci_script)],
@@ -575,7 +584,7 @@ class TestContextBudgetHooks(unittest.TestCase):
         )
         self.assertEqual(ci_res_2.get("injectSteps"), [])
 
-        # Turn 3 reaching exactly +40,000 token growth (30,300 -> 70,300) re-injects
+        # Turn 3 reaching exactly +40,000 real last_tokens growth (30,000 -> 70,000) re-injects
         self._append_planner_step(70_000, 0, output_tokens=300)
         sync_conversation_and_thresholds(
             conv_id=self.conv_id,
@@ -616,6 +625,108 @@ class TestContextBudgetHooks(unittest.TestCase):
             ).stdout
         )
         self.assertEqual(len(ci_res_3.get("injectSteps", [])), 1)
+
+    def test_compaction_detection_ignores_non_compaction_steps_and_accepts_system_summary(self) -> None:
+        repo_root: Path = Path(__file__).resolve().parent.parent
+        ci_script: Path = repo_root / ".gemini" / "config" / "scripts" / "critical_instructions.sh"
+        ci_counter_file: Path = self.temp_dir / "ci_counter_fp"
+        env: dict[str, str] = {
+            **os.environ,
+            "AGY_COMPACT_STATE_DIR": str(self.state_dir),
+            "AGY_THRESHOLDS_FILE": str(self.thresholds_file),
+            "AGY_CI_COUNTER_FILE": str(ci_counter_file),
+        }
+
+        self._append_planner_step(25_000, 0, output_tokens=200)
+        sync_conversation_and_thresholds(
+            conv_id=self.conv_id,
+            fallback_model_name="Gemini 4 Argon (High)",
+            transcript_path=str(self.transcript_file),
+            state_dir=self.state_dir,
+            thresholds_file=self.thresholds_file,
+        )
+        first_ci = json.loads(
+            subprocess.run(
+                ["bash", str(ci_script)],
+                input=json.dumps({"conversationId": self.conv_id}),
+                text=True,
+                capture_output=True,
+                env=env,
+                check=True,
+            ).stdout
+        )
+        self.assertEqual(len(first_ci.get("injectSteps", [])), 1)
+
+        # Tool outputs, model replies, system messages, and user prose mentioning
+        # <CONTEXT_SUMMARY> or /compact must NOT increment compaction_count or trigger re-injection
+        non_compaction_steps: list[dict[str, object]] = [
+            {"type": "GENERIC", "source": "MODEL", "content": 'if "<CONTEXT_SUMMARY>" in text:\n    pass'},
+            {"type": "GENERIC", "source": "MODEL", "content": "/compact"},
+            {"type": "TOOL_RESPONSE", "source": "SYSTEM", "content": "<CONTEXT_SUMMARY>in file</CONTEXT_SUMMARY>"},
+            {
+                "type": "PLANNER_RESPONSE",
+                "source": "MODEL",
+                "input_tokens": 30_000,
+                "cache_read_tokens": 0,
+                "output_tokens": 200,
+                "content": "The bug matches <CONTEXT_SUMMARY> in tool output.",
+            },
+            {"type": "SYSTEM_MESSAGE", "source": "SYSTEM", "content": "<CONTEXT_SUMMARY>in subagent brief"},
+            {"type": "USER_INPUT", "source": "USER_EXPLICIT", "content": "Check why <CONTEXT_SUMMARY> triggers hooks"},
+            {"type": "USER_INPUT", "source": "SYSTEM", "content": "note about <CONTEXT_SUMMARY> in middle"},
+        ]
+        for step in non_compaction_steps:
+            self._append_step(step)
+
+        state_no_compact, _ = sync_conversation_and_thresholds(
+            conv_id=self.conv_id,
+            fallback_model_name="Gemini 4 Argon (High)",
+            transcript_path=str(self.transcript_file),
+            state_dir=self.state_dir,
+            thresholds_file=self.thresholds_file,
+        )
+        self.assertEqual(state_no_compact.compaction_count, 0)
+
+        ci_no_reinject = json.loads(
+            subprocess.run(
+                ["bash", str(ci_script)],
+                input=json.dumps({"conversationId": self.conv_id}),
+                text=True,
+                capture_output=True,
+                env=env,
+                check=True,
+            ).stdout
+        )
+        self.assertEqual(ci_no_reinject.get("injectSteps"), [])
+
+        # System USER_INPUT starting with <CONTEXT_SUMMARY> IS recognized as compaction
+        self._append_step(
+            {
+                "type": "USER_INPUT",
+                "source": "SYSTEM",
+                "content": "<CONTEXT_SUMMARY>\ncompacted state\n</CONTEXT_SUMMARY>",
+            }
+        )
+        state_compacted, _ = sync_conversation_and_thresholds(
+            conv_id=self.conv_id,
+            fallback_model_name="Gemini 4 Argon (High)",
+            transcript_path=str(self.transcript_file),
+            state_dir=self.state_dir,
+            thresholds_file=self.thresholds_file,
+        )
+        self.assertEqual(state_compacted.compaction_count, 1)
+
+        ci_after_compact = json.loads(
+            subprocess.run(
+                ["bash", str(ci_script)],
+                input=json.dumps({"conversationId": self.conv_id}),
+                text=True,
+                capture_output=True,
+                env=env,
+                check=True,
+            ).stdout
+        )
+        self.assertEqual(len(ci_after_compact.get("injectSteps", [])), 1)
 
     def test_detect_guard_mode_tracks_plan_auditor_and_default_transitions(self) -> None:
         self.assertEqual(detect_guard_mode(str(self.transcript_file)), "default")
