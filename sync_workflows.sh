@@ -56,6 +56,7 @@ TOOL_ALLOWS = {
     "grep_search": ("grep",),
     "run_command": ("shell",),
     "write_file": ("edit", "external_directory"),
+    "edit_file": ("edit", "external_directory"),
 }
 ALLOW_ORDER = ("read", "glob", "grep", "shell", "edit", "external_directory")
 REQUIRED_KEYS = ("name", "description", "tools", "subagent", "mainAgent")
