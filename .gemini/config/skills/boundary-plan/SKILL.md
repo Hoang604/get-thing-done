@@ -204,7 +204,7 @@ Compile or finalize the initial plan in `<Artifact Directory>/implementation_pla
 
 #### Subagent Spawn Directive (Post-Implementation)
 > [!IMPORTANT]
-> After completing code implementation or remediation, spawn `boundary-auditor` via `invoke_subagent`:
+> After completing initial Build (and after remediation when `execute`'s `Post-Remediation Gate` requires Round `<N>`), spawn `boundary-auditor` via `invoke_subagent`:
 > - **TypeName**: `boundary-auditor`
 > - **Role**: `Boundary Auditor`
 > - **Prompt**: `Audit boundary implementation plan at <plan-link> with implementation ledger at <ledger-link>. Execute your passive code inspection protocol and deliver audit_report_round_<N>.md.`
